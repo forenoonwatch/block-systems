@@ -17,6 +17,8 @@
 #include <vector>
 #include <tuple>
 
+#define CAMERA_SPEED 5.f
+
 void renderMesh(Game&, float);
 void updateCamera(Game&, float);
 
@@ -28,6 +30,9 @@ struct TransformComponent {
 
 struct CameraComponent {
 	Camera* camera;
+	Vector3f position;
+	float rotationX;
+	float rotationY;
 };
 
 class GameScene : public Scene {
@@ -38,6 +43,7 @@ class GameScene : public Scene {
 			addUpdateSystem(updateCamera);
 
 			addRenderSystem(renderMesh);
+			addRenderSystem(GameRenderContext::flush);
 		}
 
 		virtual void load(Game& game) override {
@@ -92,10 +98,11 @@ int main() {
 	//});
 
 	Application::init();
-	Window window("My Window", 800, 600);
+	Window window("My Window", 1200, 800);
 
-	GameRenderContext renderContext(800, 600,
-			Math::perspective(Math::toRadians(70.f), 4.f / 3.f, 0.1f, 1000.f));
+	GameRenderContext renderContext(window.getWidth(), window.getHeight(),
+			Math::perspective(Math::toRadians(70.f), (float)window.getWidth()
+			/ (float)window.getHeight(), 0.1f, 1000.f));
 	Game game(window, &renderContext,
 			Memory::SharedPointer<Scene>(new GameScene()), false);
 
@@ -118,45 +125,72 @@ void updateCamera(Game& game, float deltaTime) {
 		Camera& camera = *cc.camera;
 
 		camera.view = transform.transform;
-		camera.viewProjection = camera.projection * camera.view;
-
 		camera.iView = Math::inverse(camera.view);
+		
+		camera.viewProjection = camera.projection * camera.iView;
 		camera.iViewProjection = Math::inverse(camera.viewProjection);
 	});
 }
 
 void moveCamera(Game& game, float deltaTime) {
+	static double lastX = 0.0;
+	static double lastY = 0.0;
+
+	const double mouseX = Application::getMouseX();
+	const double mouseY = Application::getMouseY();
+
 	game.getECS().view<TransformComponent, CameraComponent>().each([&](
-			TransformComponent& transform, CameraComponent& cc) {
+			TransformComponent& transform, CameraComponent& camera) {
 		float x = 0.f;
 		float y = 0.f;
 		float z = 0.f;
 
 		if (Application::isKeyDown(Input::KEY_W)) {
-			z += 1.f;
-		}
-
-		if (Application::isKeyDown(Input::KEY_S)) {
 			z -= 1.f;
 		}
 
-		if (Application::isKeyDown(Input::KEY_A)) {
-			x += 1.f;
+		if (Application::isKeyDown(Input::KEY_S)) {
+			z += 1.f;
 		}
 
-		if (Application::isKeyDown(Input::KEY_D)) {
+		if (Application::isKeyDown(Input::KEY_A)) {
 			x -= 1.f;
 		}
 
-		if (Application::isKeyDown(Input::KEY_Q)) {
-			y += 1.f;
+		if (Application::isKeyDown(Input::KEY_D)) {
+			x += 1.f;
 		}
 
-		if (Application::isKeyDown(Input::KEY_E)) {
+		if (Application::isKeyDown(Input::KEY_Q)) {
 			y -= 1.f;
 		}
 
-		transform.transform = Math::translate(transform.transform,
-				Vector3f(x, y, z) * (5.f * deltaTime));
+		if (Application::isKeyDown(Input::KEY_E)) {
+			y += 1.f;
+		}
+
+		if (Application::isMouseDown(Input::MOUSE_BUTTON_RIGHT)) {
+			camera.rotationX += (float)( (lastY - mouseY) * 0.01 );
+			camera.rotationY += (float)( (lastX - mouseX) * 0.01 );
+
+			if (camera.rotationX < -1.27f) {
+				camera.rotationX = -1.27f;
+			}
+			else if (camera.rotationX > 1.27f) {
+				camera.rotationX = 1.27f;
+			}
+		}
+
+		transform.transform = Math::rotate(Matrix4f(1.f), camera.rotationY, Vector3f(0.f, 1.f, 0.f));
+
+		camera.position += Vector3f(transform.transform[0]) * (x * CAMERA_SPEED * deltaTime)
+				+ Vector3f(transform.transform[2]) * (z * CAMERA_SPEED * deltaTime);
+		camera.position.y += y * CAMERA_SPEED * deltaTime;
+
+		transform.transform *= Math::rotate(Matrix4f(1.f), camera.rotationX, Vector3f(1.f, 0.f, 0.f));
+		transform.transform = Math::translate(Matrix4f(1.f), camera.position) * transform.transform;
 	});
+
+	lastX = mouseX;
+	lastY = mouseY;
 }
