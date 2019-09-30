@@ -17,10 +17,11 @@ void GameRenderContext::renderMesh(VertexArray& vertexArray, Texture& texture,
 			* transform, transform);
 }
 
-void GameRenderContext::flush() {
-	screen.clear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+void GameRenderContext::flush(Game& game, float deltaTime) {
+	((GameRenderContext*)game.getRenderContext())->screen.clear(
+			GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-	flushStaticMeshes();
+	((GameRenderContext*)game.getRenderContext())->flushStaticMeshes();
 }
 
 inline void GameRenderContext::flushStaticMeshes() {

@@ -19,13 +19,15 @@ class GameRenderContext : public RenderContext {
 		void renderMesh(VertexArray& vertexArray, Texture& texture,
 				const Matrix4f& transform);
 
-		virtual void flush() override;
-
 		inline virtual void setGame(Game& game) override {
 			this->game = &game;
 		}
 
 		inline Camera& getCamera() { return camera; }
+
+		inline auto& getStaticMeshes() { return staticMeshes; }
+
+		static void flush(Game& game, float deltaTime);
 	private:
 		NULL_COPY_AND_ASSIGN(GameRenderContext);
 
