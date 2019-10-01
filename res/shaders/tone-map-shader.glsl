@@ -1,4 +1,4 @@
-#include "commong.glh"
+#include "common.glh"
 
 #if defined(VS_BUILD)
 

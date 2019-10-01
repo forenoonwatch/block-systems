@@ -14,6 +14,7 @@
 #include "game-render-context.hpp"
 
 void renderMesh(Game&, float);
+void renderSkybox(Game&, float);
 
 class GameScene : public Scene {
 	public:
@@ -23,10 +24,16 @@ class GameScene : public Scene {
 			addUpdateSystem(updateCameraSystem);
 
 			addRenderSystem(renderMesh);
+			addRenderSystem(GameRenderContext::clear);
+			addRenderSystem(GameRenderContext::flushStaticMeshes);
+			addRenderSystem(GameRenderContext::applyLighting);
+			addRenderSystem(renderSkybox);
 			addRenderSystem(GameRenderContext::flush);
 		}
 
 		virtual void load(Game& game) override {
+			GameRenderContext* grc = (GameRenderContext*)game.getRenderContext();
+
 			struct IndexedModel::AllocationHints hints;
 			hints.elementSizes.push_back(3);
 			hints.elementSizes.push_back(2);
@@ -37,7 +44,14 @@ class GameScene : public Scene {
 
 			game.getAssetManager().loadStaticMesh("cube", "./res/cube.obj", hints);
 			game.getAssetManager().loadMaterial("bricks", "./res/bricks.dds",
-					"./res/bricks-normal.dds", "./res/bricks-material.dds");			
+					"./res/bricks-normal.dds", "./res/bricks-material.dds");
+			game.getAssetManager().loadCubeMap("sargasso-diffuse", "./res/sargasso-diffuse.dds");
+			game.getAssetManager().loadCubeMap("sargasso-specular", "./res/sargasso-specular.dds");
+			game.getAssetManager().loadTexture("schlick-brdf", "./res/schlick-brdf.png");
+
+			grc->setDiffuseIBL(game.getAssetManager().getCubeMap("sargasso-diffuse"));
+			grc->setSpecularIBL(game.getAssetManager().getCubeMap("sargasso-specular"));
+			grc->setBrdfLUT(game.getAssetManager().getTexture("schlick-brdf"));
 
 			ECS::Entity e = game.getECS().create();
 			game.getECS().assign<RenderableMesh>(e,
@@ -100,3 +114,12 @@ void renderMesh(Game& game, float deltaTime) {
 	});
 }
 
+void renderSkybox(Game& game, float deltaTime) {
+	GameRenderContext* grc = (GameRenderContext*)game.getRenderContext();
+
+	Matrix4f mvp = Math::translate(grc->getCamera().viewProjection,
+			Vector3f(grc->getCamera().view[3]));
+
+	grc->getSkyboxCube().updateBuffer(1, &mvp, sizeof(Matrix4f));
+	grc->renderSkybox(grc->getSpecularIBL(), grc->getLinearMipmapSampler());
+}

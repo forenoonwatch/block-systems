@@ -1,6 +1,7 @@
 #include "camera.hpp"
 
 #include "util-components.hpp"
+#include "game-render-context.hpp"
 
 #include <engine/core/application.hpp>
 #include <engine/game/game.hpp>
@@ -77,6 +78,8 @@ void firstPersonCameraSystem(Game& game, float deltaTime) {
 
 		transform.transform *= Math::rotate(Matrix4f(1.f), camera.rotationX, Vector3f(1.f, 0.f, 0.f));
 		transform.transform = Math::translate(Matrix4f(1.f), camera.position) * transform.transform;
+
+		((GameRenderContext*)game.getRenderContext())->updateCameraBuffer();
 	});
 
 	lastX = mouseX;
