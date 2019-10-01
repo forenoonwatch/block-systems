@@ -3,6 +3,8 @@
 #include <engine/math/matrix.hpp>
 #include <engine/serialization/archive.hpp>
 
+class Game;
+
 struct Camera {
 	Matrix4f projection;
 	Matrix4f view;
@@ -28,3 +30,16 @@ struct Camera {
 		iViewProjection = Math::inverse(viewProjection);
 	}
 };
+
+struct CameraComponent {
+	Camera* camera;
+
+	Vector3f position;
+	float rotationX;
+	float rotationY;
+};
+
+void updateCameraSystem(Game&, float);
+
+void firstPersonCameraSystem(Game&, float);
+
