@@ -1,3 +1,4 @@
+#include "common.glh"
 
 #if defined(VS_BUILD)
 
@@ -9,10 +10,12 @@ void main() {
 
 #elif defined(FS_BUILD)
 
+uniform sampler2D screen;
+
 layout (location = 0) out vec4 outColor;
 
 void main() {
-	outColor = vec4(1.0);
+	outColor = texelFetch(screen, ivec2(gl_FragCoord.xy), 0);
 }
 
 #endif
