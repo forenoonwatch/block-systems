@@ -7,14 +7,10 @@ GameRenderContext::GameRenderContext(uint32 width, uint32 height,
 				Matrix4f(1.f), Math::inverse(projection)})
 		, screen(*((RenderContext*)this), width, height)
 		, staticMeshShader(*((RenderContext*)this))
-		, linearSampler(*((RenderContext*)this), GL_LINEAR, GL_LINEAR) {
-	staticMeshShader.load("./res/shaders/static-mesh-shader.glsl");
-}
-
-void GameRenderContext::renderMesh(VertexArray& vertexArray, Texture& texture,
-		const Matrix4f& transform) {
-	staticMeshes[std::make_pair(&vertexArray, &texture)].emplace_back(camera.viewProjection
-			* transform, transform);
+		, linearSampler(*((RenderContext*)this), GL_LINEAR, GL_LINEAR)
+		, linearMipmapSampler(*((RenderContext*)this), GL_LINEAR_MIPMAP_LINEAR,
+				GL_LINEAR_MIPMAP_LINEAR) {
+	staticMeshShader.load("./res/shaders/static-mesh-deferred.glsl");
 }
 
 void GameRenderContext::flush(Game& game, float deltaTime) {
@@ -25,8 +21,8 @@ void GameRenderContext::flush(Game& game, float deltaTime) {
 }
 
 inline void GameRenderContext::flushStaticMeshes() {
-	Texture* currentTexture = nullptr;
-	Texture* texture;
+	Material* currentMaterial = nullptr;
+	Material* material;
 
 	VertexArray* vertexArray;
 	uintptr numTransforms;
@@ -40,11 +36,17 @@ inline void GameRenderContext::flushStaticMeshes() {
 		}
 
 		vertexArray = it->first.first;
-		texture = it->first.second;
+		material = it->first.second;
 
-		if (texture != currentTexture) {
-			currentTexture = texture;
-			// staticMeshShader.setSampler(...);
+		if (material != currentMaterial) {
+			currentMaterial = material;
+
+			staticMeshShader.setSampler("diffuse", *material->diffuse,
+					linearMipmapSampler, 0);
+			staticMeshShader.setSampler("normalMap", *material->normalMap,
+					linearMipmapSampler, 1);
+			staticMeshShader.setSampler("materialMap", *material->materialMap,
+					linearMipmapSampler, 2);
 		}
 
 		vertexArray->updateBuffer(4, &it->second[0],
