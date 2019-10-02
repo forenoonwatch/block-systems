@@ -17,7 +17,9 @@ class GaussianBlur;
 class GameRenderContext : public RenderContext {
 	public:
 		GameRenderContext(uint32 width, uint32 height,
-				const Matrix4f& projection);
+				float fieldOfView, float zNear, float zFar);
+
+		void resize(uint32 width, uint32 height);
 
 		inline void updateCameraBuffer();
 
@@ -98,6 +100,10 @@ class GameRenderContext : public RenderContext {
 		CubeMap* specularIBL;
 
 		Texture* brdfLUT;
+
+		float fieldOfView;
+		float zNear;
+		float zFar;
 
 		Camera camera;
 

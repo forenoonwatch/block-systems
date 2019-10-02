@@ -5,7 +5,7 @@
 static void initSkyboxCube(IndexedModel&);
 
 GameRenderContext::GameRenderContext(uint32 width, uint32 height,
-			const Matrix4f& projection)
+			float fieldOfView, float zNear, float zFar)
 		: game(nullptr)
 		
 		, colorBuffer(*((RenderContext*)this), width, height, GL_RGBA32F)
@@ -41,8 +41,11 @@ GameRenderContext::GameRenderContext(uint32 width, uint32 height,
 		, specularIBL(nullptr)
 		, brdfLUT(nullptr)
 
-		, camera({projection, Matrix4f(1.f), projection,
-				Matrix4f(1.f), Math::inverse(projection)}) {
+		, fieldOfView(fieldOfView)
+		, zNear(zNear)
+		, zFar(zFar)
+		, camera({Matrix4f(1.f), Matrix4f(1.f), Matrix4f(1.f),
+				Matrix4f(1.f), Matrix4f(1.f)}) {
 	target.addTextureTarget(normalBuffer, GL_COLOR_ATTACHMENT0, 1);
 	target.addTextureTarget(lightingBuffer, GL_COLOR_ATTACHMENT0, 2);
 
@@ -65,6 +68,9 @@ GameRenderContext::GameRenderContext(uint32 width, uint32 height,
 
 	bloomBlur = new GaussianBlur(*((RenderContext*)this), blurShader, brightBuffer);
 
+	camera.projection = Math::perspective(fieldOfView, (float)width / (float)height,
+			zNear, zFar);
+
 	float lightData[] = {0.f, 15.f, 128.f};
 	Vector3f lightDir = Math::normalize(Vector3f(1, -1, 1));
 	lightDataBuffer.update(&lightDir, sizeof(Vector3f));
@@ -79,6 +85,20 @@ GameRenderContext::GameRenderContext(uint32 width, uint32 height,
 	Vector2f sceneDims(width, height);
 	sceneDataBuffer.update(&sceneDims, sizeof(Vector3f)
 			+ sizeof(float), sizeof(Vector2f));
+}
+
+void GameRenderContext::resize(uint32 width, uint32 height) {
+	target.resize(width, height);
+	screen.resize(width, height);
+
+	colorBuffer.resize(width, height);
+	normalBuffer.resize(width, height);
+	lightingBuffer.resize(width, height);
+	brightBuffer.resize(width, height);
+	depthBuffer.resize(width, height);
+
+	camera.projection = Math::perspective(fieldOfView,
+			(float)width / (float)height, zNear, zFar);
 }
 
 GameRenderContext::~GameRenderContext() {

@@ -24,11 +24,17 @@ int main() {
 	Application::init();
 	Window window("My Window", 1200, 800);
 
+	Memory::SharedPointer<Scene> scene = Memory::SharedPointer<Scene>(new GameScene());
+
 	GameRenderContext renderContext(window.getWidth(), window.getHeight(),
-			Math::perspective(Math::toRadians(70.f), (float)window.getWidth()
-			/ (float)window.getHeight(), 0.1f, 1000.f));
-	Game game(window, &renderContext,
-			Memory::SharedPointer<Scene>(new GameScene()), false);
+			Math::toRadians(70.f), 0.1f, 1000.f);
+	Game game(window, &renderContext, false);
+
+	Application::setResizeCallback([&](Window& win, uint32 width, uint32 height) {
+		renderContext.resize(width, height);
+	});
+
+	game.loadScene(scene);
 
 	Application::destroy();
 
