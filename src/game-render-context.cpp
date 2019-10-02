@@ -97,6 +97,8 @@ void GameRenderContext::resize(uint32 width, uint32 height) {
 	brightBuffer.resize(width, height);
 	depthBuffer.resize(width, height);
 
+	bloomBlur->resize(width, height);
+
 	camera.projection = Math::perspective(fieldOfView,
 			(float)width / (float)height, zNear, zFar);
 }

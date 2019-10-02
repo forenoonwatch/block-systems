@@ -25,3 +25,8 @@ void GaussianBlur::update() {
 		horizontal = !horizontal;
 	}
 }
+
+void GaussianBlur::resize(uint32 width, uint32 height) {
+	buffer.resize(width, height);
+}
+

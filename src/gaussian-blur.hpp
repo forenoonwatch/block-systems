@@ -9,6 +9,8 @@ class GaussianBlur {
 
 		void update();
 
+		void resize(uint32 width, uint32 height);
+
 		inline Texture& getBuffer0() { return blurTarget; }
 		inline Texture& getBuffer1() { return buffer; }
 	private:
