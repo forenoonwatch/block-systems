@@ -9,21 +9,9 @@
 #include <engine/core/application.hpp>
 #include <engine/math/math.hpp>
 
-#include <cfloat>
-
 static void renderMesh(Game&, float);
 static void renderSkybox(Game&, float);
 static void toggleFullscreenSystem(Game&, float);
-
-class ShipPickBlockSystem {
-	public:
-		inline ShipPickBlockSystem(ECS::Entity rayInfo)
-				: rayInfo(rayInfo) {}
-
-		void operator()(Game&, float);
-	private:
-		ECS::Entity rayInfo;
-};
 
 GameScene::GameScene()
 		: Scene() {
@@ -179,42 +167,5 @@ static void toggleFullscreenSystem(Game& game, float deltaTime) {
 		game.getWindow().resize(1200, 800);
 		game.getWindow().moveToCenter();
 	}
-}
-
-void ShipPickBlockSystem::operator()(Game& game, float deltaTime) { 
-	const CameraComponent& cc = game.getECS().get<CameraComponent>(rayInfo);
-	const Vector4f tfOrigin(cc.position, 1.f);
-	const Vector4f tfDirection(cc.rayDirection, 0.f);
-
-	Vector3f intersectPos;
-	Vector3f intersectNormal;
-
-	game.getECS().view<TransformComponent, Ship>().each([&](
-			TransformComponent& transform, Ship& ship) {
-		const Block* block = nullptr;
-		float minDist = FLT_MAX;
-
-		for (ArrayList<Block>::const_iterator it = ship.blocks.cbegin(),
-				end = ship.blocks.cend(); it != end; ++it) {
-			const Matrix4f tf = transform.transform * it->offset;
-			const Matrix4f tfi = Math::inverse(tf);
-
-			if (BlockInfo::getInfo(it->type).model->intersectsRay(
-					Vector3f(tfi * tfOrigin), Vector3f(tfi * tfDirection),
-					&intersectPos, &intersectNormal)) {
-				const float dist = Math::length(cc.position
-						- Vector3f(tf * Vector4f(intersectPos, 1.f)));
-
-				if (dist < minDist) {
-					minDist = dist;
-					block = &(*it);
-				}
-			}
-		}
-
-		if (block != nullptr) {
-			DEBUG_LOG_TEMP2("Intersecting");
-		}
-	});
 }
 
