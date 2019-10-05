@@ -23,6 +23,7 @@ int main() {
 
 	Application::init();
 	Window window("My Window", 1200, 800);
+	//window.moveToCenter();
 
 	Memory::SharedPointer<Scene> scene = Memory::SharedPointer<Scene>(new GameScene());
 

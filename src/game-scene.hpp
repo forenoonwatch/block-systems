@@ -1,5 +1,7 @@
 #pragma once
 
+#include "ship.hpp"
+
 #include <engine/game/scene.hpp>
 
 class GameScene : public Scene {
@@ -12,3 +14,4 @@ class GameScene : public Scene {
 		virtual ~GameScene();
 	private:
 };
+
