@@ -1,6 +1,7 @@
 #include "gaussian-blur.hpp"
 
 #define NUM_PASSES 10
+#define LOCAL_BLOCK_SIZE 16
 
 GaussianBlur::GaussianBlur(RenderContext& context, Shader& blurShader,
 			Texture& blurTarget)
@@ -19,7 +20,8 @@ void GaussianBlur::update() {
 	for (uint32 i = 0; i < NUM_PASSES; ++i) {
 		blurShader.setInt("horizontal", horizontal);
 
-		context->compute(blurShader, blurTarget.getWidth() / 16, blurTarget.getHeight() / 16);
+		context->compute(blurShader, blurTarget.getWidth() / LOCAL_BLOCK_SIZE,
+				blurTarget.getHeight() / LOCAL_BLOCK_SIZE);
 		context->awaitFinish();
 
 		horizontal = !horizontal;
