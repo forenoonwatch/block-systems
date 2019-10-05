@@ -37,6 +37,7 @@ struct CameraComponent {
 	Vector3f position;
 	float rotationX;
 	float rotationY;
+	Vector3f rayDirection;
 };
 
 void updateCameraSystem(Game&, float);

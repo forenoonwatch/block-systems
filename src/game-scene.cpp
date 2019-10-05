@@ -11,14 +11,6 @@
 
 #include <cfloat>
 
-struct MouseRayInfo {
-	Vector3f origin;
-	Vector3f direction;
-	Camera* camera;
-};
-
-static void updateMouseRaySystem(Game&, float);
-
 static void renderMesh(Game&, float);
 static void renderSkybox(Game&, float);
 static void toggleFullscreenSystem(Game&, float);
@@ -37,7 +29,6 @@ GameScene::GameScene()
 		: Scene() {
 	addUpdateSystem(::firstPersonCameraSystem);
 	addUpdateSystem(::updateCameraSystem);
-	addUpdateSystem(::updateMouseRaySystem);
 	addUpdateSystem(::toggleFullscreenSystem);
 
 	addRenderSystem(::renderMesh);
@@ -108,11 +99,7 @@ void GameScene::load(Game& game) {
 	game.getECS().assign<CameraComponent>(cameraEntity,
 			&((GameRenderContext*)game.getRenderContext())->getCamera());
 
-	ECS::Entity mouseRay = game.getECS().create();
-	game.getECS().assign<MouseRayInfo>(mouseRay, Vector3f(), Vector3f(),
-			&((GameRenderContext*)game.getRenderContext())->getCamera());
-
-	addUpdateSystem(ShipPickBlockSystem(mouseRay));
+	addUpdateSystem(ShipPickBlockSystem(cameraEntity));
 
 	ECS::Entity ship = game.getECS().create();
 	game.getECS().assign<TransformComponent>(ship, Matrix4f(1.f));
@@ -194,56 +181,39 @@ static void toggleFullscreenSystem(Game& game, float deltaTime) {
 	}
 }
 
-static void updateMouseRaySystem(Game& game, float deltaTime) {
-	game.getECS().view<MouseRayInfo>().each([&](MouseRayInfo& mri) {
-		const float ndcX = (2.f * Application::getMouseX())
-				/ (float)game.getWindow().getWidth() - 1.f;
-		const float ndcY = (2.f * Application::getMouseY())
-				/ (float)game.getWindow().getHeight() - 1.f;
-
-		Vector4f rawRay = Math::inverse(mri.camera->projection)
-				* Vector4f(ndcX, -ndcY, -1.f, 1.f);
-		rawRay = mri.camera->view * Vector4f(rawRay.x, rawRay.y, -1.f, 0.f);
-	
-		mri.origin = Vector3f(mri.camera->view[3]);	
-		mri.direction = Math::normalize(Vector3f(rawRay));
-	});
-}
-
 void ShipPickBlockSystem::operator()(Game& game, float deltaTime) { 
-	const MouseRayInfo& mri = game.getECS().get<MouseRayInfo>(rayInfo);
-	const Vector4f tfOrigin(mri.origin, 1.f);
-	const Vector4f tfDirection(mri.direction, 0.f);
+	const CameraComponent& cc = game.getECS().get<CameraComponent>(rayInfo);
+	const Vector4f tfOrigin(cc.position, 1.f);
+	const Vector4f tfDirection(cc.rayDirection, 0.f);
 
 	Vector3f intersectPos;
 	Vector3f intersectNormal;
 
 	game.getECS().view<TransformComponent, Ship>().each([&](
 			TransformComponent& transform, Ship& ship) {
-		bool intersected = false;
+		const Block* block = nullptr;
 		float minDist = FLT_MAX;
-		uint32 index;
 
-		for (uint32 i = 0; i < ship.blocks.size(); ++i) {
-			const Matrix4f tf = transform.transform * ship.blocks[i].offset;
+		for (ArrayList<Block>::const_iterator it = ship.blocks.cbegin(),
+				end = ship.blocks.cend(); it != end; ++it) {
+			const Matrix4f tf = transform.transform * it->offset;
 			const Matrix4f tfi = Math::inverse(tf);
 
-			if (BlockInfo::getInfo(ship.blocks[i].type).model->intersectsRay(
+			if (BlockInfo::getInfo(it->type).model->intersectsRay(
 					Vector3f(tfi * tfOrigin), Vector3f(tfi * tfDirection),
 					&intersectPos, &intersectNormal)) {
-				const float dist = Math::length(mri.origin
+				const float dist = Math::length(cc.position
 						- Vector3f(tf * Vector4f(intersectPos, 1.f)));
 
 				if (dist < minDist) {
 					minDist = dist;
-					intersected = true;
-					index = i;
+					block = &(*it);
 				}
 			}
 		}
 
-		if (intersected) {
-			DEBUG_LOG_TEMP("Intersected with block %d", index);
+		if (block != nullptr) {
+			DEBUG_LOG_TEMP2("Intersecting");
 		}
 	});
 }
