@@ -106,20 +106,8 @@ void GameScene::load(Game& game) {
 		shipComponent.blocks.push_back(block);
 	}
 
-	//game.getECS().get<TransformComponent>(ship).transform =
-	//		Math::rotate(Matrix4f(1.f), 0.3f, Vector3f(1.f, 1.f, 0.f));
-
-	Vector3f pos;
-	Vector3f normal;
-	bool res = game.getAssetManager().getModel("cube").intersectsRay(Vector3f(0.f, 0.f, 5.f),
-			Vector3f(0.f, 0.f, -1.f), &pos, &normal);
-
-	if (res) {
-		DEBUG_LOG_TEMP("%.2f, %.2f, %.2f", pos.x, pos.y, pos.z);
-	}
-	else {
-		DEBUG_LOG_TEMP2("No intersection");
-	}
+	game.getECS().get<TransformComponent>(ship).transform =
+			Math::rotate(Matrix4f(1.f), 0.3f, Vector3f(1.f, 1.f, 0.f));
 
 	DEBUG_LOG_TEMP2("Loaded");
 }
