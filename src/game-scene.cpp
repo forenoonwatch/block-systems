@@ -89,6 +89,7 @@ void GameScene::load(Game& game) {
 			&((GameRenderContext*)game.getRenderContext())->getCamera());
 
 	addUpdateSystem(ShipPickBlockSystem(cameraEntity));
+	addUpdateSystem(UpdateBuildToolTip(game, cameraEntity));
 
 	ECS::Entity ship = game.getECS().create();
 	game.getECS().assign<TransformComponent>(ship, Matrix4f(1.f));
@@ -125,8 +126,10 @@ GameScene::~GameScene() {
 static void renderMesh(Game& game, float deltaTime) {
 	game.getECS().view<TransformComponent, RenderableMesh>().each([&](
 			TransformComponent& transform, RenderableMesh& mesh) {
-		((GameRenderContext*)game.getRenderContext())->renderMesh(*mesh.vertexArray,
-				*mesh.material, transform.transform);
+		if (mesh.render) {
+			((GameRenderContext*)game.getRenderContext())->renderMesh(*mesh.vertexArray,
+					*mesh.material, transform.transform);
+		}
 	});
 }
 

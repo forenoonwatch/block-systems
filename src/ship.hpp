@@ -26,6 +26,17 @@ class ShipPickBlockSystem {
 		ECS::Entity cameraInfo;
 };
 
+class UpdateBuildToolTip {
+	public:
+		UpdateBuildToolTip(Game& game, ECS::Entity cameraInfo);
+
+		void operator()(Game& game, float deltaTime);
+	private:
+		ECS::Entity toolTip;
+		ECS::Entity cameraInfo;
+};
+
+void updateBuildToolTip(Game& game, float deltaTime);
 void updateShipBuildInfo(Game& game, float deltaTime);
 
 void shipRenderSystem(Game& game, float deltaTime);

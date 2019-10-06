@@ -6,5 +6,6 @@
 struct RenderableMesh {
 	VertexArray* vertexArray;
 	Material* material;
+	bool render;
 };
 
