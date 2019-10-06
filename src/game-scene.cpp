@@ -18,6 +18,7 @@ GameScene::GameScene()
 	addUpdateSystem(::firstPersonCameraSystem);
 	addUpdateSystem(::updateCameraSystem);
 	addUpdateSystem(::toggleFullscreenSystem);
+	addUpdateSystem(::updateShipBuildInfo);
 
 	addRenderSystem(::renderMesh);
 	addRenderSystem(::shipRenderSystem);
@@ -92,6 +93,7 @@ void GameScene::load(Game& game) {
 	ECS::Entity ship = game.getECS().create();
 	game.getECS().assign<TransformComponent>(ship, Matrix4f(1.f));
 	game.getECS().assign<Ship>(ship);
+	game.getECS().assign<ShipBuildInfo>(ship, Matrix4f(1.f), BlockInfo::TYPE_BASIC_CUBE);
 
 	Ship& shipComponent = game.getECS().get<Ship>(ship);
 

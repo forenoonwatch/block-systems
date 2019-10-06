@@ -26,8 +26,8 @@ void ShipPickBlockSystem::operator()(Game& game, float deltaTime) {
 		Vector3f intersectPos;
 		Vector3f intersectNormal;
 
-		game.getECS().view<TransformComponent, Ship>().each([&](
-				TransformComponent& transform, Ship& ship) {
+		game.getECS().view<TransformComponent, Ship, ShipBuildInfo>().each([&](
+				TransformComponent& transform, Ship& ship, ShipBuildInfo& sbi) {
 			uint32 index = (uint32)-1;
 			float minDist = FLT_MAX;
 			Vector3f mousePos;
@@ -63,13 +63,33 @@ void ShipPickBlockSystem::operator()(Game& game, float deltaTime) {
 					pos += hitNormal * BlockInfo::OFFSET_SCALE;
 
 					Block block;
-					block.type = BlockInfo::TYPE_BASIC_CUBE;
-					block.offset = Math::translate(Matrix4f(1.f), pos);
+					block.type = sbi.objectType;
+					block.offset = Math::translate(Matrix4f(1.f), pos)
+							* sbi.transform;
 					ship.blocks.push_back(block);
 				}
 			}
 		});
 	}
+}
+
+void updateShipBuildInfo(Game& game, float deltaTime) {
+	game.getECS().view<ShipBuildInfo>().each([&](ShipBuildInfo& sbi) {
+		if (Application::getKeyPressed(Input::KEY_R)) {
+			sbi.transform = Math::rotate(sbi.transform, Math::toRadians(90.f),
+					Vector3f(0.f, 1.f, 0.f));
+		}
+
+		if (Application::getKeyPressed(Input::KEY_T)) {
+			sbi.transform = Math::rotate(sbi.transform, Math::toRadians(90.f),
+					Vector3f(1.f, 0.f, 0.f));
+		}
+
+		if (Application::getKeyPressed(Input::KEY_F)) {
+			sbi.objectType = (enum BlockInfo::BlockType)(((int32)sbi.objectType + 1)
+					% BlockInfo::NUM_TYPES);
+		}
+	});
 }
 
 void shipRenderSystem(Game& game, float deltaTime) {
