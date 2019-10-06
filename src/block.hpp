@@ -16,6 +16,7 @@ class BlockInfo {
 		enum BlockType {
 			TYPE_BASIC_CUBE,
 			TYPE_BASIC_TETRA,
+			TYPE_BASIC_PYRAMID,
 			TYPE_BASIC_WEDGE,
 			TYPE_BASIC_FIVE_SIXTH,
 

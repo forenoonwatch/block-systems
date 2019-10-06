@@ -44,6 +44,8 @@ void GameScene::load(Game& game) {
 	game.getAssetManager().loadStaticMesh("cube", "cube", "./res/cube.obj", hints);
 	game.getAssetManager().loadStaticMesh("tetrahedron", "tetrahedron",
 			"./res/tetrahedron.obj", hints);
+	game.getAssetManager().loadStaticMesh("pyramid", "pyramid",
+			"./res/pyramid.obj", hints);
 	game.getAssetManager().loadStaticMesh("wedge", "wedge", "./res/wedge.obj", hints);
 	game.getAssetManager().loadStaticMesh("five-sixths-block", "five-sixths-block",
 			"./res/five-sixths-block.obj", hints);
@@ -65,6 +67,10 @@ void GameScene::load(Game& game) {
 	BlockInfo::registerType(BlockInfo::TYPE_BASIC_TETRA, Vector3i(1, 1, 1),
 			game.getAssetManager().getModel("tetrahedron"),
 			game.getAssetManager().getVertexArray("tetrahedron"),
+			game.getAssetManager().getMaterial("bricks"));
+	BlockInfo::registerType(BlockInfo::TYPE_BASIC_PYRAMID, Vector3i(1, 1, 1),
+			game.getAssetManager().getModel("pyramid"),
+			game.getAssetManager().getVertexArray("pyramid"),
 			game.getAssetManager().getMaterial("bricks"));
 	BlockInfo::registerType(BlockInfo::TYPE_BASIC_WEDGE, Vector3i(1, 1, 1),
 			game.getAssetManager().getModel("wedge"),
