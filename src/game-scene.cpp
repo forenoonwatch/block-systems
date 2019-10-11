@@ -6,6 +6,8 @@
 
 #include "game-render-context.hpp"
 
+#include "ship-build.hpp"
+
 #include <engine/core/application.hpp>
 #include <engine/math/math.hpp>
 
