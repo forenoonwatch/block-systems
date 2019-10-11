@@ -19,17 +19,18 @@ class BlockInfo {
 			TYPE_BASIC_PYRAMID,
 			TYPE_BASIC_WEDGE,
 			TYPE_BASIC_FIVE_SIXTH,
+			TYPE_BASIC_WEDGE_2X1,
+			TYPE_BASIC_WEDGE_2X2,
 
 			NUM_TYPES
 		};
 
-		static void registerType(enum BlockType type, const Vector3i& occupancy,
-				IndexedModel& model, VertexArray& vertexArray, Material& material);
+		static void registerType(enum BlockType type, IndexedModel& model,
+				VertexArray& vertexArray, Material& material);
 
 		inline static const BlockInfo& getInfo(enum BlockType type) { return blockInfo[type]; }
 
 		const enum BlockType type;
-		const Vector3i occupancy;
 		const IndexedModel* model;
 		const VertexArray* vertexArray;
 		const Material* material;
@@ -38,16 +39,13 @@ class BlockInfo {
 
 		inline BlockInfo()
 				: type((enum BlockType)0)
-				, occupancy(0, 0, 0)
 				, model(nullptr)
 				, vertexArray(nullptr)
 				, material(nullptr) {}
 
-		inline BlockInfo(enum BlockType type, const Vector3i& occupancy,
-					IndexedModel* model, VertexArray* vertexArray,
-					Material* material)
+		inline BlockInfo(enum BlockType type, IndexedModel* model,
+					VertexArray* vertexArray, Material* material)
 				: type(type)
-				, occupancy(occupancy)
 				, model(model)
 				, vertexArray(vertexArray)
 				, material(material) {}
