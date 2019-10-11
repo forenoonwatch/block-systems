@@ -49,9 +49,15 @@ void GameScene::load(Game& game) {
 	game.getAssetManager().loadStaticMesh("wedge", "wedge", "./res/wedge.obj", hints);
 	game.getAssetManager().loadStaticMesh("five-sixths-block", "five-sixths-block",
 			"./res/five-sixths-block.obj", hints);
+	game.getAssetManager().loadStaticMesh("wedge-2x-1", "wedge-2x-1",
+			"./res/wedge-2x-1.obj", hints);
+	game.getAssetManager().loadStaticMesh("wedge-2x-2", "wedge-2x-2",
+			"./res/wedge-2x-2.obj", hints);
 	
 	game.getAssetManager().loadMaterial("bricks", "./res/bricks.dds",
 			"./res/bricks-normal.dds", "./res/bricks-material.dds");
+	game.getAssetManager().loadMaterial("wood-planks", "./res/wood-planks.dds",
+			"./res/wood-planks-normal.dds", "./res/wood-planks-material.dds");
 	game.getAssetManager().loadCubeMap("sargasso-diffuse", "./res/sargasso-diffuse.dds");
 	game.getAssetManager().loadCubeMap("sargasso-specular", "./res/sargasso-specular.dds");
 	game.getAssetManager().loadTexture("schlick-brdf", "./res/schlick-brdf.png");
@@ -60,26 +66,34 @@ void GameScene::load(Game& game) {
 	grc->setSpecularIBL(game.getAssetManager().getCubeMap("sargasso-specular"));
 	grc->setBrdfLUT(game.getAssetManager().getTexture("schlick-brdf"));
 
-	BlockInfo::registerType(BlockInfo::TYPE_BASIC_CUBE, Vector3i(1, 1, 1),
+	BlockInfo::registerType(BlockInfo::TYPE_BASIC_CUBE,
 			game.getAssetManager().getModel("cube"),
 			game.getAssetManager().getVertexArray("cube"),
-			game.getAssetManager().getMaterial("bricks"));
-	BlockInfo::registerType(BlockInfo::TYPE_BASIC_TETRA, Vector3i(1, 1, 1),
+			game.getAssetManager().getMaterial("wood-planks"));
+	BlockInfo::registerType(BlockInfo::TYPE_BASIC_TETRA,
 			game.getAssetManager().getModel("tetrahedron"),
 			game.getAssetManager().getVertexArray("tetrahedron"),
-			game.getAssetManager().getMaterial("bricks"));
-	BlockInfo::registerType(BlockInfo::TYPE_BASIC_PYRAMID, Vector3i(1, 1, 1),
+			game.getAssetManager().getMaterial("wood-planks"));
+	BlockInfo::registerType(BlockInfo::TYPE_BASIC_PYRAMID,
 			game.getAssetManager().getModel("pyramid"),
 			game.getAssetManager().getVertexArray("pyramid"),
-			game.getAssetManager().getMaterial("bricks"));
-	BlockInfo::registerType(BlockInfo::TYPE_BASIC_WEDGE, Vector3i(1, 1, 1),
+			game.getAssetManager().getMaterial("wood-planks"));
+	BlockInfo::registerType(BlockInfo::TYPE_BASIC_WEDGE,
 			game.getAssetManager().getModel("wedge"),
 			game.getAssetManager().getVertexArray("wedge"),
-			game.getAssetManager().getMaterial("bricks"));
-	BlockInfo::registerType(BlockInfo::TYPE_BASIC_FIVE_SIXTH, Vector3i(1, 1, 1),
+			game.getAssetManager().getMaterial("wood-planks"));
+	BlockInfo::registerType(BlockInfo::TYPE_BASIC_FIVE_SIXTH,
 			game.getAssetManager().getModel("five-sixths-block"),
 			game.getAssetManager().getVertexArray("five-sixths-block"),
-			game.getAssetManager().getMaterial("bricks"));
+			game.getAssetManager().getMaterial("wood-planks"));
+	BlockInfo::registerType(BlockInfo::TYPE_BASIC_WEDGE_2X1,
+			game.getAssetManager().getModel("wedge-2x-1"),
+			game.getAssetManager().getVertexArray("wedge-2x-1"),
+			game.getAssetManager().getMaterial("wood-planks"));
+	BlockInfo::registerType(BlockInfo::TYPE_BASIC_WEDGE_2X1,
+			game.getAssetManager().getModel("wedge-2x-2"),
+			game.getAssetManager().getVertexArray("wedge-2x-2"),
+			game.getAssetManager().getMaterial("wood-planks"));
 
 	/*ECS::Entity e = game.getECS().create();
 	game.getECS().assign<RenderableMesh>(e,
@@ -105,14 +119,20 @@ void GameScene::load(Game& game) {
 	Ship& shipComponent = game.getECS().get<Ship>(ship);
 
 	Block block;
-	block.type = BlockInfo::TYPE_BASIC_FIVE_SIXTH;
 
-	for (uint32 i = 0; i < 3; ++i) {
-		block.offset = Math::rotate(Math::translate(Matrix4f(1.f),
-				Vector3f(i * BlockInfo::OFFSET_SCALE, 0.f,
-				i * BlockInfo::OFFSET_SCALE)), Math::toRadians(90.f * i),
-				Vector3f(0.f, 1.f, 0.f));
-		shipComponent.blocks.push_back(block);
+	constexpr const uint32 size = 1;
+
+	for (uint32 x = 0; x < size; ++x) {
+		for (uint32 y = 0; y < size; ++y) {
+			for (uint32 z = 0; z < size; ++z) {
+				block.type = (enum BlockInfo::BlockType)((x + y + z) % BlockInfo::NUM_TYPES);
+				block.offset = Math::rotate(Math::translate(Matrix4f(1.f),
+						Vector3f(x, y, z) * BlockInfo::OFFSET_SCALE),
+						Math::toRadians(90.f * 0.f),
+						Vector3f(0.f, 1.f, 0.f));
+				shipComponent.blocks.push_back(block);
+			}
+		}
 	}
 
 	game.getECS().get<TransformComponent>(ship).transform =
