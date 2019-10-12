@@ -15,6 +15,8 @@ static void renderMesh(Game&, float);
 static void renderSkybox(Game&, float);
 static void toggleFullscreenSystem(Game&, float);
 
+static void initBlockTypes(Game&);
+
 GameScene::GameScene()
 		: Scene() {
 	addUpdateSystem(::firstPersonCameraSystem);
@@ -68,34 +70,7 @@ void GameScene::load(Game& game) {
 	grc->setSpecularIBL(game.getAssetManager().getCubeMap("sargasso-specular"));
 	grc->setBrdfLUT(game.getAssetManager().getTexture("schlick-brdf"));
 
-	BlockInfo::registerType(BlockInfo::TYPE_BASIC_CUBE,
-			game.getAssetManager().getModel("cube"),
-			game.getAssetManager().getVertexArray("cube"),
-			game.getAssetManager().getMaterial("wood-planks"));
-	BlockInfo::registerType(BlockInfo::TYPE_BASIC_TETRA,
-			game.getAssetManager().getModel("tetrahedron"),
-			game.getAssetManager().getVertexArray("tetrahedron"),
-			game.getAssetManager().getMaterial("wood-planks"));
-	BlockInfo::registerType(BlockInfo::TYPE_BASIC_PYRAMID,
-			game.getAssetManager().getModel("pyramid"),
-			game.getAssetManager().getVertexArray("pyramid"),
-			game.getAssetManager().getMaterial("wood-planks"));
-	BlockInfo::registerType(BlockInfo::TYPE_BASIC_WEDGE,
-			game.getAssetManager().getModel("wedge"),
-			game.getAssetManager().getVertexArray("wedge"),
-			game.getAssetManager().getMaterial("wood-planks"));
-	BlockInfo::registerType(BlockInfo::TYPE_BASIC_FIVE_SIXTH,
-			game.getAssetManager().getModel("five-sixths-block"),
-			game.getAssetManager().getVertexArray("five-sixths-block"),
-			game.getAssetManager().getMaterial("wood-planks"));
-	BlockInfo::registerType(BlockInfo::TYPE_BASIC_WEDGE_2X1,
-			game.getAssetManager().getModel("wedge-2x-1"),
-			game.getAssetManager().getVertexArray("wedge-2x-1"),
-			game.getAssetManager().getMaterial("wood-planks"));
-	BlockInfo::registerType(BlockInfo::TYPE_BASIC_WEDGE_2X1,
-			game.getAssetManager().getModel("wedge-2x-2"),
-			game.getAssetManager().getVertexArray("wedge-2x-2"),
-			game.getAssetManager().getMaterial("wood-planks"));
+	initBlockTypes(game);
 
 	/*ECS::Entity e = game.getECS().create();
 	game.getECS().assign<RenderableMesh>(e,
@@ -121,21 +96,9 @@ void GameScene::load(Game& game) {
 	Ship& shipComponent = game.getECS().get<Ship>(ship);
 
 	Block block;
-
-	constexpr const uint32 size = 1;
-
-	for (uint32 x = 0; x < size; ++x) {
-		for (uint32 y = 0; y < size; ++y) {
-			for (uint32 z = 0; z < size; ++z) {
-				block.type = (enum BlockInfo::BlockType)((x + y + z) % BlockInfo::NUM_TYPES);
-				block.offset = Math::rotate(Math::translate(Matrix4f(1.f),
-						Vector3f(x, y, z) * BlockInfo::OFFSET_SCALE),
-						Math::toRadians(90.f * 0.f),
-						Vector3f(0.f, 1.f, 0.f));
-				shipComponent.blocks.push_back(block);
-			}
-		}
-	}
+	block.offset = Matrix4f(1.f);
+	block.type = BlockInfo::TYPE_BASIC_CUBE;
+	shipComponent.blocks.push_back(block);
 
 	game.getECS().get<TransformComponent>(ship).transform =
 			Math::rotate(Matrix4f(1.f), 0.3f, Vector3f(1.f, 1.f, 0.f));
@@ -188,5 +151,36 @@ static void toggleFullscreenSystem(Game& game, float deltaTime) {
 		game.getWindow().resize(1200, 800);
 		game.getWindow().moveToCenter();
 	}
+}
+
+inline static void initBlockTypes(Game& game) {
+	BlockInfo::registerType(BlockInfo::TYPE_BASIC_CUBE,
+			game.getAssetManager().getModel("cube"),
+			game.getAssetManager().getVertexArray("cube"),
+			game.getAssetManager().getMaterial("wood-planks"));
+	BlockInfo::registerType(BlockInfo::TYPE_BASIC_TETRA,
+			game.getAssetManager().getModel("tetrahedron"),
+			game.getAssetManager().getVertexArray("tetrahedron"),
+			game.getAssetManager().getMaterial("wood-planks"));
+	BlockInfo::registerType(BlockInfo::TYPE_BASIC_PYRAMID,
+			game.getAssetManager().getModel("pyramid"),
+			game.getAssetManager().getVertexArray("pyramid"),
+			game.getAssetManager().getMaterial("wood-planks"));
+	BlockInfo::registerType(BlockInfo::TYPE_BASIC_WEDGE,
+			game.getAssetManager().getModel("wedge"),
+			game.getAssetManager().getVertexArray("wedge"),
+			game.getAssetManager().getMaterial("wood-planks"));
+	BlockInfo::registerType(BlockInfo::TYPE_BASIC_FIVE_SIXTH,
+			game.getAssetManager().getModel("five-sixths-block"),
+			game.getAssetManager().getVertexArray("five-sixths-block"),
+			game.getAssetManager().getMaterial("wood-planks"));
+	BlockInfo::registerType(BlockInfo::TYPE_BASIC_WEDGE_2X1,
+			game.getAssetManager().getModel("wedge-2x-1"),
+			game.getAssetManager().getVertexArray("wedge-2x-1"),
+			game.getAssetManager().getMaterial("wood-planks"));
+	BlockInfo::registerType(BlockInfo::TYPE_BASIC_WEDGE_2X1,
+			game.getAssetManager().getModel("wedge-2x-2"),
+			game.getAssetManager().getVertexArray("wedge-2x-2"),
+			game.getAssetManager().getMaterial("wood-planks"));
 }
 
