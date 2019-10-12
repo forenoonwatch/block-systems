@@ -152,17 +152,15 @@ void GameRenderContext::flushStaticMeshes(Game& game, float deltaTime) {
 	VertexArray* vertexArray;
 	uintptr numTransforms;
 
-	for (auto it = std::begin(grc->staticMeshes),
-			end = std::end(grc->staticMeshes);
-			it != end; ++it) {
-		numTransforms = it->second.size();
+	for (auto& pair : grc->staticMeshes) {
+		numTransforms = pair.second.size();
 
 		if (numTransforms == 0) {
 			continue;
 		}
 
-		vertexArray = it->first.first;
-		material = it->first.second;
+		vertexArray = pair.first.first;
+		material = pair.first.second;
 
 		if (material != currentMaterial) {
 			currentMaterial = material;
@@ -175,7 +173,7 @@ void GameRenderContext::flushStaticMeshes(Game& game, float deltaTime) {
 					grc->linearMipmapSampler, 2);
 		}
 
-		vertexArray->updateBuffer(4, &it->second[0],
+		vertexArray->updateBuffer(4, &pair.second[0],
 				sizeof(StaticMeshData) * numTransforms);
 
 		grc->draw(grc->target, grc->staticMeshShader, *vertexArray,
