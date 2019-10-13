@@ -11,14 +11,39 @@
 #include <engine/rendering/material.hpp>
 
 void shipRenderSystem(Game& game, float deltaTime) {
+	Shader& shader = game.getAssetManager().getShader("ship-shader");
+	GameRenderContext* grc = (GameRenderContext*)game.getRenderContext();
+	Material* currentMaterial = nullptr;
+
 	game.getECS().view<TransformComponent, Ship>().each([&](TransformComponent& transform,
 			Ship& ship) {
-		for (ArrayList<Block>::const_iterator it = ship.blocks.cbegin(),
-				end = ship.blocks.cend(); it != end; ++it) {
-			((GameRenderContext*)game.getRenderContext())->renderMesh(
-					*((VertexArray*)BlockInfo::getInfo(it->type).vertexArray),
-					*((Material*)BlockInfo::getInfo(it->type).material),
-					transform.transform * it->offset);
+		uint32 numTransforms;
+
+		shader.setMatrix4f("baseTransform", transform.transform);
+
+		for (auto& pair : ship.offsets) {
+			numTransforms = pair.second.size();
+
+			if (numTransforms == 0) {
+				continue;
+			}
+
+			Material* material = (Material*)BlockInfo::getInfo(pair.first).material;
+
+			if (material != currentMaterial) {
+				currentMaterial = material;
+
+				shader.setSampler("diffuse", *material->diffuse,
+						grc->getLinearMipmapSampler(), 0);
+				shader.setSampler("normalMap", *material->normalMap,
+						grc->getLinearMipmapSampler(), 1);
+				shader.setSampler("materialMap", *material->materialMap,
+						grc->getLinearMipmapSampler(), 2);
+			}
+
+			grc->draw(grc->getTarget(), shader,
+					*((VertexArray*)BlockInfo::getInfo(pair.first).vertexArray),
+					GL_TRIANGLES, numTransforms);
 		}
 	});
 }
