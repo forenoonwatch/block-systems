@@ -1,4 +1,5 @@
 #include "common.glh"
+#include "scene-info.glh"
 
 varying vec2 texCoord0;
 varying mat3 TBN;
@@ -9,13 +10,18 @@ layout (location = 0) in vec3 position;
 layout (location = 1) in vec2 texCoord;
 layout (location = 2) in vec3 normal;
 layout (location = 3) in vec3 tangent;
-layout (location = 4) in mat4 transforms[2];
+layout (location = 4) in mat4 transform;
+
+uniform mat4 baseTransform;
 
 void main() {
-	const vec4 vertPos = transforms[0] * vec4(position, 1.0);
+	const mat4 model = baseTransform * transform;
+	const mat4 mvp = viewProjection * model;
 
-	const vec3 N = normalize(vec3(transforms[1] * vec4(normal, 0.0)));
-	vec3 T = normalize(vec3(transforms[1] * vec4(tangent, 0.0)));
+	const vec4 vertPos = mvp * vec4(position, 1.0);
+
+	const vec3 N = normalize(vec3(model * vec4(normal, 0.0)));
+	vec3 T = normalize(vec3(model * vec4(tangent, 0.0)));
 	T = normalize(T - dot(T, N) * N);
 
 	gl_Position = vertPos;

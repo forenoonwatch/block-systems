@@ -11,8 +11,6 @@ class Material;
 
 class BlockInfo {
 	public:
-		static constexpr const float OFFSET_SCALE = 2.f;
-
 		enum BlockType {
 			TYPE_BASIC_CUBE,
 			TYPE_BASIC_TETRA,
