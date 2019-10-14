@@ -16,43 +16,43 @@
 #include <engine/rendering/material.hpp>
 
 #include <engine/math/math.hpp>
+#include <engine/math/aabb.hpp>
 
 #include <cfloat>
 
-static void rayShipIntersection(const IndexedModel& cube, const Matrix4f& shipTransform,
-		const Ship& ship, const Vector3f& origin, const Vector3f& direction, uint32* index,
+static void rayShipIntersection(const Matrix4f& shipTransform, const Ship& ship,
+		const Vector3f& origin, const Vector3f& direction, Block*& block,
 		Vector3f* hitPosition, Vector3f* hitNormal);
 
-void ShipPickBlockSystem::operator()(Game& game, float deltaTime) { 
+//static void addBlockToShip(Ship& ship);
+static void removeBlockFromShip(Ship& ship, Block* block);
+
+void ShipBuildSystem::operator()(Game& game, float deltaTime) { 
 	if (Application::getMousePressed(Input::MOUSE_BUTTON_LEFT)) {
 		const CameraComponent& cc = game.getECS().get<CameraComponent>(cameraInfo);
-		const IndexedModel& cube = game.getAssetManager().getModel("cube");
 
-		uint32 index;
+		Block* block;
 		Vector3f mousePos;
 		Vector3f hitNormal;
 
 		game.getECS().view<TransformComponent, Ship, ShipBuildInfo>().each([&](
 				TransformComponent& transform, Ship& ship, ShipBuildInfo& sbi) {
-			rayShipIntersection(cube, transform.transform, ship, cc.position,
-					cc.rayDirection, &index, &mousePos, &hitNormal);
+			rayShipIntersection(transform.transform, ship, cc.position,
+					cc.rayDirection, block, &mousePos, &hitNormal);
 
-			if (index != (uint32)-1) {
+			if (block != nullptr) {
 				if (Application::isKeyDown(Input::KEY_LEFT_SHIFT)) {
-					if (ship.blocks.size() > 1) {
-						ship.blocks[index] = ship.blocks.back();
-						ship.blocks.pop_back();
-					}
+					removeBlockFromShip(ship, block);
 				}
 				else {
-					Vector3f pos(ship.blocks[index].offset[3]);
+					/*Vector3f pos(ship.blocks[index].offset[3]);
 					pos += hitNormal * BlockInfo::OFFSET_SCALE;
 
 					Block block;
 					block.type = sbi.objectType;
 					block.offset = Math::translate(Matrix4f(1.f), pos)
 							* sbi.transform;
-					ship.blocks.push_back(block);
+					ship.blocks.push_back(block);*/
 				}
 			}
 		});
@@ -70,7 +70,7 @@ UpdateBuildToolTip::UpdateBuildToolTip(Game& game, ECS::Entity cameraInfo)
 }
 
 void UpdateBuildToolTip::operator()(Game& game, float deltaTime) {
-	const CameraComponent& cc = game.getECS().get<CameraComponent>(cameraInfo);
+	/*const CameraComponent& cc = game.getECS().get<CameraComponent>(cameraInfo);
 	const IndexedModel& cube = game.getAssetManager().getModel("cube");
 
 	uint32 index;
@@ -96,11 +96,11 @@ void UpdateBuildToolTip::operator()(Game& game, float deltaTime) {
 
 		rm.vertexArray = const_cast<VertexArray*>(BlockInfo::getInfo(sbi.objectType).vertexArray);
 		rm.material = const_cast<Material*>(BlockInfo::getInfo(sbi.objectType).material);
-	});
+	});*/
 }
 
 void updateShipBuildInfo(Game& game, float deltaTime) {
-	game.getECS().view<ShipBuildInfo>().each([&](ShipBuildInfo& sbi) {
+	/*game.getECS().view<ShipBuildInfo>().each([&](ShipBuildInfo& sbi) {
 		if (Application::getKeyPressed(Input::KEY_R)) {
 			sbi.transform = Math::rotate(Matrix4f(1.f), Math::toRadians(90.f),
 					Vector3f(0.f, 1.f, 0.f)) * sbi.transform;
@@ -115,11 +115,11 @@ void updateShipBuildInfo(Game& game, float deltaTime) {
 			sbi.objectType = (enum BlockInfo::BlockType)(((int32)sbi.objectType + 1)
 					% BlockInfo::NUM_TYPES);
 		}
-	});
+	});*/
 }
 
-static void rayShipIntersection(const IndexedModel& cube, const Matrix4f& shipTransform,
-		const Ship& ship, const Vector3f& origin, const Vector3f& direction, uint32* index,
+static void rayShipIntersection(const Matrix4f& shipTransform, const Ship& ship,
+		const Vector3f& origin, const Vector3f& direction, Block*& block,
 		Vector3f* hitPosition, Vector3f* hitNormal) {
 	const Vector4f tfOrigin(origin, 1.f);
 	const Vector4f tfDirection(direction, 0.f);
@@ -127,25 +127,48 @@ static void rayShipIntersection(const IndexedModel& cube, const Matrix4f& shipTr
 	Vector3f intersectPos, intersectNormal;
 	float minDist = FLT_MAX;
 	
-	*index = (uint32)-1;
+	block = nullptr;
 
-	for (uint32 i = 0; i < ship.blocks.size(); ++i) {
-		const Matrix4f tf = shipTransform * ship.blocks[i].offset;
+	const AABB aabb(Vector3f(-1.f, -1.f, -1.f), Vector3f(1.f, 1.f, 1.f));
+	float p1, p2;
+
+	for (auto& pair : ship.blocks) {
+		const Matrix4f& offset = const_cast<Ship&>(ship)
+				.offsets[pair.second.type][pair.second.renderIndex];
+		const Matrix4f tf = shipTransform * offset;
 		const Matrix4f tfi = Math::inverse(tf);
 
-		if (cube.intersectsRay(Vector3f(tfi * tfOrigin), Vector3f(tfi * tfDirection),
-				&intersectPos, &intersectNormal)) {
+		if (aabb.intersectRay(Vector3f(tfi * tfOrigin), Vector3f(tfi * tfDirection),
+				p1, p2)) {
+			intersectPos = Vector3f(tfi * tfOrigin) + Vector3f(tfi * tfDirection) * p1;
 			intersectPos = Vector3f(tf * Vector4f(intersectPos, 1.f));
+			// TODO: calculate intersect normal
 			const float dist = Math::length(origin - intersectPos);
 
 			if (dist < minDist) {
 				minDist = dist;
 
-				*index = i;
+				block = const_cast<Block*>(&pair.second);
 				*hitPosition = intersectPos;
-				*hitNormal = Vector3f(ship.blocks[i].offset * Vector4f(intersectNormal, 0.f));
+				*hitNormal = Vector3f(offset * Vector4f(intersectNormal, 0.f));
 			}
 		}
 	}
+}
+
+inline static void removeBlockFromShip(Ship& ship, Block* block) {
+	Block* back = ship.offsetIndices[block->type].back();
+
+	back->renderIndex = block->renderIndex;
+	
+	ship.offsets[block->type][block->renderIndex] = ship.offsets[block->type].back();
+	ship.offsetIndices[block->type][block->renderIndex] = back;
+
+	ship.offsets[block->type].pop_back();
+	ship.offsetIndices[block->type].pop_back();
+
+	const_cast<VertexArray*>(BlockInfo::getInfo(block->type).vertexArray)->updateBuffer(4,
+				&ship.offsets[block->type][0], ship.offsets[block->type].size()
+				* sizeof(Matrix4f));
 }
 

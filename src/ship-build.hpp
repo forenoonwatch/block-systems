@@ -11,9 +11,9 @@ struct ShipBuildInfo {
 	enum BlockInfo::BlockType objectType;
 };
 
-class ShipPickBlockSystem {
+class ShipBuildSystem {
 	public:
-		inline ShipPickBlockSystem(ECS::Entity cameraInfo)
+		inline ShipBuildSystem(ECS::Entity cameraInfo)
 				: cameraInfo(cameraInfo) {}
 
 		void operator()(Game&, float);
