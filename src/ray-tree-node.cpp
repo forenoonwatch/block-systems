@@ -39,9 +39,8 @@ bool RayTreeNode::intersectsRay(const Vector3f& origin,
 			const Vector3i* minCoord = nullptr;
 
 			for (auto& c : coords) {
-				const Vector3f b0 = Vector3f(c) - Vector3f(0.5f, 0.5f, 0.5f);
-				const Vector3f b1 = Vector3f(c) + Vector3f(0.5f, 0.5f, 0.5f);
-				const AABB box(Math::min(b0, b1), Math::max(b0, b1));
+				const AABB box(Vector3f(c) - Vector3f(0.5f, 0.5f, 0.5f),
+						Vector3f(c) + Vector3f(0.5f, 0.5f, 0.5f));
 
 				if (box.intersectRay(origin, direction, p1, p2)) {
 					if (p1 < minDist) {
@@ -68,11 +67,10 @@ bool RayTreeNode::intersectsRay(const Vector3f& origin,
 			for (RayTreeNode* child : children) {
 				if (child != nullptr && child->intersectsRay(origin, direction,
 						&tempCoord, &tempPos)) {
-					const float len2 = Math::dot(tempPos - origin,
-							tempPos - origin);
+					const float len = Math::length(tempPos - origin);
 
-					if (len2 < minDist) {
-						minDist = len2;
+					if (len < minDist) {
+						minDist = len;
 						minChild = child;
 
 						*intersectCoord = tempCoord;
@@ -99,9 +97,11 @@ bool RayTreeNode::addObject(const Vector3i& coord) {
 
 			for (auto& c : coords) {
 				const Vector3f p(c);
+				const AABB box(p - Vector3f(0.5f, 0.5f, 0.5f),
+						p + Vector3f(0.5f, 0.5f, 0.5f));
 
 				for (uint32 i = 0; i < 8; ++i) {
-					if (childAABBs[i].contains(p)) {
+					if (childAABBs[i].intersects(box)) {
 						if (children[i] == nullptr) {
 							children[i] = new RayTreeNode(
 									childAABBs[i].getMinExtents(),
@@ -110,7 +110,6 @@ bool RayTreeNode::addObject(const Vector3i& coord) {
 						}
 
 						children[i]->addObject(c);
-						break;
 					}
 				}
 			}
@@ -122,18 +121,24 @@ bool RayTreeNode::addObject(const Vector3i& coord) {
 	}
 	else {
 		const Vector3f p(coord);
+		const AABB box(p - Vector3f(0.5f, 0.5f, 0.5f),
+						p + Vector3f(0.5f, 0.5f, 0.5f));
+
+		bool added = false;
 
 		for (uint32 i = 0; i < 8; ++i) {
-			if (childAABBs[i].contains(p)) {
+			if (childAABBs[i].intersects(box)) {
 				if (children[i] == nullptr) {
 					children[i] = new RayTreeNode(
 							childAABBs[i].getMinExtents(),
 							childAABBs[i].getMaxExtents(), level + 1, this);
 				}
 
-				return children[i]->addObject(coord);
+				added |= children[i]->addObject(coord);
 			}
 		}
+
+		return added;
 	}
 
 	return false;
@@ -142,12 +147,18 @@ bool RayTreeNode::addObject(const Vector3i& coord) {
 bool RayTreeNode::removeObject(const Vector3i& coord) {
 	if (limitReached) {
 		const Vector3f p(coord);
+		const AABB box(p - Vector3f(0.5f, 0.5f, 0.5f),
+				p + Vector3f(0.5f, 0.5f, 0.5f));
+
+		bool removed = false;
 
 		for (uint32 i = 0; i < 8; ++i) {
-			if (children[i] != nullptr && childAABBs[i].contains(p)) {
-				return children[i]->removeObject(coord);
+			if (children[i] != nullptr && childAABBs[i].intersects(box)) {
+				removed |= children[i]->removeObject(coord);
 			}
 		}
+
+		return removed;
 	}
 	else {
 		for (uint32 i = 0; i < coords.size(); ++i) {

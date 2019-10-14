@@ -30,14 +30,16 @@ static void removeBlockFromShip(Ship& ship, Block* block);
 void ShipBuildSystem::operator()(Game& game, float deltaTime) { 
 	//if (Application::getMousePressed(Input::MOUSE_BUTTON_LEFT)) {
 	if (Application::isMouseDown(Input::MOUSE_BUTTON_LEFT)) {
-		const CameraComponent& cc = game.getECS().get<CameraComponent>(cameraInfo);
+		const CameraComponent& cc =
+			game.getECS().get<CameraComponent>(cameraInfo);
 
 		Block* block;
 		Vector3f mousePos;
 		Vector3f hitNormal;
 
 		game.getECS().view<TransformComponent, Ship, ShipBuildInfo>().each([&](
-				TransformComponent& transform, Ship& ship, ShipBuildInfo& sbi) {
+				TransformComponent& transform, Ship& ship,
+				ShipBuildInfo& sbi) {
 			rayShipIntersection(transform.transform, ship, cc.position,
 					cc.rayDirection, block, &mousePos, &hitNormal);
 
@@ -65,9 +67,10 @@ UpdateBuildToolTip::UpdateBuildToolTip(Game& game, ECS::Entity cameraInfo)
 		, cameraInfo(cameraInfo) {
 	game.getECS().assign<TransformComponent>(toolTip, Matrix4f(1.f));
 	game.getECS().assign<RenderableMesh>(toolTip,
-			const_cast<VertexArray*>(BlockInfo::getInfo(BlockInfo::TYPE_BASIC_CUBE).vertexArray),
-			const_cast<Material*>(BlockInfo::getInfo(BlockInfo::TYPE_BASIC_CUBE).material),
-			false);
+			const_cast<VertexArray*>(BlockInfo
+			::getInfo(BlockInfo::TYPE_BASIC_CUBE).vertexArray),
+			const_cast<Material*>(BlockInfo
+			::getInfo(BlockInfo::TYPE_BASIC_CUBE).material), false);
 }
 
 void UpdateBuildToolTip::operator()(Game& game, float deltaTime) {

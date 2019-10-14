@@ -7,8 +7,8 @@
 
 class RayTreeNode {
 	public:
-		static constexpr const uint32 MAX_DEPTH = 6;
-		static constexpr const uint32 MAX_OBJECTS = 30;
+		static constexpr const uint32 MAX_DEPTH = 5;
+		static constexpr const uint32 MAX_OBJECTS = 20;
 
 		RayTreeNode(const Vector3f& minExtents = Vector3f(0, 0, 0),
 				const Vector3f& maxExtents = Vector3f(100, 100, 100),

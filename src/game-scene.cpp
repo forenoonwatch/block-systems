@@ -103,14 +103,14 @@ void GameScene::load(Game& game) {
 	//block.type = BlockInfo::TYPE_BASIC_CUBE;
 	//shipComponent.blocks.push_back(block);
 	
-	constexpr const uint32 n = 50;
+	constexpr const uint32 n = 60;
 
 	for (uint32 x = 0; x < n; ++x) {
 		for (uint32 y = 0; y < n; ++y) {
 			for (uint32 z = 0; z < n; ++z) {
-				block.type = (enum BlockInfo::BlockType)((x + y + z)
-						% BlockInfo::NUM_TYPES);
-				//block.type = BlockInfo::TYPE_BASIC_CUBE;
+				//block.type = (enum BlockInfo::BlockType)((x + y + z)
+				//		% BlockInfo::NUM_TYPES);
+				block.type = BlockInfo::TYPE_BASIC_CUBE;
 				block.position = Vector3i(x, y, z);
 				block.rotation = Vector2i(x % 4, y % 4);
 				block.renderIndex = (uint32)-1;
@@ -131,7 +131,7 @@ void GameScene::load(Game& game) {
 			Vector3i(0, 0, 1)};
 
 	for (auto& pair : shipComponent.blocks) {
-		bool occluded = true;
+		/*bool occluded = true;
 
 		for (uint32 i = 0; i < ARRAY_SIZE_IN_ELEMENTS(directions); ++i) {
 			auto it = shipComponent.blocks.find(pair.first + directions[i]);
@@ -146,9 +146,9 @@ void GameScene::load(Game& game) {
 				occluded = false;
 				break;
 			}
-		}
+		}*/
 
-		if (!occluded) {
+		//if (!occluded) {
 			Matrix4f rot = Math::rotate(Matrix4f(1.f),
 					Math::toRadians(90.f * pair.second.rotation.x),
 					Vector3f(1.f, 0.f, 0.f));
@@ -162,7 +162,7 @@ void GameScene::load(Game& game) {
 					* rot);
 			shipComponent.offsetIndices[pair.second.type]
 					.push_back(&pair.second);
-		}
+		//}
 	}
 
 	for (auto& pair : shipComponent.offsets) {
