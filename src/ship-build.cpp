@@ -20,16 +20,17 @@
 
 #include <cfloat>
 
-static void rayShipIntersection(const Matrix4f& shipTransform, const Ship& ship,
-		const Vector3f& origin, const Vector3f& direction, Block*& block,
-		Vector3f* hitPosition, Vector3f* hitNormal);
+static void rayShipIntersection(const Matrix4f& shipTransform,
+		const Ship& ship, const Vector3f& origin, const Vector3f& direction,
+		Block*& block, Vector3f* hitPosition, Vector3f* hitNormal);
 
-//static void addBlockToShip(Ship& ship);
+static void addBlockToShip(Ship& ship, enum BlockInfo::BlockType type,
+		const Vector3i& position, const Vector3i& rotation);
 static void removeBlockFromShip(Ship& ship, Block* block);
 
 void ShipBuildSystem::operator()(Game& game, float deltaTime) { 
-	//if (Application::getMousePressed(Input::MOUSE_BUTTON_LEFT)) {
-	if (Application::isMouseDown(Input::MOUSE_BUTTON_LEFT)) {
+	if (Application::getMousePressed(Input::MOUSE_BUTTON_LEFT)) {
+	//if (Application::isMouseDown(Input::MOUSE_BUTTON_LEFT)) {
 		const CameraComponent& cc =
 			game.getECS().get<CameraComponent>(cameraInfo);
 
@@ -48,14 +49,9 @@ void ShipBuildSystem::operator()(Game& game, float deltaTime) {
 					removeBlockFromShip(ship, block);
 				}
 				else {
-					/*Vector3f pos(ship.blocks[index].offset[3]);
-					pos += hitNormal * BlockInfo::OFFSET_SCALE;
-
-					Block block;
-					block.type = sbi.objectType;
-					block.offset = Math::translate(Matrix4f(1.f), pos)
-							* sbi.transform;
-					ship.blocks.push_back(block);*/
+					addBlockToShip(ship, sbi.objectType,
+							block->position + Vector3i(hitNormal),
+							sbi.rotation);
 				}
 			}
 		});
@@ -66,60 +62,59 @@ UpdateBuildToolTip::UpdateBuildToolTip(Game& game, ECS::Entity cameraInfo)
 		: toolTip(game.getECS().create())
 		, cameraInfo(cameraInfo) {
 	game.getECS().assign<TransformComponent>(toolTip, Matrix4f(1.f));
-	game.getECS().assign<RenderableMesh>(toolTip,
-			const_cast<VertexArray*>(BlockInfo
-			::getInfo(BlockInfo::TYPE_BASIC_CUBE).vertexArray),
-			const_cast<Material*>(BlockInfo
-			::getInfo(BlockInfo::TYPE_BASIC_CUBE).material), false);
+	game.getECS().assign<RenderableMesh>(toolTip, nullptr, nullptr, false);
 }
 
 void UpdateBuildToolTip::operator()(Game& game, float deltaTime) {
-	/*const CameraComponent& cc = game.getECS().get<CameraComponent>(cameraInfo);
-	const IndexedModel& cube = game.getAssetManager().getModel("cube");
+	const CameraComponent& cc = game.getECS().get<CameraComponent>(cameraInfo);
 
-	uint32 index;
+	Block* block;
 	Vector3f mousePos;
 	Vector3f hitNormal;
 
 	TransformComponent& tf = game.getECS().get<TransformComponent>(toolTip);
 	RenderableMesh& rm = game.getECS().get<RenderableMesh>(toolTip);
 
-	game.getECS().view<ShipBuildInfo, TransformComponent, Ship>().each([&](ShipBuildInfo& sbi,
-			TransformComponent& transform, Ship& ship) {
-		rayShipIntersection(cube, transform.transform, ship, cc.position,
-					cc.rayDirection, &index, &mousePos, &hitNormal);
+	game.getECS().view<ShipBuildInfo, TransformComponent, Ship>().each([&](
+			ShipBuildInfo& sbi, TransformComponent& transform, Ship& ship) {
+		rayShipIntersection(transform.transform, ship, cc.position,
+					cc.rayDirection, block, &mousePos, &hitNormal);
 
-		rm.render = index != (uint32)-1;
+		rm.render = block != nullptr;
 
 		if (rm.render) {
-			Vector3f pos(ship.blocks[index].offset[3]);
-			pos += hitNormal * BlockInfo::OFFSET_SCALE;
+			Vector3f pos = Vector3f(block->position) + hitNormal;
+
+			Matrix4f rot = Math::rotate(Matrix4f(1.f),
+					Math::toRadians(90.f * sbi.rotation.x),
+					Vector3f(1.f, 0.f, 0.f));
+			rot = Math::rotate(rot, Math::toRadians(90.f
+					* sbi.rotation.y), Vector3f(0.f, 1.f, 0.f));
+
 			tf.transform = transform.transform
-					* Math::translate(Matrix4f(1.f), pos) * sbi.transform;
+					* (Math::translate(Matrix4f(1.f), pos) * rot);
 		}
 
-		rm.vertexArray = const_cast<VertexArray*>(BlockInfo::getInfo(sbi.objectType).vertexArray);
-		rm.material = const_cast<Material*>(BlockInfo::getInfo(sbi.objectType).material);
-	});*/
+		rm.vertexArray = sbi.blockInfo[sbi.objectType].vertexArray.get();
+		rm.material = sbi.blockInfo[sbi.objectType].material;
+	});
 }
 
 void updateShipBuildInfo(Game& game, float deltaTime) {
-	/*game.getECS().view<ShipBuildInfo>().each([&](ShipBuildInfo& sbi) {
+	game.getECS().view<ShipBuildInfo>().each([&](ShipBuildInfo& sbi) {
 		if (Application::getKeyPressed(Input::KEY_R)) {
-			sbi.transform = Math::rotate(Matrix4f(1.f), Math::toRadians(90.f),
-					Vector3f(0.f, 1.f, 0.f)) * sbi.transform;
+			sbi.rotation += Vector3i(0, 1, 0);
 		}
 
 		if (Application::getKeyPressed(Input::KEY_T)) {
-			sbi.transform = Math::rotate(Matrix4f(1.f), Math::toRadians(90.f),
-					Vector3f(1.f, 0.f, 0.f)) * sbi.transform;
+			sbi.rotation += Vector3i(1, 0, 0);
 		}
 
 		if (Application::getKeyPressed(Input::KEY_F)) {
-			sbi.objectType = (enum BlockInfo::BlockType)(((int32)sbi.objectType + 1)
-					% BlockInfo::NUM_TYPES);
+			sbi.objectType = (enum BlockInfo::BlockType)(
+					((int32)sbi.objectType + 1) % BlockInfo::NUM_TYPES);
 		}
-	});*/
+	});
 }
 
 /*static void rayShipIntersection(const Matrix4f& shipTransform,
@@ -175,12 +170,57 @@ static void rayShipIntersection(const Matrix4f& shipTransform,
 
 	block = nullptr;
 
+	const Vector3i directions[] = {Vector3i(-1, 0, 0), Vector3i(1, 0, 0),
+			Vector3i(0, -1, 0), Vector3i(0, 1, 0), Vector3i(0, 0, -1),
+			Vector3i(0, 0, 1)};
+
 	if (ship.hitTree.intersectsRay(tfOrigin, tfDirection,
 			&blockPosition, hitPosition)) {
 		block = &const_cast<Ship&>(ship).blocks[blockPosition];
-		*hitNormal = Vector3f(0.f, 0.f, 1.f);
-		*hitPosition = Vector3f(shipTransform * Vector4f(*hitPosition, 1.f));
+		
+		float maxDot = 0.f;
+		uint32 maxI = (uint32)-1;
+
+		for (uint32 i = 0; i < ARRAY_SIZE_IN_ELEMENTS(directions); ++i) {
+			const float d = Math::dot(*hitPosition - Vector3f(blockPosition),
+					Vector3f(directions[i]));
+
+			if (d > maxDot) {
+				maxDot = d;
+				maxI = i;
+			}
+		}
+
+		//*hitPosition = Vector3f(shipTransform * Vector4f(*hitPosition, 1.f));
+		//*hitNormal = Vector3f(shipTransform * Vector4f(directions[maxI], 0.f));
+		*hitNormal = Vector3f(directions[maxI]);
 	}	
+}
+
+inline static void addBlockToShip(Ship& ship, enum BlockInfo::BlockType type,
+		const Vector3i& position, const Vector3i& rotation) {
+	Block block;
+	block.type = type;
+	block.position = position;
+	block.rotation = rotation;
+	block.renderIndex = ship.offsets[block.type].size();
+
+	ship.blocks[position] = block;
+	ship.hitTree.addObject(position);
+
+	Matrix4f rot = Math::rotate(Matrix4f(1.f),
+			Math::toRadians(90.f * rotation.x),
+			Vector3f(1.f, 0.f, 0.f));
+	rot = Math::rotate(rot, Math::toRadians(90.f
+			* rotation.y), Vector3f(0.f, 1.f, 0.f));
+	
+	ship.offsets[block.type].push_back(Math::translate(Matrix4f(1.f),
+			Vector3f(position)) * rot);
+	ship.offsetIndices[block.type].push_back(&ship.blocks[position]);
+
+	ship.blockInfo[block.type].vertexArray->updateBuffer(4,
+			&ship.offsets[block.type][0], ship.offsets[block.type].size()
+			* sizeof(Matrix4f));
 }
 
 inline static void removeBlockFromShip(Ship& ship, Block* block) {
@@ -198,8 +238,8 @@ inline static void removeBlockFromShip(Ship& ship, Block* block) {
 	ship.blocks.erase(block->position);
 	ship.hitTree.removeObject(block->position);
 
-	const_cast<VertexArray*>(BlockInfo::getInfo(block->type).vertexArray)
-			->updateBuffer(4, &ship.offsets[block->type][0],
-			ship.offsets[block->type].size() * sizeof(Matrix4f));
+	ship.blockInfo[block->type].vertexArray->updateBuffer(4,
+			&ship.offsets[block->type][0], ship.offsets[block->type].size()
+			* sizeof(Matrix4f));
 }
 

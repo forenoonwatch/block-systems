@@ -1,5 +1,6 @@
 #pragma once
 
+#include <engine/core/array-list.hpp>
 #include <engine/core/hash-map.hpp>
 
 #include "block.hpp"
@@ -21,6 +22,8 @@ struct Ship {
 	HashMap<enum BlockInfo::BlockType, ArrayList<Matrix4f>> offsets;
 	HashMap<enum BlockInfo::BlockType, ArrayList<Block*>> offsetIndices;
 	RayTreeNode hitTree;
+
+	ArrayList<BlockInfo> blockInfo;
 };
 
 void shipRenderSystem(Game& game, float deltaTime);

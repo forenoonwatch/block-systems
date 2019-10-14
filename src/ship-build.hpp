@@ -1,5 +1,7 @@
 #pragma once
 
+#include <engine/core/array-list.hpp>
+
 #include <engine/ecs/ecs.hpp>
 
 #include "block.hpp"
@@ -7,8 +9,9 @@
 class Game;
 
 struct ShipBuildInfo {
-	Matrix4f transform;
 	enum BlockInfo::BlockType objectType;
+	Vector3i rotation;
+	ArrayList<BlockInfo> blockInfo;
 };
 
 class ShipBuildSystem {

@@ -15,8 +15,8 @@ void shipRenderSystem(Game& game, float deltaTime) {
 	GameRenderContext* grc = (GameRenderContext*)game.getRenderContext();
 	Material* currentMaterial = nullptr;
 
-	game.getECS().view<TransformComponent, Ship>().each([&](TransformComponent& transform,
-			Ship& ship) {
+	game.getECS().view<TransformComponent, Ship>().each([&](
+			TransformComponent& transform, Ship& ship) {
 		uint32 numTransforms;
 
 		shader.setMatrix4f("baseTransform", transform.transform);
@@ -28,7 +28,7 @@ void shipRenderSystem(Game& game, float deltaTime) {
 				continue;
 			}
 
-			Material* material = (Material*)BlockInfo::getInfo(pair.first).material;
+			Material* material = ship.blockInfo[pair.first].material;
 
 			if (material != currentMaterial) {
 				currentMaterial = material;
@@ -42,8 +42,8 @@ void shipRenderSystem(Game& game, float deltaTime) {
 			}
 
 			grc->draw(grc->getTarget(), shader,
-					*((VertexArray*)BlockInfo::getInfo(pair.first).vertexArray),
-					GL_TRIANGLES, numTransforms);
+					*ship.blockInfo[pair.first].vertexArray, GL_TRIANGLES,
+					numTransforms);
 		}
 	});
 }
