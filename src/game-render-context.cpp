@@ -12,8 +12,8 @@ GameRenderContext::GameRenderContext(uint32 width, uint32 height,
 		, normalBuffer(*((RenderContext*)this), width, height, GL_RGBA32F)
 		, lightingBuffer(*((RenderContext*)this), width, height, GL_RGBA32F)
 		, brightBuffer(*((RenderContext*)this), width, height, GL_RGBA32F)
-		, depthBuffer(*((RenderContext*)this), width, height, GL_DEPTH_COMPONENT,
-				nullptr, GL_DEPTH_COMPONENT, GL_FLOAT)
+		, depthBuffer(*((RenderContext*)this), width, height,
+				GL_DEPTH_COMPONENT, nullptr, GL_DEPTH_COMPONENT, GL_FLOAT)
 	
 		, target(*((RenderContext*)this), colorBuffer, GL_COLOR_ATTACHMENT0)
 		, screen(*((RenderContext*)this), width, height)
@@ -34,8 +34,8 @@ GameRenderContext::GameRenderContext(uint32 width, uint32 height,
 		
 		, nearestSampler(*((RenderContext*)this), GL_NEAREST, GL_NEAREST)
 		, linearSampler(*((RenderContext*)this), GL_LINEAR, GL_LINEAR)
-		, linearMipmapSampler(*((RenderContext*)this), GL_LINEAR_MIPMAP_LINEAR,
-				GL_LINEAR_MIPMAP_LINEAR)
+		, linearMipmapSampler(*((RenderContext*)this),
+				GL_LINEAR_MIPMAP_LINEAR, GL_LINEAR_MIPMAP_LINEAR)
 		
 		, diffuseIBL(nullptr)
 		, specularIBL(nullptr)
@@ -64,12 +64,14 @@ GameRenderContext::GameRenderContext(uint32 width, uint32 height,
 	IndexedModel cube;
 	initSkyboxCube(cube);
 
-	skyboxCube = new VertexArray(*((RenderContext*)this), cube, GL_STATIC_DRAW);
+	skyboxCube = new VertexArray(*((RenderContext*)this), cube,
+			GL_STATIC_DRAW);
 
-	bloomBlur = new GaussianBlur(*((RenderContext*)this), blurShader, brightBuffer);
+	bloomBlur = new GaussianBlur(*((RenderContext*)this), blurShader,
+			brightBuffer);
 
-	camera.projection = Math::perspective(fieldOfView, (float)width / (float)height,
-			zNear, zFar);
+	camera.projection = Math::perspective(fieldOfView, (float)width
+			/ (float)height, zNear, zFar);
 
 	float lightData[] = {0.f, 15.f, 128.f};
 	Vector3f lightDir = Math::normalize(Vector3f(1, -1, 1));
@@ -169,12 +171,12 @@ void GameRenderContext::flushStaticMeshes(Game& game, float deltaTime) {
 					grc->linearMipmapSampler, 0);
 			grc->staticMeshShader.setSampler("normalMap", *material->normalMap,
 					grc->linearMipmapSampler, 1);
-			grc->staticMeshShader.setSampler("materialMap", *material->materialMap,
-					grc->linearMipmapSampler, 2);
+			grc->staticMeshShader.setSampler("materialMap",
+					*material->materialMap, grc->linearMipmapSampler, 2);
 		}
 
 		vertexArray->updateBuffer(4, &pair.second[0],
-				sizeof(StaticMeshData) * numTransforms);
+				sizeof(Matrix4f) * numTransforms);
 
 		grc->draw(grc->target, grc->staticMeshShader, *vertexArray,
 				GL_TRIANGLES, numTransforms);
@@ -248,3 +250,4 @@ static void initSkyboxCube(IndexedModel& model) {
 	model.addIndices3i(1, 5, 7);
 	model.addIndices3i(7, 3, 1);
 }
+

@@ -35,6 +35,9 @@ class GameRenderContext : public RenderContext {
 		inline void setSpecularIBL(CubeMap& specularIBL) { this->specularIBL = &specularIBL; }
 		inline void setBrdfLUT(Texture& brdfLUT) { this->brdfLUT = &brdfLUT; }
 
+		inline RenderTarget& getTarget() { return target; }
+		inline RenderTarget& getScreen() { return screen; }
+
 		inline CubeMap& getDiffuseIBL() { return *diffuseIBL; }
 		inline CubeMap& getSpecularIBL() { return *specularIBL; }
 
@@ -55,16 +58,6 @@ class GameRenderContext : public RenderContext {
 		static void flush(Game& game, float deltaTime);
 	private:
 		NULL_COPY_AND_ASSIGN(GameRenderContext);
-
-		struct StaticMeshData {
-			inline StaticMeshData(const Matrix4f& mvp,
-						const Matrix4f& transform)
-					: projectedTransform(mvp)
-					, transform(transform) {}
-
-			Matrix4f projectedTransform;
-			Matrix4f transform;
-		};
 
 		Game* game;
 
@@ -107,7 +100,7 @@ class GameRenderContext : public RenderContext {
 
 		Camera camera;
 
-		TreeMap<Pair<VertexArray*, Material*>, ArrayList<StaticMeshData>> staticMeshes;
+		TreeMap<Pair<VertexArray*, Material*>, ArrayList<Matrix4f>> staticMeshes;
 };
 
 inline void GameRenderContext::updateCameraBuffer() {
@@ -121,8 +114,7 @@ inline void GameRenderContext::updateCameraBuffer() {
 
 inline void GameRenderContext::renderMesh(VertexArray& vertexArray, Material& material,
 		const Matrix4f& transform) {
-	staticMeshes[std::make_pair(&vertexArray, &material)].emplace_back(camera.viewProjection
-			* transform, transform);
+	staticMeshes[std::make_pair(&vertexArray, &material)].push_back(transform);
 }
 
 inline void GameRenderContext::renderSkybox(CubeMap& skybox, Sampler& sampler) {

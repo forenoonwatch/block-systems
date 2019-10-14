@@ -12,16 +12,12 @@ layout (location = 2) in vec3 normal;
 layout (location = 3) in vec3 tangent;
 layout (location = 4) in mat4 transform;
 
-uniform mat4 baseTransform;
-
 void main() {
-	const mat4 model = baseTransform * transform;
-	const mat4 mvp = viewProjection * model;
-
+	const mat4 mvp = viewProjection * transform;
 	const vec4 vertPos = mvp * vec4(position, 1.0);
 
-	const vec3 N = normalize(vec3(model * vec4(normal, 0.0)));
-	vec3 T = normalize(vec3(model * vec4(tangent, 0.0)));
+	const vec3 N = normalize(vec3(transform * vec4(normal, 0.0)));
+	vec3 T = normalize(vec3(transform * vec4(tangent, 0.0)));
 	T = normalize(T - dot(T, N) * N);
 
 	gl_Position = vertPos;
