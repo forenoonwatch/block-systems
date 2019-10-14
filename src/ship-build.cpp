@@ -28,7 +28,8 @@ static void rayShipIntersection(const Matrix4f& shipTransform, const Ship& ship,
 static void removeBlockFromShip(Ship& ship, Block* block);
 
 void ShipBuildSystem::operator()(Game& game, float deltaTime) { 
-	if (Application::getMousePressed(Input::MOUSE_BUTTON_LEFT)) {
+	//if (Application::getMousePressed(Input::MOUSE_BUTTON_LEFT)) {
+	if (Application::isMouseDown(Input::MOUSE_BUTTON_LEFT)) {
 		const CameraComponent& cc = game.getECS().get<CameraComponent>(cameraInfo);
 
 		Block* block;
@@ -118,9 +119,9 @@ void updateShipBuildInfo(Game& game, float deltaTime) {
 	});*/
 }
 
-static void rayShipIntersection(const Matrix4f& shipTransform, const Ship& ship,
-		const Vector3f& origin, const Vector3f& direction, Block*& block,
-		Vector3f* hitPosition, Vector3f* hitNormal) {
+/*static void rayShipIntersection(const Matrix4f& shipTransform,
+		const Ship& ship, const Vector3f& origin, const Vector3f& direction,
+		Block*& block, Vector3f* hitPosition, Vector3f* hitNormal) {
 	const Vector4f tfOrigin(origin, 1.f);
 	const Vector4f tfDirection(direction, 0.f);
 
@@ -129,19 +130,22 @@ static void rayShipIntersection(const Matrix4f& shipTransform, const Ship& ship,
 	
 	block = nullptr;
 
-	const AABB aabb(Vector3f(-1.f, -1.f, -1.f), Vector3f(1.f, 1.f, 1.f));
 	float p1, p2;
+
+	const Vector3f start(Math::inverse(shipTransform) * tfOrigin);
+	const Vector3f dir(Math::inverse(shipTransform) * tfDirection);
 
 	for (auto& pair : ship.blocks) {
 		const Matrix4f& offset = const_cast<Ship&>(ship)
 				.offsets[pair.second.type][pair.second.renderIndex];
-		const Matrix4f tf = shipTransform * offset;
-		const Matrix4f tfi = Math::inverse(tf);
+		const Vector3f p(pair.first);
+		const AABB aabb(p - Vector3f(0.5f, 0.5f, 0.5f),
+				p + Vector3f(0.5f, 0.5f, 0.5f));
 
-		if (aabb.intersectRay(Vector3f(tfi * tfOrigin), Vector3f(tfi * tfDirection),
-				p1, p2)) {
-			intersectPos = Vector3f(tfi * tfOrigin) + Vector3f(tfi * tfDirection) * p1;
-			intersectPos = Vector3f(tf * Vector4f(intersectPos, 1.f));
+		if (aabb.intersectRay(start, dir, p1, p2)) {
+			intersectPos = Vector3f(shipTransform
+					* Vector4f(start + dir * p1, 1.f));
+			intersectNormal = Vector3f(0.f, 0.f, 1.f);
 			// TODO: calculate intersect normal
 			const float dist = Math::length(origin - intersectPos);
 
@@ -154,6 +158,26 @@ static void rayShipIntersection(const Matrix4f& shipTransform, const Ship& ship,
 			}
 		}
 	}
+}*/
+
+static void rayShipIntersection(const Matrix4f& shipTransform,
+		const Ship& ship, const Vector3f& origin, const Vector3f& direction,
+		Block*& block, Vector3f* hitPosition, Vector3f* hitNormal) {
+	const Matrix4f itf = Math::inverse(shipTransform);
+
+	const Vector3f tfOrigin(itf * Vector4f(origin, 1.f));
+	const Vector3f tfDirection(itf * Vector4f(direction, 0.f));
+
+	Vector3i blockPosition;
+
+	block = nullptr;
+
+	if (ship.hitTree.intersectsRay(tfOrigin, tfDirection,
+			&blockPosition, hitPosition)) {
+		block = &const_cast<Ship&>(ship).blocks[blockPosition];
+		*hitNormal = Vector3f(0.f, 0.f, 1.f);
+		*hitPosition = Vector3f(shipTransform * Vector4f(*hitPosition, 1.f));
+	}	
 }
 
 inline static void removeBlockFromShip(Ship& ship, Block* block) {
@@ -161,14 +185,18 @@ inline static void removeBlockFromShip(Ship& ship, Block* block) {
 
 	back->renderIndex = block->renderIndex;
 	
-	ship.offsets[block->type][block->renderIndex] = ship.offsets[block->type].back();
+	ship.offsets[block->type][block->renderIndex] =
+			ship.offsets[block->type].back();
 	ship.offsetIndices[block->type][block->renderIndex] = back;
 
 	ship.offsets[block->type].pop_back();
 	ship.offsetIndices[block->type].pop_back();
 
-	const_cast<VertexArray*>(BlockInfo::getInfo(block->type).vertexArray)->updateBuffer(4,
-				&ship.offsets[block->type][0], ship.offsets[block->type].size()
-				* sizeof(Matrix4f));
+	ship.blocks.erase(block->position);
+	ship.hitTree.removeObject(block->position);
+
+	const_cast<VertexArray*>(BlockInfo::getInfo(block->type).vertexArray)
+			->updateBuffer(4, &ship.offsets[block->type][0],
+			ship.offsets[block->type].size() * sizeof(Matrix4f));
 }
 
