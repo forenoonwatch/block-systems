@@ -18,6 +18,7 @@ struct HashBlockPosition {
 struct Ship {
 	HashMap<Vector3i, Block, HashBlockPosition> blocks;
 	HashMap<enum BlockInfo::BlockType, ArrayList<Matrix4f>> offsets;
+	HashMap<enum BlockInfo::BlockType, ArrayList<Block*>> offsetIndices;
 };
 
 void shipRenderSystem(Game& game, float deltaTime);
