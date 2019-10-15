@@ -33,7 +33,7 @@ bool RayTreeNode::intersectsRay(const Vector3f& origin,
 		Vector3f* intersectPos) const {
 	float p1, p2;
 
-	if (aabb.intersectRay(origin, direction, p1, p2)) {
+	if (aabb.intersectsRay(origin, direction, p1, p2)) {
 		if (!limitReached) {
 			float minDist = FLT_MAX;
 			const Vector3i* minCoord = nullptr;
@@ -42,7 +42,7 @@ bool RayTreeNode::intersectsRay(const Vector3f& origin,
 				const AABB box(Vector3f(c) - Vector3f(0.5f, 0.5f, 0.5f),
 						Vector3f(c) + Vector3f(0.5f, 0.5f, 0.5f));
 
-				if (box.intersectRay(origin, direction, p1, p2)) {
+				if (box.intersectsRay(origin, direction, p1, p2)) {
 					if (p1 < minDist) {
 						minDist = p1;
 						minCoord = &c;
