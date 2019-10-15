@@ -1,13 +1,8 @@
 #pragma once
 
-#include <engine/math/matrix.hpp>
+#include <engine/math/transform.hpp>
 
 struct TransformComponent {
-	Matrix4f transform;
-};
-
-struct MotionComponent {
-	Vector3f velocity;
-	Vector3f acceleration;
+	Transform transform;
 };
 

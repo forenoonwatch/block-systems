@@ -19,7 +19,7 @@ void shipRenderSystem(Game& game, float deltaTime) {
 			TransformComponent& transform, Ship& ship) {
 		uint32 numTransforms;
 
-		shader.setMatrix4f("baseTransform", transform.transform);
+		shader.setMatrix4f("baseTransform", transform.transform.toMatrix());
 
 		for (auto& pair : ship.offsets) {
 			numTransforms = pair.second.size();

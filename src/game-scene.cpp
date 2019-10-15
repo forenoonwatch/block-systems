@@ -88,7 +88,7 @@ void GameScene::load(Game& game) {
 
 	ECS::Entity cameraEntity = game.getECS().create();
 
-	game.getECS().assign<TransformComponent>(cameraEntity, Matrix4f(1.f));
+	game.getECS().assign<TransformComponent>(cameraEntity, Transform());
 	game.getECS().assign<CameraComponent>(cameraEntity,
 			&((GameRenderContext*)game.getRenderContext())->getCamera());
 
@@ -96,7 +96,7 @@ void GameScene::load(Game& game) {
 	addUpdateSystem(UpdateBuildToolTip(game, cameraEntity));
 
 	ECS::Entity ship = game.getECS().create();
-	game.getECS().assign<TransformComponent>(ship, Matrix4f(1.f));
+	game.getECS().assign<TransformComponent>(ship, Transform());
 	game.getECS().assign<Ship>(ship);
 	game.getECS().assign<ShipBuildInfo>(ship, BlockInfo::TYPE_BASIC_CUBE,
 			Quaternion(1.f, 0.f, 0.f, 0.f));
@@ -141,8 +141,8 @@ void GameScene::load(Game& game) {
 				&pair.second[0], pair.second.size() * sizeof(Matrix4f));
 	}
 
-	game.getECS().get<TransformComponent>(ship).transform =
-			Math::rotate(Matrix4f(1.f), 0.3f, Vector3f(1.f, 1.f, 0.f));
+	//game.getECS().get<TransformComponent>(ship).transform =
+	//		Math::rotate(Matrix4f(1.f), 0.3f, Vector3f(1.f, 1.f, 0.f));
 
 	DEBUG_LOG_TEMP2("Loaded");
 }
@@ -160,7 +160,8 @@ static void renderMesh(Game& game, float deltaTime) {
 			TransformComponent& transform, RenderableMesh& mesh) {
 		if (mesh.render) {
 			((GameRenderContext*)game.getRenderContext())->renderMesh(
-					*mesh.vertexArray, *mesh.material, transform.transform);
+					*mesh.vertexArray, *mesh.material,
+					transform.transform.toMatrix());
 		}
 	});
 }
@@ -207,7 +208,8 @@ inline static void initBlockTypes(Game& game,
 			&game.getAssetManager().getModel("tetrahedron"),
 			&game.getAssetManager().getMaterial("wood-planks"),
 			Memory::make_shared<VertexArray>(*game.getRenderContext(),
-				game.getAssetManager().getModel("tetrahedron"), GL_STATIC_DRAW));
+				game.getAssetManager().getModel("tetrahedron"),
+				GL_STATIC_DRAW));
 	blockInfo.emplace_back(BlockInfo::TYPE_BASIC_PYRAMID,
 			0,
 			&game.getAssetManager().getModel("pyramid"),
@@ -232,12 +234,14 @@ inline static void initBlockTypes(Game& game,
 			&game.getAssetManager().getModel("wedge-2x-1"),
 			&game.getAssetManager().getMaterial("wood-planks"),
 			Memory::make_shared<VertexArray>(*game.getRenderContext(),
-				game.getAssetManager().getModel("wedge-2x-1"), GL_STATIC_DRAW));
+				game.getAssetManager().getModel("wedge-2x-1"),
+				GL_STATIC_DRAW));
 	blockInfo.emplace_back(BlockInfo::TYPE_BASIC_WEDGE_2X1,
 			0,
 			&game.getAssetManager().getModel("wedge-2x-2"),
 			&game.getAssetManager().getMaterial("wood-planks"),
 			Memory::make_shared<VertexArray>(*game.getRenderContext(),
-				game.getAssetManager().getModel("wedge-2x-2"), GL_STATIC_DRAW));
+				game.getAssetManager().getModel("wedge-2x-2"),
+				GL_STATIC_DRAW));
 }
 

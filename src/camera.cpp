@@ -13,7 +13,7 @@ void updateCameraSystem(Game& game, float deltaTime) {
 			TransformComponent& transform, CameraComponent& cc) {
 		Camera& camera = *cc.camera;
 
-		camera.view = transform.transform;
+		camera.view = transform.transform.toMatrix();
 		camera.iView = Math::inverse(camera.view);
 
 		const Matrix4f iProjection = Math::inverse(camera.projection);
@@ -85,14 +85,19 @@ void firstPersonCameraSystem(Game& game, float deltaTime) {
 			}
 		}
 
-		transform.transform = Math::rotate(Matrix4f(1.f), camera.rotationY, Vector3f(0.f, 1.f, 0.f));
+		Matrix4f tf = Math::rotate(Matrix4f(1.f), camera.rotationY,
+				Vector3f(0.f, 1.f, 0.f));
 
-		camera.position += Vector3f(transform.transform[0]) * (x * CAMERA_SPEED * deltaTime)
-				+ Vector3f(transform.transform[2]) * (z * CAMERA_SPEED * deltaTime);
+		camera.position += Vector3f(tf[0]) * (x * CAMERA_SPEED * deltaTime)
+				+ Vector3f(tf[2]) * (z * CAMERA_SPEED * deltaTime);
 		camera.position.y += y * CAMERA_SPEED * deltaTime;
 
-		transform.transform *= Math::rotate(Matrix4f(1.f), camera.rotationX, Vector3f(1.f, 0.f, 0.f));
-		transform.transform = Math::translate(Matrix4f(1.f), camera.position) * transform.transform;
+		tf *= Math::rotate(Matrix4f(1.f), camera.rotationX,
+				Vector3f(1.f, 0.f, 0.f));
+		tf = Math::translate(Matrix4f(1.f), camera.position) * tf;
+
+		transform.transform.setPosition(Vector3f(tf[3]));
+		transform.transform.setRotation(Math::mat4ToQuat(tf));
 
 		((GameRenderContext*)game.getRenderContext())->updateCameraBuffer();
 	});

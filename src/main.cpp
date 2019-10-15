@@ -25,13 +25,15 @@ int main() {
 	Window window("My Window", 1200, 800);
 	//window.moveToCenter();
 
-	Memory::SharedPointer<Scene> scene = Memory::SharedPointer<Scene>(new GameScene());
+	Memory::SharedPointer<Scene> scene =
+			Memory::SharedPointer<Scene>(new GameScene());
 
 	GameRenderContext renderContext(window.getWidth(), window.getHeight(),
 			Math::toRadians(70.f), 0.1f, 1000.f);
 	Game game(window, &renderContext, false);
 
-	Application::setResizeCallback([&](Window& win, uint32 width, uint32 height) {
+	Application::setResizeCallback([&](Window& win, uint32 width,
+			uint32 height) {
 		renderContext.resize(width, height);
 	});
 

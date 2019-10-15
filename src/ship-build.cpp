@@ -41,8 +41,9 @@ void ShipBuildSystem::operator()(Game& game, float deltaTime) {
 		game.getECS().view<TransformComponent, Ship, ShipBuildInfo>().each([&](
 				TransformComponent& transform, Ship& ship,
 				ShipBuildInfo& sbi) {
-			rayShipIntersection(transform.transform, ship, cc.position,
-					cc.rayDirection, block, &mousePos, &hitNormal);
+			rayShipIntersection(transform.transform.toMatrix(), ship,
+					cc.position, cc.rayDirection, block, &mousePos,
+					&hitNormal);
 
 			if (block != nullptr) {
 				if (Application::isKeyDown(Input::KEY_LEFT_SHIFT)) {
@@ -61,7 +62,7 @@ void ShipBuildSystem::operator()(Game& game, float deltaTime) {
 UpdateBuildToolTip::UpdateBuildToolTip(Game& game, ECS::Entity cameraInfo)
 		: toolTip(game.getECS().create())
 		, cameraInfo(cameraInfo) {
-	game.getECS().assign<TransformComponent>(toolTip, Matrix4f(1.f));
+	game.getECS().assign<TransformComponent>(toolTip, Transform());
 	game.getECS().assign<RenderableMesh>(toolTip, nullptr, nullptr, false);
 }
 
@@ -77,7 +78,7 @@ void UpdateBuildToolTip::operator()(Game& game, float deltaTime) {
 
 	game.getECS().view<ShipBuildInfo, TransformComponent, Ship>().each([&](
 			ShipBuildInfo& sbi, TransformComponent& transform, Ship& ship) {
-		rayShipIntersection(transform.transform, ship, cc.position,
+		rayShipIntersection(transform.transform.toMatrix(), ship, cc.position,
 					cc.rayDirection, block, &mousePos, &hitNormal);
 
 		rm.render = block != nullptr;
@@ -85,9 +86,12 @@ void UpdateBuildToolTip::operator()(Game& game, float deltaTime) {
 		if (rm.render) {
 			Vector3f pos = Vector3f(block->position) + hitNormal;
 
-			tf.transform = transform.transform
+			Matrix4f mat = transform.transform.toMatrix()
 					* (Math::translate(Matrix4f(1.f), pos)
 					* Math::quatToMat4(sbi.rotation));
+			
+			tf.transform.setPosition(Vector3f(mat[3]));
+			tf.transform.setRotation(Math::mat4ToQuat(mat));
 		}
 
 		rm.vertexArray = sbi.blockInfo[sbi.objectType].vertexArray.get();
@@ -99,12 +103,12 @@ void updateShipBuildInfo(Game& game, float deltaTime) {
 	game.getECS().view<ShipBuildInfo>().each([&](ShipBuildInfo& sbi) {
 		if (Application::getKeyPressed(Input::KEY_R)) {
 			sbi.rotation = Math::rotate(sbi.rotation, Math::toRadians(90.f),
-					Vector3f(0.f, 1.f, 0.f));
+					Vector3f(1.f, 0.f, 0.f));
 		}
 
 		if (Application::getKeyPressed(Input::KEY_T)) {
 			sbi.rotation = Math::rotate(sbi.rotation, Math::toRadians(90.f),
-					Vector3f(1.f, 0.f, 0.f));
+					Vector3f(0.f, 1.f, 0.f));
 		}
 
 		if (Application::getKeyPressed(Input::KEY_F)) {
@@ -137,7 +141,7 @@ void updateShipBuildInfo(Game& game, float deltaTime) {
 		const AABB aabb(p - Vector3f(0.5f, 0.5f, 0.5f),
 				p + Vector3f(0.5f, 0.5f, 0.5f));
 
-		if (aabb.intersectRay(start, dir, p1, p2)) {
+		if (aabb.intersectsRay(start, dir, p1, p2)) {
 			intersectPos = Vector3f(shipTransform
 					* Vector4f(start + dir * p1, 1.f));
 			intersectNormal = Vector3f(0.f, 0.f, 1.f);
