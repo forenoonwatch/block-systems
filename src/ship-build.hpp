@@ -10,7 +10,7 @@ class Game;
 
 struct ShipBuildInfo {
 	enum BlockInfo::BlockType objectType;
-	Vector3i rotation;
+	Quaternion rotation;
 	ArrayList<BlockInfo> blockInfo;
 };
 

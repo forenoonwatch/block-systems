@@ -3,7 +3,7 @@
 #include <engine/core/common.hpp>
 #include <engine/core/memory.hpp>
 
-#include <engine/math/matrix.hpp>
+#include <engine/math/quaternion.hpp>
 
 class IndexedModel;
 class VertexArray;
@@ -53,7 +53,7 @@ struct BlockInfo {
 struct Block {
 	enum BlockInfo::BlockType type;
 	Vector3i position;
-	Vector2i rotation;
+	Quaternion rotation;
 	uint32 renderIndex;
 };
 

@@ -99,7 +99,7 @@ void GameScene::load(Game& game) {
 	game.getECS().assign<TransformComponent>(ship, Matrix4f(1.f));
 	game.getECS().assign<Ship>(ship);
 	game.getECS().assign<ShipBuildInfo>(ship, BlockInfo::TYPE_BASIC_CUBE,
-			Vector3i(0, 0, 0));
+			Quaternion(1.f, 0.f, 0.f, 0.f));
 
 	Ship& shipComponent = game.getECS().get<Ship>(ship);
 
@@ -108,7 +108,7 @@ void GameScene::load(Game& game) {
 
 	Block block;
 	
-	constexpr const uint32 n = 60;
+	constexpr const uint32 n = 1;
 
 	for (uint32 x = 0; x < n; ++x) {
 		for (uint32 y = 0; y < n; ++y) {
@@ -117,7 +117,7 @@ void GameScene::load(Game& game) {
 						% BlockInfo::NUM_TYPES);
 				//block.type = BlockInfo::TYPE_BASIC_CUBE;
 				block.position = Vector3i(x, y, z);
-				block.rotation = Vector2i(x % 4, y % 4);
+				block.rotation = Quaternion(1.f, 0.f, 0.f, 0.f);
 				block.renderIndex = (uint32)-1;
 
 				shipComponent.blocks[block.position] = block;
@@ -127,17 +127,11 @@ void GameScene::load(Game& game) {
 	}
 
 	for (auto& pair : shipComponent.blocks) {
-		Matrix4f rot = Math::rotate(Matrix4f(1.f),
-				Math::toRadians(90.f * pair.second.rotation.x),
-				Vector3f(1.f, 0.f, 0.f));
-		rot = Math::rotate(rot, Math::toRadians(90.f
-				* pair.second.rotation.y), Vector3f(0.f, 1.f, 0.f));
-
 		pair.second.renderIndex = shipComponent
 				.offsets[pair.second.type].size();
 		shipComponent.offsets[pair.second.type].push_back(
 				Math::translate(Matrix4f(1.f), Vector3f(pair.first))
-				* rot);
+				* Math::quatToMat4(pair.second.rotation));
 		shipComponent.offsetIndices[pair.second.type]
 				.push_back(&pair.second);
 	}

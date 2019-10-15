@@ -25,7 +25,7 @@ static void rayShipIntersection(const Matrix4f& shipTransform,
 		Block*& block, Vector3f* hitPosition, Vector3f* hitNormal);
 
 static void addBlockToShip(Ship& ship, enum BlockInfo::BlockType type,
-		const Vector3i& position, const Vector3i& rotation);
+		const Vector3i& position, const Quaternion& rotation);
 static void removeBlockFromShip(Ship& ship, Block* block);
 
 void ShipBuildSystem::operator()(Game& game, float deltaTime) { 
@@ -85,14 +85,9 @@ void UpdateBuildToolTip::operator()(Game& game, float deltaTime) {
 		if (rm.render) {
 			Vector3f pos = Vector3f(block->position) + hitNormal;
 
-			Matrix4f rot = Math::rotate(Matrix4f(1.f),
-					Math::toRadians(90.f * sbi.rotation.x),
-					Vector3f(1.f, 0.f, 0.f));
-			rot = Math::rotate(rot, Math::toRadians(90.f
-					* sbi.rotation.y), Vector3f(0.f, 1.f, 0.f));
-
 			tf.transform = transform.transform
-					* (Math::translate(Matrix4f(1.f), pos) * rot);
+					* (Math::translate(Matrix4f(1.f), pos)
+					* Math::quatToMat4(sbi.rotation));
 		}
 
 		rm.vertexArray = sbi.blockInfo[sbi.objectType].vertexArray.get();
@@ -103,11 +98,13 @@ void UpdateBuildToolTip::operator()(Game& game, float deltaTime) {
 void updateShipBuildInfo(Game& game, float deltaTime) {
 	game.getECS().view<ShipBuildInfo>().each([&](ShipBuildInfo& sbi) {
 		if (Application::getKeyPressed(Input::KEY_R)) {
-			sbi.rotation += Vector3i(0, 1, 0);
+			sbi.rotation = Math::rotate(sbi.rotation, Math::toRadians(90.f),
+					Vector3f(0.f, 1.f, 0.f));
 		}
 
 		if (Application::getKeyPressed(Input::KEY_T)) {
-			sbi.rotation += Vector3i(1, 0, 0);
+			sbi.rotation = Math::rotate(sbi.rotation, Math::toRadians(90.f),
+					Vector3f(1.f, 0.f, 0.f));
 		}
 
 		if (Application::getKeyPressed(Input::KEY_F)) {
@@ -198,7 +195,7 @@ static void rayShipIntersection(const Matrix4f& shipTransform,
 }
 
 inline static void addBlockToShip(Ship& ship, enum BlockInfo::BlockType type,
-		const Vector3i& position, const Vector3i& rotation) {
+		const Vector3i& position, const Quaternion& rotation) {
 	Block block;
 	block.type = type;
 	block.position = position;
@@ -207,15 +204,9 @@ inline static void addBlockToShip(Ship& ship, enum BlockInfo::BlockType type,
 
 	ship.blocks[position] = block;
 	ship.hitTree.addObject(position);
-
-	Matrix4f rot = Math::rotate(Matrix4f(1.f),
-			Math::toRadians(90.f * rotation.x),
-			Vector3f(1.f, 0.f, 0.f));
-	rot = Math::rotate(rot, Math::toRadians(90.f
-			* rotation.y), Vector3f(0.f, 1.f, 0.f));
 	
 	ship.offsets[block.type].push_back(Math::translate(Matrix4f(1.f),
-			Vector3f(position)) * rot);
+			Vector3f(position)) * Math::quatToMat4(rotation));
 	ship.offsetIndices[block.type].push_back(&ship.blocks[position]);
 
 	ship.blockInfo[block.type].vertexArray->updateBuffer(4,
