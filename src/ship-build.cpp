@@ -20,10 +20,6 @@
 
 #include <cfloat>
 
-static void rayShipIntersection(const Matrix4f& shipTransform,
-		const Ship& ship, const Vector3f& origin, const Vector3f& direction,
-		Block*& block, Vector3f* hitPosition, Vector3f* hitNormal);
-
 static void addBlockToShip(Ship& ship, enum BlockInfo::BlockType type,
 		const Vector3i& position, const Quaternion& rotation);
 static void removeBlockFromShip(Ship& ship, Block* block);
@@ -158,45 +154,6 @@ void updateShipBuildInfo(Game& game, float deltaTime) {
 		}
 	}
 }*/
-
-static void rayShipIntersection(const Matrix4f& shipTransform,
-		const Ship& ship, const Vector3f& origin, const Vector3f& direction,
-		Block*& block, Vector3f* hitPosition, Vector3f* hitNormal) {
-	const Matrix4f itf = Math::inverse(shipTransform);
-
-	const Vector3f tfOrigin(itf * Vector4f(origin, 1.f));
-	const Vector3f tfDirection(itf * Vector4f(direction, 0.f));
-
-	Vector3i blockPosition;
-
-	block = nullptr;
-
-	const Vector3i directions[] = {Vector3i(-1, 0, 0), Vector3i(1, 0, 0),
-			Vector3i(0, -1, 0), Vector3i(0, 1, 0), Vector3i(0, 0, -1),
-			Vector3i(0, 0, 1)};
-
-	if (ship.hitTree.intersectsRay(tfOrigin, tfDirection,
-			&blockPosition, hitPosition)) {
-		block = &const_cast<Ship&>(ship).blocks[blockPosition];
-		
-		float maxDot = 0.f;
-		uint32 maxI = (uint32)-1;
-
-		for (uint32 i = 0; i < ARRAY_SIZE_IN_ELEMENTS(directions); ++i) {
-			const float d = Math::dot(*hitPosition - Vector3f(blockPosition),
-					Vector3f(directions[i]));
-
-			if (d > maxDot) {
-				maxDot = d;
-				maxI = i;
-			}
-		}
-
-		//*hitPosition = Vector3f(shipTransform * Vector4f(*hitPosition, 1.f));
-		//*hitNormal = Vector3f(shipTransform * Vector4f(directions[maxI], 0.f));
-		*hitNormal = Vector3f(directions[maxI]);
-	}	
-}
 
 inline static void addBlockToShip(Ship& ship, enum BlockInfo::BlockType type,
 		const Vector3i& position, const Quaternion& rotation) {

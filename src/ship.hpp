@@ -26,5 +26,12 @@ struct Ship {
 	ArrayList<BlockInfo> blockInfo;
 };
 
+void rayShipIntersection(const Matrix4f& shipTransform, const Ship& ship,
+		const Vector3f& origin, const Vector3f& direction, Block*& block,
+		Vector3f* hitPosition, Vector3f* hitNormal);
+
+void calcMassData(const Ship& ship, float& mass, float& invMass,
+		Vector3f& localCenter, Matrix3f& inertia);
+
 void shipRenderSystem(Game& game, float deltaTime);
 

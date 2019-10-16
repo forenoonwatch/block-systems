@@ -4,9 +4,9 @@ inline void Physics::applyForce(Physics::Body& body, const Vector3f& force) {
 }
 
 inline void Physics::applyForce(Physics::Body& body, const Vector3f& force,
-		const Vector3f& localPoint) {
+		const Vector3f& worldPoint) {
 	body.force += force * body.mass;
-	body.torque += Math::cross(localPoint, force);
+	body.torque += Math::cross(worldPoint - body.worldCenter, force);
 }
 
 inline void Physics::applyTorque(Physics::Body& body,
@@ -20,9 +20,9 @@ inline void Physics::applyImpulse(Physics::Body& body,
 }
 
 inline void Physics::applyImpulse(Physics::Body& body, const Vector3f& impulse,
-		const Vector3f& localPoint) {
+		const Vector3f& worldPoint) {
 	body.velocity += impulse;
 	body.angularVelocity += body.invInertiaWorld
-		* Math::cross(localPoint, impulse);
+		* Math::cross(worldPoint - body.worldCenter, impulse);
 }
 

@@ -8,6 +8,8 @@
 
 #include "ship-build.hpp"
 
+#include "physics.hpp"
+
 #include <engine/core/application.hpp>
 #include <engine/math/math.hpp>
 
@@ -17,12 +19,53 @@ static void toggleFullscreenSystem(Game&, float);
 
 static void initBlockTypes(Game&, ArrayList<BlockInfo>&);
 
+struct ApplyImpulseSystem {
+	inline ApplyImpulseSystem(ECS::Entity cameraInfo)
+			: cameraInfo(cameraInfo) {}
+
+	void operator()(Game& game, float deltaTime) {
+		if (Application::getKeyPressed(Input::KEY_X)) {
+			const CameraComponent& cc =
+					game.getECS().get<CameraComponent>(cameraInfo);
+
+			Block* block;
+			Vector3f mousePos;
+			Vector3f hitNormal;
+
+			game.getECS().view<TransformComponent, Physics::Body, Ship>()
+					.each([&](TransformComponent& tf, Physics::Body& body,
+					Ship& ship) {
+				rayShipIntersection(tf.transform.toMatrix(), ship,
+						cc.position, cc.rayDirection, block, &mousePos,
+						&hitNormal);
+
+				if (block != nullptr) {
+					//Vector3f lp(tf.transform.inverse()
+					//		* Vector4f(mousePos, 1.f));
+
+					mousePos = Vector3f(tf.transform.toMatrix()
+							* Vector4f(mousePos, 1.f));
+					Physics::applyImpulse(body, cc.rayDirection, mousePos);
+				}
+			});
+		}
+		else if (Application::getKeyPressed(Input::KEY_Z)) {
+			game.getECS().view<Physics::Body>().each([&](Physics::Body& body) {
+				body.angularVelocity = Vector3f();
+			});
+		}
+	}
+
+	ECS::Entity cameraInfo;
+};
+
 GameScene::GameScene()
 		: Scene() {
 	addUpdateSystem(::firstPersonCameraSystem);
 	addUpdateSystem(::updateCameraSystem);
 	addUpdateSystem(::toggleFullscreenSystem);
 	addUpdateSystem(::updateShipBuildInfo);
+	addUpdateSystem(Physics::integrateVelocities);
 
 	addRenderSystem(::renderMesh);
 
@@ -94,12 +137,17 @@ void GameScene::load(Game& game) {
 
 	addUpdateSystem(ShipBuildSystem(cameraEntity));
 	addUpdateSystem(UpdateBuildToolTip(game, cameraEntity));
+	addUpdateSystem(ApplyImpulseSystem(cameraEntity));
 
 	ECS::Entity ship = game.getECS().create();
 	game.getECS().assign<TransformComponent>(ship, Transform());
 	game.getECS().assign<Ship>(ship);
 	game.getECS().assign<ShipBuildInfo>(ship, BlockInfo::TYPE_BASIC_CUBE,
 			Quaternion(1.f, 0.f, 0.f, 0.f));
+
+	game.getECS().assign<Physics::Body>(ship, Vector3f(), Vector3f(),
+			Vector3f(), Vector3f(), Vector3f(), Vector3f(), 1.f, 1.f,
+			Matrix3f(1.f), Matrix3f(1.f));
 
 	Ship& shipComponent = game.getECS().get<Ship>(ship);
 
@@ -108,14 +156,14 @@ void GameScene::load(Game& game) {
 
 	Block block;
 	
-	constexpr const uint32 n = 1;
+	constexpr const int32 n = 3;
 
-	for (uint32 x = 0; x < n; ++x) {
-		for (uint32 y = 0; y < n; ++y) {
-			for (uint32 z = 0; z < n; ++z) {
-				block.type = (enum BlockInfo::BlockType)((x + y + z)
-						% BlockInfo::NUM_TYPES);
-				//block.type = BlockInfo::TYPE_BASIC_CUBE;
+	for (int32 x = 0; x < n; ++x) {
+		for (int32 y = 0; y < 1; ++y) {
+			for (int32 z = 0; z < 1; ++z) {
+				//block.type = (enum BlockInfo::BlockType)((x + y + z)
+				//		% BlockInfo::NUM_TYPES);
+				block.type = BlockInfo::TYPE_BASIC_CUBE;
 				block.position = Vector3i(x, y, z);
 				block.rotation = Quaternion(1.f, 0.f, 0.f, 0.f);
 				block.renderIndex = (uint32)-1;
@@ -140,6 +188,18 @@ void GameScene::load(Game& game) {
 		shipComponent.blockInfo[pair.first].vertexArray->updateBuffer(4,
 				&pair.second[0], pair.second.size() * sizeof(Matrix4f));
 	}
+
+	float mass, invMass;
+	Vector3f localCenter;
+	Matrix3f inertia;
+	calcMassData(shipComponent, mass, invMass, localCenter, inertia);
+
+	Physics::Body& sb = game.getECS().get<Physics::Body>(ship);
+
+	sb.mass = mass;
+	sb.invMass = invMass;
+	sb.localCenter = localCenter;
+	sb.invInertiaLocal = Math::inverse(inertia);
 
 	//game.getECS().get<TransformComponent>(ship).transform =
 	//		Math::rotate(Matrix4f(1.f), 0.3f, Vector3f(1.f, 1.f, 0.f));
@@ -202,46 +262,53 @@ inline static void initBlockTypes(Game& game,
 			&game.getAssetManager().getModel("cube"),
 			&game.getAssetManager().getMaterial("wood-planks"),
 			Memory::make_shared<VertexArray>(*game.getRenderContext(),
-				game.getAssetManager().getModel("cube"), GL_STATIC_DRAW));
+			game.getAssetManager().getModel("cube"), GL_STATIC_DRAW),
+			1.f);
 	blockInfo.emplace_back(BlockInfo::TYPE_BASIC_TETRA,
 			0,
 			&game.getAssetManager().getModel("tetrahedron"),
 			&game.getAssetManager().getMaterial("wood-planks"),
 			Memory::make_shared<VertexArray>(*game.getRenderContext(),
-				game.getAssetManager().getModel("tetrahedron"),
-				GL_STATIC_DRAW));
+			game.getAssetManager().getModel("tetrahedron"),
+			GL_STATIC_DRAW),
+			0.2f);
 	blockInfo.emplace_back(BlockInfo::TYPE_BASIC_PYRAMID,
 			0,
 			&game.getAssetManager().getModel("pyramid"),
 			&game.getAssetManager().getMaterial("wood-planks"),
 			Memory::make_shared<VertexArray>(*game.getRenderContext(),
-				game.getAssetManager().getModel("pyramid"), GL_STATIC_DRAW));
+			game.getAssetManager().getModel("pyramid"), GL_STATIC_DRAW),
+			0.4f); // TODO: double check this mass
 	blockInfo.emplace_back(BlockInfo::TYPE_BASIC_WEDGE,
 			0,
 			&game.getAssetManager().getModel("wedge"),
 			&game.getAssetManager().getMaterial("wood-planks"),
 			Memory::make_shared<VertexArray>(*game.getRenderContext(),
-				game.getAssetManager().getModel("wedge"), GL_STATIC_DRAW));
+			game.getAssetManager().getModel("wedge"), GL_STATIC_DRAW),
+			0.5f);
 	blockInfo.emplace_back(BlockInfo::TYPE_BASIC_FIVE_SIXTH,
 			0,
 			&game.getAssetManager().getModel("five-sixths-block"),
 			&game.getAssetManager().getMaterial("wood-planks"),
 			Memory::make_shared<VertexArray>(*game.getRenderContext(),
-				game.getAssetManager().getModel("five-sixths-block"),
-				GL_STATIC_DRAW));
+			game.getAssetManager().getModel("five-sixths-block"),
+			GL_STATIC_DRAW),
+			0.8f);
 	blockInfo.emplace_back(BlockInfo::TYPE_BASIC_WEDGE_2X1,
 			0,
 			&game.getAssetManager().getModel("wedge-2x-1"),
 			&game.getAssetManager().getMaterial("wood-planks"),
 			Memory::make_shared<VertexArray>(*game.getRenderContext(),
-				game.getAssetManager().getModel("wedge-2x-1"),
-				GL_STATIC_DRAW));
+			game.getAssetManager().getModel("wedge-2x-1"),
+			GL_STATIC_DRAW),
+			0.6f); // TODO: calculate accurate mass
 	blockInfo.emplace_back(BlockInfo::TYPE_BASIC_WEDGE_2X1,
 			0,
 			&game.getAssetManager().getModel("wedge-2x-2"),
 			&game.getAssetManager().getMaterial("wood-planks"),
 			Memory::make_shared<VertexArray>(*game.getRenderContext(),
-				game.getAssetManager().getModel("wedge-2x-2"),
-				GL_STATIC_DRAW));
+			game.getAssetManager().getModel("wedge-2x-2"),
+			GL_STATIC_DRAW),
+			0.4f); // TODO: calculate accurate mass
 }
 
