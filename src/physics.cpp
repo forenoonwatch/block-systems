@@ -7,6 +7,12 @@
 static Quaternion integrateAngularVelocity(const Quaternion& rot,
 		const Vector3f& angularVelocity, float deltaTime);
 
+void Physics::gravitySystem(Game& game, float deltaTime) {
+	game.getECS().view<Physics::Body>().each([&](Physics::Body& body) {
+		Physics::applyForce(body, Physics::GRAVITY);
+	});
+}
+
 void Physics::integrateVelocities(Game& game, float deltaTime) {
 	game.getECS().view<TransformComponent, Physics::Body>().each([&](
 			TransformComponent& tf, Physics::Body& body) {
@@ -24,6 +30,9 @@ void Physics::integrateVelocities(Game& game, float deltaTime) {
 				+ body.velocity * deltaTime);
 		tf.transform.setRotation(integrateAngularVelocity(
 				tf.transform.getRotation(), body.angularVelocity, deltaTime));
+
+		body.force = Vector3f();
+		body.torque = Vector3f();
 	});
 }
 

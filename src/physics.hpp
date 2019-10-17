@@ -35,6 +35,7 @@ namespace Physics {
 	inline void applyImpulse(Body& body, const Vector3f& impulse,
 			const Vector3f& worldPoint);
 
+	void gravitySystem(Game& game, float deltaTime);
 	void integrateVelocities(Game& game, float deltaTime);
 };
 
