@@ -5,7 +5,7 @@
 #include <engine/core/hash-map.hpp>
 
 #include "block.hpp"
-#include "ray-tree-node.hpp"
+#include "block-tree.hpp"
 
 class Game;
 
@@ -33,7 +33,7 @@ class Ship {
 		HashMap<Vector3i, Block, HashBlockPosition> blocks;
 		HashMap<enum BlockInfo::BlockType, ArrayList<Matrix4f>> offsets;
 		HashMap<enum BlockInfo::BlockType, ArrayList<Block*>> offsetIndices;
-		RayTreeNode hitTree;
+		BlockTreeNode blockTree;
 
 		ArrayList<BlockInfo> blockInfo;
 		

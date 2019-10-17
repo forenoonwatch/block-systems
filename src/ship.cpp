@@ -24,7 +24,7 @@ void Ship::addBlock(enum BlockInfo::BlockType type,
 	block.renderIndex = offsets[block.type].size();
 
 	blocks[position] = block;
-	hitTree.addObject(position);
+	blockTree.addObject(position);
 	
 	offsets[block.type].push_back(Math::translate(Matrix4f(1.f),
 			Vector3f(position)) * Math::quatToMat4(rotation));
@@ -52,7 +52,7 @@ void Ship::removeBlock(Block& block) {
 	offsetIndices[block.type].pop_back();
 
 	blocks.erase(block.position);
-	hitTree.removeObject(block.position);
+	blockTree.removeObject(block.position);
 
 	changedBuffers.insert(block.type);
 
@@ -80,7 +80,7 @@ void rayShipIntersection(const Matrix4f& shipTransform, const Ship& ship,
 			Vector3i(0, -1, 0), Vector3i(0, 1, 0), Vector3i(0, 0, -1),
 			Vector3i(0, 0, 1)};
 
-	if (ship.hitTree.intersectsRay(tfOrigin, tfDirection,
+	if (ship.blockTree.intersectsRay(tfOrigin, tfDirection,
 			&blockPosition, hitPosition)) {
 		block = &const_cast<Ship&>(ship).blocks[blockPosition];
 		
