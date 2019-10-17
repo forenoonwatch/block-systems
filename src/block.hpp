@@ -32,17 +32,20 @@ struct BlockInfo {
 			, model(nullptr)
 			, vertexArray(nullptr)
 			, material(nullptr)
-			, mass(0.f) {}
+			, mass(0.f)
+			, volume(0.f) {}
 
 	inline BlockInfo(enum BlockType type, uint32 flags, IndexedModel* model,
 				Material* material,
-				Memory::SharedPointer<VertexArray> vertexArray, float mass)
+				Memory::SharedPointer<VertexArray> vertexArray, float mass,
+				float volume)
 			: type(type)
 			, flags(flags)
 			, model(model)
 			, vertexArray(vertexArray)
 			, material(material)
-			, mass(mass) {}
+			, mass(mass)
+			, volume(volume) {}
 
 	enum BlockType type;
 	uint32 flags;
@@ -52,6 +55,7 @@ struct BlockInfo {
 	Memory::SharedPointer<VertexArray> vertexArray;
 
 	float mass;
+	float volume;
 };
 
 struct Block {
