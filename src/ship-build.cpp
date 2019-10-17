@@ -16,13 +16,6 @@
 #include <engine/rendering/material.hpp>
 
 #include <engine/math/math.hpp>
-#include <engine/math/aabb.hpp>
-
-#include <cfloat>
-
-static void addBlockToShip(Ship& ship, enum BlockInfo::BlockType type,
-		const Vector3i& position, const Quaternion& rotation);
-static void removeBlockFromShip(Ship& ship, Block* block);
 
 void ShipBuildSystem::operator()(Game& game, float deltaTime) { 
 	if (Application::getMousePressed(Input::MOUSE_BUTTON_LEFT)) {
@@ -43,10 +36,10 @@ void ShipBuildSystem::operator()(Game& game, float deltaTime) {
 
 			if (block != nullptr) {
 				if (Application::isKeyDown(Input::KEY_LEFT_SHIFT)) {
-					removeBlockFromShip(ship, block);
+					ship.removeBlock(*block);
 				}
 				else {
-					addBlockToShip(ship, sbi.objectType,
+					ship.addBlock(sbi.objectType,
 							block->position + Vector3i(hitNormal),
 							sbi.rotation);
 				}
@@ -112,86 +105,5 @@ void updateShipBuildInfo(Game& game, float deltaTime) {
 					((int32)sbi.objectType + 1) % BlockInfo::NUM_TYPES);
 		}
 	});
-}
-
-/*static void rayShipIntersection(const Matrix4f& shipTransform,
-		const Ship& ship, const Vector3f& origin, const Vector3f& direction,
-		Block*& block, Vector3f* hitPosition, Vector3f* hitNormal) {
-	const Vector4f tfOrigin(origin, 1.f);
-	const Vector4f tfDirection(direction, 0.f);
-
-	Vector3f intersectPos, intersectNormal;
-	float minDist = FLT_MAX;
-	
-	block = nullptr;
-
-	float p1, p2;
-
-	const Vector3f start(Math::inverse(shipTransform) * tfOrigin);
-	const Vector3f dir(Math::inverse(shipTransform) * tfDirection);
-
-	for (auto& pair : ship.blocks) {
-		const Matrix4f& offset = const_cast<Ship&>(ship)
-				.offsets[pair.second.type][pair.second.renderIndex];
-		const Vector3f p(pair.first);
-		const AABB aabb(p - Vector3f(0.5f, 0.5f, 0.5f),
-				p + Vector3f(0.5f, 0.5f, 0.5f));
-
-		if (aabb.intersectsRay(start, dir, p1, p2)) {
-			intersectPos = Vector3f(shipTransform
-					* Vector4f(start + dir * p1, 1.f));
-			intersectNormal = Vector3f(0.f, 0.f, 1.f);
-			// TODO: calculate intersect normal
-			const float dist = Math::length(origin - intersectPos);
-
-			if (dist < minDist) {
-				minDist = dist;
-
-				block = const_cast<Block*>(&pair.second);
-				*hitPosition = intersectPos;
-				*hitNormal = Vector3f(offset * Vector4f(intersectNormal, 0.f));
-			}
-		}
-	}
-}*/
-
-inline static void addBlockToShip(Ship& ship, enum BlockInfo::BlockType type,
-		const Vector3i& position, const Quaternion& rotation) {
-	Block block;
-	block.type = type;
-	block.position = position;
-	block.rotation = rotation;
-	block.renderIndex = ship.offsets[block.type].size();
-
-	ship.blocks[position] = block;
-	ship.hitTree.addObject(position);
-	
-	ship.offsets[block.type].push_back(Math::translate(Matrix4f(1.f),
-			Vector3f(position)) * Math::quatToMat4(rotation));
-	ship.offsetIndices[block.type].push_back(&ship.blocks[position]);
-
-	ship.blockInfo[block.type].vertexArray->updateBuffer(4,
-			&ship.offsets[block.type][0], ship.offsets[block.type].size()
-			* sizeof(Matrix4f));
-}
-
-inline static void removeBlockFromShip(Ship& ship, Block* block) {
-	Block* back = ship.offsetIndices[block->type].back();
-
-	back->renderIndex = block->renderIndex;
-	
-	ship.offsets[block->type][block->renderIndex] =
-			ship.offsets[block->type].back();
-	ship.offsetIndices[block->type][block->renderIndex] = back;
-
-	ship.offsets[block->type].pop_back();
-	ship.offsetIndices[block->type].pop_back();
-
-	ship.blocks.erase(block->position);
-	ship.hitTree.removeObject(block->position);
-
-	ship.blockInfo[block->type].vertexArray->updateBuffer(4,
-			&ship.offsets[block->type][0], ship.offsets[block->type].size()
-			* sizeof(Matrix4f));
 }
 

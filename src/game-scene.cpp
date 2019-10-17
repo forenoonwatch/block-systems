@@ -138,6 +138,8 @@ void GameScene::load(Game& game) {
 	addUpdateSystem(ShipBuildSystem(cameraEntity));
 	addUpdateSystem(UpdateBuildToolTip(game, cameraEntity));
 	addUpdateSystem(ApplyImpulseSystem(cameraEntity));
+	addUpdateSystem(::shipUpdateMassSystem);
+	addUpdateSystem(::shipUpdateVAOSystem);
 
 	ECS::Entity ship = game.getECS().create();
 	game.getECS().assign<TransformComponent>(ship, Transform());
@@ -156,53 +158,22 @@ void GameScene::load(Game& game) {
 
 	Block block;
 	
-	constexpr const int32 n = 3;
+	constexpr const int32 n = 1;
 
 	for (int32 x = 0; x < n; ++x) {
-		for (int32 y = 0; y < 1; ++y) {
-			for (int32 z = 0; z < 1; ++z) {
+		for (int32 y = 0; y < n; ++y) {
+			for (int32 z = 0; z < n; ++z) {
 				//block.type = (enum BlockInfo::BlockType)((x + y + z)
 				//		% BlockInfo::NUM_TYPES);
 				block.type = BlockInfo::TYPE_BASIC_CUBE;
 				block.position = Vector3i(x, y, z);
 				block.rotation = Quaternion(1.f, 0.f, 0.f, 0.f);
-				block.renderIndex = (uint32)-1;
 
-				shipComponent.blocks[block.position] = block;
-				shipComponent.hitTree.addObject(block.position);
+				shipComponent.addBlock(block.type, block.position,
+						block.rotation);
 			}
 		}
 	}
-
-	for (auto& pair : shipComponent.blocks) {
-		pair.second.renderIndex = shipComponent
-				.offsets[pair.second.type].size();
-		shipComponent.offsets[pair.second.type].push_back(
-				Math::translate(Matrix4f(1.f), Vector3f(pair.first))
-				* Math::quatToMat4(pair.second.rotation));
-		shipComponent.offsetIndices[pair.second.type]
-				.push_back(&pair.second);
-	}
-
-	for (auto& pair : shipComponent.offsets) {
-		shipComponent.blockInfo[pair.first].vertexArray->updateBuffer(4,
-				&pair.second[0], pair.second.size() * sizeof(Matrix4f));
-	}
-
-	float mass, invMass;
-	Vector3f localCenter;
-	Matrix3f inertia;
-	calcMassData(shipComponent, mass, invMass, localCenter, inertia);
-
-	Physics::Body& sb = game.getECS().get<Physics::Body>(ship);
-
-	sb.mass = mass;
-	sb.invMass = invMass;
-	sb.localCenter = localCenter;
-	sb.invInertiaLocal = Math::inverse(inertia);
-
-	//game.getECS().get<TransformComponent>(ship).transform =
-	//		Math::rotate(Matrix4f(1.f), 0.3f, Vector3f(1.f, 1.f, 0.f));
 
 	DEBUG_LOG_TEMP2("Loaded");
 }

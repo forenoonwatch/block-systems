@@ -5,42 +5,63 @@
 
 #include "game-render-context.hpp"
 
+#include "physics.hpp"
+
 #include <engine/game/game.hpp>
 
 #include <engine/rendering/vertex-array.hpp>
 #include <engine/rendering/material.hpp>
 
-inline static void calcBlockTensor(const Vector3f& localPos, float mass,
-		Matrix3f& inertia) {
-	inertia = Matrix3f(mass / 6.f);
-	inertia += (Matrix3f(Math::dot(localPos, localPos))
-			- Math::outerProduct(localPos, localPos)) * mass;
+static Matrix3f calcBlockTensor(const Vector3f& localPos, float mass);
+
+void Ship::addBlock(enum BlockInfo::BlockType type,
+		const Vector3i& position, const Quaternion& rotation) {
+	Block block;
+	block.type = type;
+	block.position = position;
+	block.rotation = rotation;
+
+	block.renderIndex = offsets[block.type].size();
+
+	blocks[position] = block;
+	hitTree.addObject(position);
+	
+	offsets[block.type].push_back(Math::translate(Matrix4f(1.f),
+			Vector3f(position)) * Math::quatToMat4(rotation));
+	offsetIndices[block.type].push_back(&blocks[position]);
+
+	changedBuffers.insert(block.type);
+
+	const float blockMass = blockInfo[block.type].mass;
+
+	totalMass += blockMass;
+	inertiaSum += calcBlockTensor(Vector3f(block.position), blockMass);
+	localCenterSum += Vector3f(block.position) * blockMass;
+	massChanged = true;
 }
 
-void calcMassData(const Ship& ship, float& mass, float& invMass,
-		Vector3f& localCenter, Matrix3f& inertia) {
-	mass = 0.f;
-	invMass = 0.f;
-	localCenter = Vector3f(0.f, 0.f, 0.f);
-	inertia = Matrix3f(0.f);
+void Ship::removeBlock(Block& block) {
+	Block* back = offsetIndices[block.type].back();
+
+	back->renderIndex = block.renderIndex;
 	
-	Matrix3f localInertia;
+	offsets[block.type][block.renderIndex] = offsets[block.type].back();
+	offsetIndices[block.type][block.renderIndex] = back;
 
-	for (auto& pair : ship.blocks) {
-		const float blockMass = ship.blockInfo[pair.second.type].mass;
-		calcBlockTensor(Vector3f(pair.first), blockMass, localInertia);
+	offsets[block.type].pop_back();
+	offsetIndices[block.type].pop_back();
 
-		mass += blockMass;
-		inertia += localInertia;
-		localCenter += Vector3f(pair.first) * blockMass;
-	}
+	blocks.erase(block.position);
+	hitTree.removeObject(block.position);
 
-	if (mass > 0.f) {
-		invMass = 1.f / mass;
-		localCenter *= invMass;
-		inertia -= (Matrix3f(Math::dot(localCenter, localCenter))
-				- Math::outerProduct(localCenter, localCenter)) * mass;
-	}
+	changedBuffers.insert(block.type);
+
+	const float blockMass = blockInfo[block.type].mass;
+
+	totalMass -= blockMass;
+	inertiaSum -= calcBlockTensor(Vector3f(block.position), blockMass);
+	localCenterSum -= Vector3f(block.position) * blockMass;
+	massChanged = true;
 }
 
 void rayShipIntersection(const Matrix4f& shipTransform, const Ship& ship,
@@ -82,6 +103,51 @@ void rayShipIntersection(const Matrix4f& shipTransform, const Ship& ship,
 	}	
 }
 
+void shipUpdateMassSystem(Game& game, float deltaTime) {
+	game.getECS().view<Ship, Physics::Body>().each([&](Ship& ship,
+			Physics::Body& body) {
+		if (ship.massChanged) {
+			ship.massChanged = false;
+
+			body.mass = ship.totalMass;
+
+			if (body.mass > 0.f) {
+				body.invMass = 1.f / body.mass;
+				body.localCenter = ship.localCenterSum * body.invMass;
+				
+				const Matrix3f inertia = ship.inertiaSum
+						- (Matrix3f(Math::dot(body.localCenter,
+							body.localCenter))
+						- Math::outerProduct(body.localCenter,
+							body.localCenter)) * body.mass;
+
+				body.invInertiaLocal = Math::inverse(inertia);
+			}
+			else {
+				body.invMass = 0.f;
+				body.localCenter = Vector3f(0.f, 0.f, 0.f);
+				body.invInertiaLocal = Matrix3f(0.f);
+			}
+		}
+	});
+}
+
+void shipUpdateVAOSystem(Game& game, float deltaTime) {
+	game.getECS().view<Ship>().each([&](Ship& ship) {
+		if (ship.changedBuffers.empty()) {
+			return;
+		}
+
+		for (auto& type : ship.changedBuffers) {
+			ship.blockInfo[type].vertexArray->updateBuffer(4,
+					&ship.offsets[type][0], ship.offsets[type].size()
+					* sizeof(Matrix4f));
+		}
+
+		ship.changedBuffers.clear();
+	});
+}
+
 void shipRenderSystem(Game& game, float deltaTime) {
 	Shader& shader = game.getAssetManager().getShader("ship-shader");
 	GameRenderContext* grc = (GameRenderContext*)game.getRenderContext();
@@ -118,5 +184,10 @@ void shipRenderSystem(Game& game, float deltaTime) {
 					numTransforms);
 		}
 	});
+}
+
+inline static Matrix3f calcBlockTensor(const Vector3f& localPos, float mass) {
+	return Matrix3f(mass / 6.f) + (Matrix3f(Math::dot(localPos, localPos))
+			- Math::outerProduct(localPos, localPos)) * mass;
 }
 

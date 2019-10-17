@@ -1,6 +1,7 @@
 #pragma once
 
 #include <engine/core/array-list.hpp>
+#include <engine/core/hash-set.hpp>
 #include <engine/core/hash-map.hpp>
 
 #include "block.hpp"
@@ -17,21 +18,39 @@ struct HashBlockPosition {
 	}
 };
 
-struct Ship {
-	HashMap<Vector3i, Block, HashBlockPosition> blocks;
-	HashMap<enum BlockInfo::BlockType, ArrayList<Matrix4f>> offsets;
-	HashMap<enum BlockInfo::BlockType, ArrayList<Block*>> offsetIndices;
-	RayTreeNode hitTree;
+class Ship {
+	public:
+		inline Ship()
+				: totalMass(0.f)
+				, localCenterSum(0.f, 0.f, 0.f)
+				, inertiaSum(0.f)
+				, massChanged(false) {}
 
-	ArrayList<BlockInfo> blockInfo;
+		void addBlock(enum BlockInfo::BlockType type,
+				const Vector3i& position, const Quaternion& rotation);
+		void removeBlock(Block& block);
+
+		HashMap<Vector3i, Block, HashBlockPosition> blocks;
+		HashMap<enum BlockInfo::BlockType, ArrayList<Matrix4f>> offsets;
+		HashMap<enum BlockInfo::BlockType, ArrayList<Block*>> offsetIndices;
+		RayTreeNode hitTree;
+
+		ArrayList<BlockInfo> blockInfo;
+		
+		HashSet<enum BlockInfo::BlockType> changedBuffers;
+
+		float totalMass;
+		Vector3f localCenterSum;
+		Matrix3f inertiaSum;
+		bool massChanged;
 };
 
 void rayShipIntersection(const Matrix4f& shipTransform, const Ship& ship,
 		const Vector3f& origin, const Vector3f& direction, Block*& block,
 		Vector3f* hitPosition, Vector3f* hitNormal);
 
-void calcMassData(const Ship& ship, float& mass, float& invMass,
-		Vector3f& localCenter, Matrix3f& inertia);
+void shipUpdateMassSystem(Game& game, float deltaTime);
 
+void shipUpdateVAOSystem(Game& game, float deltaTime);
 void shipRenderSystem(Game& game, float deltaTime);
 

@@ -20,8 +20,6 @@ void Physics::integrateVelocities(Game& game, float deltaTime) {
 		body.velocity += body.force * body.invMass * deltaTime;
 		body.angularVelocity += body.invInertiaWorld * body.torque * deltaTime;
 
-		//body.velocity = Vector3f(); // TODO: remove
-
 		tf.transform.setPosition(tf.transform.getPosition()
 				+ body.velocity * deltaTime);
 		tf.transform.setRotation(integrateAngularVelocity(
