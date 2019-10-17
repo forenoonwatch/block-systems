@@ -9,7 +9,7 @@ static Quaternion integrateAngularVelocity(const Quaternion& rot,
 
 void Physics::gravitySystem(Game& game, float deltaTime) {
 	game.getECS().view<Physics::Body>().each([&](Physics::Body& body) {
-		Physics::applyForce(body, Physics::GRAVITY);
+		body.applyForce(Physics::GRAVITY);
 	});
 }
 
