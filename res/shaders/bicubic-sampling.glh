@@ -1,0 +1,23 @@
+
+vec3 catmullRom(vec3 p0, vec3 p1, vec3 p2, vec3 p3, float weight) {
+	const float weight2 = weight * weight;
+
+	return 0.5 * (p0 * weight * ((2.0 - weight) * weight - 1.0)
+			+ p1 * (weight2 * (3.0 * weight - 5.0) + 2.0)
+			+ p2 * weight * ((4.0 - 3.0 * weight) * weight + 1.0)
+			+ p3 * (weight - 1.0) * weight2);
+}
+
+vec3 textureCubicU(sampler2D samp, vec2 uv00, float texel, float offsetV, float frac) {
+    return catmullRom(texture2D(samp, uv00 + vec2(-texel, offsetV), 0.0).rgb,
+			texture2D(samp, uv00 + vec2(0.0, offsetV), 0.0).rgb,
+			texture2D(samp, uv00 + vec2(texel, offsetV), 0.0).rgb,
+			texture2D(samp, uv00 + vec2(texel * 2.0, offsetV), 0.0).rgb, frac);
+}
+
+vec3 textureBicubic(sampler2D samp, vec2 uv00, float texel, vec2 frac) {
+	return catmullRom(textureCubicU(samp, uv00, texel, -texel, frac.x),
+			textureCubicU(samp, uv00, texel, 0.0, frac.x),
+			textureCubicU(samp, uv00, texel, texel, frac.x),
+			textureCubicU(samp, uv00, texel, texel * 2.0, frac.x), frac.y);
+}

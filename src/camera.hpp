@@ -13,7 +13,7 @@ struct Camera {
 	Matrix4f iView;
 	Matrix4f iViewProjection;
 
-	inline glm::vec3 getLookVector() const { return glm::vec3(view[2]); }
+	inline Vector3f getLookVector() const { return Vector3f(view[2]); }
 
 	template <class Archive>
 	void save(Archive& ar) const {

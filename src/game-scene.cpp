@@ -10,14 +10,18 @@
 
 #include "physics.hpp"
 
+#include "ocean.hpp"
+#include "ocean-projector.hpp"
+
 #include <engine/core/application.hpp>
 #include <engine/math/math.hpp>
 
 static void renderMesh(Game&, float);
 static void renderSkybox(Game&, float);
+static void renderOcean(Game&, float);
 static void toggleFullscreenSystem(Game&, float);
 
-static void initBlockTypes(Game&, ArrayList<BlockInfo>&);
+static void initBlockTypes(Game&);
 
 struct ApplyImpulseSystem {
 	inline ApplyImpulseSystem(ECS::Entity cameraInfo)
@@ -45,7 +49,7 @@ struct ApplyImpulseSystem {
 
 					mousePos = Vector3f(tf.transform.toMatrix()
 							* Vector4f(mousePos, 1.f));
-					Physics::applyImpulse(body, cc.rayDirection, mousePos);
+					body.applyImpulse(cc.rayDirection, mousePos);
 				}
 			});
 		}
@@ -63,15 +67,18 @@ GameScene::GameScene()
 		: Scene() {
 	addUpdateSystem(::firstPersonCameraSystem);
 	addUpdateSystem(::updateCameraSystem);
+	addUpdateSystem(::updateOceanProjector);
 	addUpdateSystem(::toggleFullscreenSystem);
 	addUpdateSystem(::updateShipBuildInfo);
-	addUpdateSystem(Physics::integrateVelocities);
+	addUpdateSystem(Physics::gravitySystem);
 
 	addRenderSystem(::renderMesh);
 
+	addRenderSystem(::updateOceanBuffer);
 	addRenderSystem(GameRenderContext::clear);
 	addRenderSystem(GameRenderContext::flushStaticMeshes);
 	addRenderSystem(::shipRenderSystem);
+	addRenderSystem(::renderOcean);
 	addRenderSystem(GameRenderContext::applyLighting);
 	addRenderSystem(::renderSkybox);
 	addRenderSystem(GameRenderContext::flush);
@@ -102,6 +109,9 @@ void GameScene::load(Game& game) {
 			"./res/wedge-2x-1.obj", hints);
 	game.getAssetManager().loadStaticMesh("wedge-2x-2", "wedge-2x-2",
 			"./res/wedge-2x-2.obj", hints);
+
+	game.getAssetManager().loadStaticMesh("plane", "plane",
+			"./res/plane.obj", hints);
 	
 	game.getAssetManager().loadMaterial("bricks", "./res/bricks.dds",
 			"./res/bricks-normal.dds", "./res/bricks-material.dds");
@@ -114,8 +124,12 @@ void GameScene::load(Game& game) {
 	game.getAssetManager().loadTexture("schlick-brdf",
 			"./res/schlick-brdf.png");
 
+	game.getAssetManager().loadTexture("foam", "./res/foam.jpg");
+
 	game.getAssetManager().loadShader("ship-shader",
 			"./res/shaders/block-deferred.glsl");
+	game.getAssetManager().loadShader("ocean-deferred",
+			"./res/shaders/ocean/ocean-deferred.glsl");
 
 	grc->setDiffuseIBL(game.getAssetManager().getCubeMap("sargasso-diffuse"));
 	grc->setSpecularIBL(game.getAssetManager()
@@ -124,10 +138,10 @@ void GameScene::load(Game& game) {
 
 	/*ECS::Entity e = game.getECS().create();
 	game.getECS().assign<RenderableMesh>(e,
-			&game.getAssetManager().getVertexArray("cube"),
-			&game.getAssetManager().getMaterial("bricks"));
-	game.getECS().assign<TransformComponent>(e,
-			Math::translate(Matrix4f(1.f), Vector3f(0.f, 0.f, -5.f)));*/
+			&game.getAssetManager().getVertexArray("plane"),
+			&game.getAssetManager().getMaterial("bricks"),
+			true);
+	game.getECS().assign<TransformComponent>(e, Transform());*/
 
 	ECS::Entity cameraEntity = game.getECS().create();
 
@@ -135,11 +149,31 @@ void GameScene::load(Game& game) {
 	game.getECS().assign<CameraComponent>(cameraEntity,
 			&((GameRenderContext*)game.getRenderContext())->getCamera());
 
+	game.getECS().assign<OceanProjector>(cameraEntity,
+			((GameRenderContext*)game.getRenderContext())->getCamera(),
+			Matrix4f(1.f));
+
+	Memory::SharedPointer<OceanFFT> oceanFFT = Memory::make_shared<OceanFFT>(
+			*game.getRenderContext(), 256, 1000, true, 6.f);
+
+	oceanFFT->setOceanParams(2.f, Vector2f(1.f, 1.f), 10.f, 0.5f);
+
+	game.getECS().assign<Ocean>(cameraEntity, oceanFFT);
+	initOcean(*game.getRenderContext(),
+			game.getECS().get<Ocean>(cameraEntity), 256);
+
+	float f[] = {1.f, 0.01f, 1.f};
+	game.getECS().get<Ocean>(cameraEntity).oceanDataBuffer->update(f,
+			4 * sizeof(Vector4f), sizeof(f));
+
 	addUpdateSystem(ShipBuildSystem(cameraEntity));
 	addUpdateSystem(UpdateBuildToolTip(game, cameraEntity));
 	addUpdateSystem(ApplyImpulseSystem(cameraEntity));
 	addUpdateSystem(::shipUpdateMassSystem);
 	addUpdateSystem(::shipUpdateVAOSystem);
+	addUpdateSystem(::shipBuoyancySystem);
+
+	addUpdateSystem(Physics::integrateVelocities);
 
 	ECS::Entity ship = game.getECS().create();
 	game.getECS().assign<TransformComponent>(ship, Transform());
@@ -148,17 +182,21 @@ void GameScene::load(Game& game) {
 			Quaternion(1.f, 0.f, 0.f, 0.f));
 
 	game.getECS().assign<Physics::Body>(ship, Vector3f(), Vector3f(),
-			Vector3f(), Vector3f(), Vector3f(), Vector3f(), 1.f, 1.f,
+			Vector3f(), Vector3f(), Vector3f(0.f, -9.81f, 0.f), Vector3f(), 1.f, 1.f,
 			Matrix3f(1.f), Matrix3f(1.f));
 
 	Ship& shipComponent = game.getECS().get<Ship>(ship);
 
-	initBlockTypes(game, shipComponent.blockInfo);
-	initBlockTypes(game, game.getECS().get<ShipBuildInfo>(ship).blockInfo);
+	initBlockTypes(game);
+
+	BlockInfo::initVertexArrays(*game.getRenderContext(),
+			shipComponent.blockArrays);
+	BlockInfo::initVertexArrays(*game.getRenderContext(),
+			game.getECS().get<ShipBuildInfo>(ship).blockArrays);
 
 	Block block;
 	
-	constexpr const int32 n = 1;
+	/*constexpr const int32 n = 1;
 
 	for (int32 x = 0; x < n; ++x) {
 		for (int32 y = 0; y < n; ++y) {
@@ -173,7 +211,20 @@ void GameScene::load(Game& game) {
 						block.rotation);
 			}
 		}
+	}*/
+
+	for (int32 i = 0; i < 5; ++i) {
+		shipComponent.addBlock(BlockInfo::TYPE_BASIC_CUBE,
+				Vector3i(i, 0, 0), Quaternion(1.f, 0.f, 0.f, 0.f));
 	}
+
+	for (int32 i = 1; i <= 2; ++i) {
+		shipComponent.addBlock(BlockInfo::TYPE_BASIC_CUBE,
+				Vector3i(4, 0, i), Quaternion(1.f, 0.f, 0.f, 0.f));
+	}
+
+	game.getECS().get<TransformComponent>(ship)
+			.transform.setPosition(Vector3f(0.f, 20.f, 0.f));
 
 	DEBUG_LOG_TEMP2("Loaded");
 }
@@ -207,6 +258,23 @@ static void renderSkybox(Game& game, float deltaTime) {
 	grc->renderSkybox(grc->getSpecularIBL(), grc->getLinearMipmapSampler());
 }
 
+static void renderOcean(Game& game, float deltaTime) {
+	GameRenderContext* grc = (GameRenderContext*)game.getRenderContext();
+	Shader& oceanShader = game.getAssetManager().getShader("ocean-deferred");
+	Texture& foam = game.getAssetManager().getTexture("foam");
+
+	game.getECS().view<Ocean>().each([&](Ocean& ocean) {
+		oceanShader.setSampler("displacementMap",
+				ocean.oceanFFT->getDisplacement(), grc->getLinearSampler(), 0);
+		oceanShader.setSampler("foldingMap", ocean.oceanFFT->getFoldingMap(),
+				grc->getLinearSampler(), 1);
+		oceanShader.setSampler("foam", foam, grc->getLinearSampler(), 2);
+
+		grc->draw(grc->getTarget(), oceanShader, *ocean.gridArray,
+				GL_TRIANGLES);
+	});
+}
+
 static void toggleFullscreenSystem(Game& game, float deltaTime) {
 	if (Application::getKeyPressed(Input::KEY_M)) {
 		if (game.getWindow().isFullscreen()) {
@@ -224,68 +292,55 @@ static void toggleFullscreenSystem(Game& game, float deltaTime) {
 		game.getWindow().resize(1200, 800);
 		game.getWindow().moveToCenter();
 	}
+	else if (Application::getKeyPressed(Input::KEY_B)) {
+		game.getECS().view<TransformComponent, Ship>().each([](TransformComponent& tfc,
+				Ship& ship) {
+			tfc.transform.setPosition(Vector3f(0.f, 10.f, 0.f));
+		});
+	}
 }
 
-inline static void initBlockTypes(Game& game,
-		ArrayList<BlockInfo>& blockInfo) {
-	blockInfo.emplace_back(BlockInfo::TYPE_BASIC_CUBE,
+inline static void initBlockTypes(Game& game) {
+	BlockInfo::registerType(BlockInfo::TYPE_BASIC_CUBE,
 			BlockInfo::FLAG_OCCLUDES,
 			&game.getAssetManager().getModel("cube"),
 			&game.getAssetManager().getMaterial("wood-planks"),
-			Memory::make_shared<VertexArray>(*game.getRenderContext(),
-			game.getAssetManager().getModel("cube"), GL_STATIC_DRAW),
-			1.f,
+			0.8f,
 			1.f);
-	blockInfo.emplace_back(BlockInfo::TYPE_BASIC_TETRA,
+	BlockInfo::registerType(BlockInfo::TYPE_BASIC_TETRA,
 			0,
 			&game.getAssetManager().getModel("tetrahedron"),
 			&game.getAssetManager().getMaterial("wood-planks"),
-			Memory::make_shared<VertexArray>(*game.getRenderContext(),
-			game.getAssetManager().getModel("tetrahedron"),
-			GL_STATIC_DRAW),
 			0.2f,
 			0.2f);
-	blockInfo.emplace_back(BlockInfo::TYPE_BASIC_PYRAMID,
+	BlockInfo::registerType(BlockInfo::TYPE_BASIC_PYRAMID,
 			0,
 			&game.getAssetManager().getModel("pyramid"),
 			&game.getAssetManager().getMaterial("wood-planks"),
-			Memory::make_shared<VertexArray>(*game.getRenderContext(),
-			game.getAssetManager().getModel("pyramid"), GL_STATIC_DRAW),
 			0.4f,
 			0.4f); // TODO: double check this mass
-	blockInfo.emplace_back(BlockInfo::TYPE_BASIC_WEDGE,
+	BlockInfo::registerType(BlockInfo::TYPE_BASIC_WEDGE,
 			0,
 			&game.getAssetManager().getModel("wedge"),
 			&game.getAssetManager().getMaterial("wood-planks"),
-			Memory::make_shared<VertexArray>(*game.getRenderContext(),
-			game.getAssetManager().getModel("wedge"), GL_STATIC_DRAW),
 			0.5f,
 			0.5f);
-	blockInfo.emplace_back(BlockInfo::TYPE_BASIC_FIVE_SIXTH,
+	BlockInfo::registerType(BlockInfo::TYPE_BASIC_FIVE_SIXTH,
 			0,
 			&game.getAssetManager().getModel("five-sixths-block"),
 			&game.getAssetManager().getMaterial("wood-planks"),
-			Memory::make_shared<VertexArray>(*game.getRenderContext(),
-			game.getAssetManager().getModel("five-sixths-block"),
-			GL_STATIC_DRAW),
 			0.8f,
 			0.8f);
-	blockInfo.emplace_back(BlockInfo::TYPE_BASIC_WEDGE_2X1,
+	BlockInfo::registerType(BlockInfo::TYPE_BASIC_WEDGE_2X1,
 			0,
 			&game.getAssetManager().getModel("wedge-2x-1"),
 			&game.getAssetManager().getMaterial("wood-planks"),
-			Memory::make_shared<VertexArray>(*game.getRenderContext(),
-			game.getAssetManager().getModel("wedge-2x-1"),
-			GL_STATIC_DRAW),
 			0.6f,
 			0.6f); // TODO: calculate accurate mass
-	blockInfo.emplace_back(BlockInfo::TYPE_BASIC_WEDGE_2X1,
+	BlockInfo::registerType(BlockInfo::TYPE_BASIC_WEDGE_2X1,
 			0,
 			&game.getAssetManager().getModel("wedge-2x-2"),
 			&game.getAssetManager().getMaterial("wood-planks"),
-			Memory::make_shared<VertexArray>(*game.getRenderContext(),
-			game.getAssetManager().getModel("wedge-2x-2"),
-			GL_STATIC_DRAW),
 			0.4f,
 			0.4f); // TODO: calculate accurate mass
 }
