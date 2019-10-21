@@ -83,8 +83,8 @@ void UpdateBuildToolTip::operator()(Game& game, float deltaTime) {
 			tf.transform.setRotation(Math::mat4ToQuat(mat));
 		}
 
-		rm.vertexArray = sbi.blockInfo[sbi.objectType].vertexArray.get();
-		rm.material = sbi.blockInfo[sbi.objectType].material;
+		rm.vertexArray = sbi.blockArrays[sbi.objectType].get();
+		rm.material = BlockInfo::getInfo(sbi.objectType).material;
 	});
 }
 

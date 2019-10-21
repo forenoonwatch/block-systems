@@ -1,5 +1,6 @@
 #pragma once
 
+#include <engine/core/memory.hpp>
 #include <engine/core/array-list.hpp>
 #include <engine/core/hash-set.hpp>
 #include <engine/core/hash-map.hpp>
@@ -35,7 +36,7 @@ class Ship {
 		HashMap<enum BlockInfo::BlockType, ArrayList<Block*>> offsetIndices;
 		BlockTreeNode blockTree;
 
-		ArrayList<BlockInfo> blockInfo;
+		ArrayList<Memory::SharedPointer<VertexArray>> blockArrays;
 		
 		HashSet<enum BlockInfo::BlockType> changedBuffers;
 
@@ -48,6 +49,8 @@ class Ship {
 void rayShipIntersection(const Matrix4f& shipTransform, const Ship& ship,
 		const Vector3f& origin, const Vector3f& direction, Block*& block,
 		Vector3f* hitPosition, Vector3f* hitNormal);
+
+void shipBuoyancySystem(Game& game, float deltaTime);
 
 void shipUpdateMassSystem(Game& game, float deltaTime);
 

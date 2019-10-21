@@ -1,5 +1,6 @@
 #pragma once
 
+#include <engine/core/memory.hpp>
 #include <engine/core/array-list.hpp>
 
 #include <engine/ecs/ecs.hpp>
@@ -11,7 +12,7 @@ class Game;
 struct ShipBuildInfo {
 	enum BlockInfo::BlockType objectType;
 	Quaternion rotation;
-	ArrayList<BlockInfo> blockInfo;
+	ArrayList<Memory::SharedPointer<VertexArray>> blockArrays;
 };
 
 class ShipBuildSystem {

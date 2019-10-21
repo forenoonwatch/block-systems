@@ -7,10 +7,14 @@
 
 #include "physics.hpp"
 
+#include "ocean.hpp"
+
 #include <engine/game/game.hpp>
 
 #include <engine/rendering/vertex-array.hpp>
 #include <engine/rendering/material.hpp>
+
+#include <engine/math/aabb.hpp>
 
 static Matrix3f calcBlockTensor(const Vector3f& localPos, float mass);
 
@@ -24,7 +28,7 @@ void Ship::addBlock(enum BlockInfo::BlockType type,
 	block.renderIndex = offsets[block.type].size();
 
 	blocks[position] = block;
-	blockTree.addObject(position);
+	blockTree.add(blocks[position]);
 	
 	offsets[block.type].push_back(Math::translate(Matrix4f(1.f),
 			Vector3f(position)) * Math::quatToMat4(rotation));
@@ -32,7 +36,7 @@ void Ship::addBlock(enum BlockInfo::BlockType type,
 
 	changedBuffers.insert(block.type);
 
-	const float blockMass = blockInfo[block.type].mass;
+	const float blockMass = BlockInfo::getInfo(block.type).mass;
 
 	totalMass += blockMass;
 	inertiaSum += calcBlockTensor(Vector3f(block.position), blockMass);
@@ -52,11 +56,11 @@ void Ship::removeBlock(Block& block) {
 	offsetIndices[block.type].pop_back();
 
 	blocks.erase(block.position);
-	blockTree.removeObject(block.position);
+	blockTree.remove(block);
 
 	changedBuffers.insert(block.type);
 
-	const float blockMass = blockInfo[block.type].mass;
+	const float blockMass = BlockInfo::getInfo(block.type).mass;
 
 	totalMass -= blockMass;
 	inertiaSum -= calcBlockTensor(Vector3f(block.position), blockMass);
@@ -103,6 +107,69 @@ void rayShipIntersection(const Matrix4f& shipTransform, const Ship& ship,
 	}	
 }
 
+void shipBuoyancySystem(Game& game, float deltaTime) {
+	game.getECS().view<TransformComponent, Ship, Physics::Body>().each([&](
+			TransformComponent& tf, Ship& ship, Physics::Body& body) {
+		const Vector3f pWorld(0.f, 0.f, 0.f);
+		const Vector3f nWorld(0.f, 1.f, 0.f);
+
+		const Matrix4f tfi = tf.transform.inverse();
+		const Vector3f p(tfi * Vector4f(pWorld, 1.f));
+		const Vector3f n(tfi * Vector4f(nWorld, 0.f));
+
+		for (auto& pair : ship.blocks) {
+			const Vector3f pp(pair.first);
+			const AABB box(pp - Vector3f(0.5f, 0.5f, 0.5f),
+					pp + Vector3f(0.5f, 0.5f, 0.5f));
+
+			float r, dPPP;
+
+			if (box.belowPlane(p, n, r, dPPP)) {
+				const float mass = BlockInfo::getInfo(pair.second.type).mass;
+				const float totalV =
+						BlockInfo::getInfo(pair.second.type).volume;
+				
+				Vector3f cob;
+				float submergedV;
+
+				if (r - dPPP < r + r) {
+					const IndexedModel& model =
+							*BlockInfo::getInfo(pair.second.type).model;
+
+					submergedV = model.calcSubmergedVolume(p - pp, n, cob);
+					cob += pp;
+				}
+				else {
+					cob = pp;
+					submergedV = totalV;
+				}
+				
+				cob = Vector3f(tf.transform.toMatrix() * Vector4f(cob, 1.f));
+				float partialMass = mass * submergedV / totalV;
+				
+				Vector3f rc = cob - body.worldCenter;
+
+				Vector3f buoyantForce = nWorld * (-Physics::GRAVITY 
+							* submergedV * Ocean::DENSITY);
+
+				Vector3f vc = body.velocity
+						+ Math::cross(body.angularVelocity, rc);
+				Vector3f dragForce = (partialMass * Ocean::LINEAR_DRAG)
+						* (Ocean::VELOCITY - vc);
+
+				Vector3f totalForce = buoyantForce + dragForce;
+
+				body.force += totalForce;
+				body.torque += Math::cross(rc, totalForce);
+
+				// drag torque
+				body.torque += (-partialMass * Ocean::ANGULAR_DRAG)
+						* body.angularVelocity;
+			}
+		}
+	});
+}
+
 void shipUpdateMassSystem(Game& game, float deltaTime) {
 	game.getECS().view<Ship, Physics::Body>().each([&](Ship& ship,
 			Physics::Body& body) {
@@ -139,7 +206,7 @@ void shipUpdateVAOSystem(Game& game, float deltaTime) {
 		}
 
 		for (auto& type : ship.changedBuffers) {
-			ship.blockInfo[type].vertexArray->updateBuffer(4,
+			ship.blockArrays[type]->updateBuffer(4,
 					&ship.offsets[type][0], ship.offsets[type].size()
 					* sizeof(Matrix4f));
 		}
@@ -166,7 +233,7 @@ void shipRenderSystem(Game& game, float deltaTime) {
 				continue;
 			}
 
-			Material* material = ship.blockInfo[pair.first].material;
+			Material* material = BlockInfo::getInfo(pair.first).material;
 
 			if (material != currentMaterial) {
 				currentMaterial = material;
@@ -180,7 +247,7 @@ void shipRenderSystem(Game& game, float deltaTime) {
 			}
 
 			grc->draw(grc->getTarget(), shader,
-					*ship.blockInfo[pair.first].vertexArray, GL_TRIANGLES,
+					*ship.blockArrays[pair.first], GL_TRIANGLES,
 					numTransforms);
 		}
 	});
