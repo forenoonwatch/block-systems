@@ -5,6 +5,8 @@
 
 #include <engine/math/aabb.hpp>
 
+class Block;
+
 class BlockTreeNode {
 	public:
 		static constexpr const uint32 MAX_DEPTH = 5;
@@ -17,8 +19,16 @@ class BlockTreeNode {
 		bool intersectsRay(const Vector3f& origin, const Vector3f& direction,
 				Vector3i* intersectCoord, Vector3f* intersectPos) const;
 
-		bool addObject(const Vector3i& coord);
-		bool removeObject(const Vector3i& coord);
+		bool belowPlane(const Vector3f& position, const Vector3f& normal,
+				float& volumeBelow, Vector3f& centerSumBelow,
+				float& numBlocksBelow) const;
+
+		bool add(const Block& block);
+		bool remove(const Block& block);
+
+		inline float getTotalVolume() const { return totalVolume; }
+		inline float getTotalBlocks() const { return totalBlocks; }
+		inline const Vector3f& getCenterSum() const { return centerSum; }
 
 		~BlockTreeNode();
 	private:
@@ -33,6 +43,14 @@ class BlockTreeNode {
 
 		bool limitReached;
 
-		ArrayList<Vector3i> coords;
+		float totalVolume;
+		float totalBlocks;
+		Vector3f centerSum;
+
+		ArrayList<const Block*> blocks;
+
+		bool childrenBelowPlane(const Vector3f& position,
+				const Vector3f& normal, float& volumeBelow,
+				Vector3f& centerSumBelow, float& numBlocksBelow) const;
 };
 
