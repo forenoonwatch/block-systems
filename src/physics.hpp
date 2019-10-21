@@ -20,6 +20,8 @@ namespace Physics {
 			inline void applyImpulse(const Vector3f& impulse,
 					const Vector3f& worldPoint);
 
+			inline Vector3f getVelocityAt(const Vector3f& worldPoint) const;
+
 			Vector3f localCenter;
 			Vector3f worldCenter;
 

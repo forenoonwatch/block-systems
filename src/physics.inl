@@ -24,3 +24,8 @@ inline void Physics::Body::applyImpulse(const Vector3f& impulse,
 		* Math::cross(worldPoint - worldCenter, impulse);
 }
 
+inline Vector3f Physics::Body::getVelocityAt(
+		const Vector3f& worldPoint) const {
+	return velocity + Math::cross(angularVelocity, worldPoint - worldCenter);
+}
+
