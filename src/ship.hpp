@@ -22,7 +22,8 @@ struct HashBlockPosition {
 class Ship {
 	public:
 		inline Ship()
-				: totalMass(0.f)
+				: blockTree(5, 4)
+				, totalMass(0.f)
 				, localCenterSum(0.f, 0.f, 0.f)
 				, inertiaSum(0.f)
 				, massChanged(false) {}
@@ -34,7 +35,8 @@ class Ship {
 		HashMap<Vector3i, Block, HashBlockPosition> blocks;
 		HashMap<enum BlockInfo::BlockType, ArrayList<Matrix4f>> offsets;
 		HashMap<enum BlockInfo::BlockType, ArrayList<Block*>> offsetIndices;
-		BlockTreeNode blockTree;
+		
+		BlockTree blockTree;
 
 		ArrayList<Memory::SharedPointer<VertexArray>> blockArrays;
 		

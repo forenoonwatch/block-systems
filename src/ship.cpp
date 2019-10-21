@@ -117,7 +117,9 @@ void shipBuoyancySystem(Game& game, float deltaTime) {
 		const Vector3f p(tfi * Vector4f(pWorld, 1.f));
 		const Vector3f n(tfi * Vector4f(nWorld, 0.f));
 
-		for (auto& pair : ship.blocks) {
+		float totalMassBelow = 0.f;
+		
+		/*for (auto& pair : ship.blocks) {
 			const Vector3f pp(pair.first);
 			const AABB box(pp - Vector3f(0.5f, 0.5f, 0.5f),
 					pp + Vector3f(0.5f, 0.5f, 0.5f));
@@ -137,7 +139,11 @@ void shipBuoyancySystem(Game& game, float deltaTime) {
 							*BlockInfo::getInfo(pair.second.type).model;
 
 					submergedV = model.calcSubmergedVolume(p - pp, n, cob);
-					cob += pp;
+
+					if (submergedV != 0.f) {
+						cob /= submergedV;
+						cob += pp;
+					}
 				}
 				else {
 					cob = pp;
@@ -147,6 +153,8 @@ void shipBuoyancySystem(Game& game, float deltaTime) {
 				cob = Vector3f(tf.transform.toMatrix() * Vector4f(cob, 1.f));
 				float partialMass = mass * submergedV / totalV;
 				
+				totalMassBelow += partialMass;
+
 				Vector3f rc = cob - body.worldCenter;
 
 				Vector3f buoyantForce = nWorld * (-Physics::GRAVITY 
@@ -166,7 +174,39 @@ void shipBuoyancySystem(Game& game, float deltaTime) {
 				body.torque += (-partialMass * Ocean::ANGULAR_DRAG)
 						* body.angularVelocity;
 			}
+		}*/
+
+		Vector3f cob;
+		float submergedV, submergedM;
+
+		if (ship.blockTree.calcSubmergedVolume(p, n, cob, submergedV,
+					submergedM)) {
+			cob = Vector3f(tf.transform.toMatrix() * Vector4f(cob, 1.f));
+			float partialMass = submergedM;//mass * submergedV / totalV;
+
+			totalMassBelow += partialMass;
+			
+			Vector3f rc = cob - body.worldCenter;
+
+			Vector3f buoyantForce = nWorld * (-Physics::GRAVITY 
+						* submergedV * Ocean::DENSITY);
+
+			Vector3f vc = body.velocity
+					+ Math::cross(body.angularVelocity, rc);
+			Vector3f dragForce = (partialMass * Ocean::LINEAR_DRAG)
+					* (Ocean::VELOCITY - vc);
+
+			Vector3f totalForce = buoyantForce + dragForce;
+
+			body.force += totalForce;
+			body.torque += Math::cross(rc, totalForce);
+
+			// drag torque
+			body.torque += (-partialMass * Ocean::ANGULAR_DRAG)
+					* body.angularVelocity;
 		}
+
+		DEBUG_LOG_TEMP("%.2f", totalMassBelow);
 	});
 }
 

@@ -2,17 +2,24 @@
 
 #include "block.hpp"
 
+#include <engine/math/math.hpp>
+
+#include <engine/rendering/indexed-model.hpp>
+
 #include <cfloat>
 
 BlockTreeNode::BlockTreeNode(const Vector3f& minExtents,
-			const Vector3f& maxExtents, uint32 level, BlockTreeNode* parent)
+			const Vector3f& maxExtents, uint32 maxDepth, uint32 maxObjects,
+			uint32 level, BlockTreeNode* parent)
 		: aabb(minExtents, maxExtents)
 		, level(level)
+		, maxDepth(maxDepth)
+		, maxObjects(maxObjects)
 		, parent(parent)
 		, children{0}
 		, limitReached(false)
 		, totalVolume(0.f)
-		, totalBlocks(0.f)
+		, totalMass(0.f)
 		, centerSum(0.f, 0.f, 0.f) {
 	uint32 i = 0;
 
@@ -93,19 +100,19 @@ bool BlockTreeNode::intersectsRay(const Vector3f& origin,
 }
 
 bool BlockTreeNode::belowPlane(const Vector3f& position,
-		const Vector3f& normal, float& volumeBelow,
-		Vector3f& centerSumBelow, float& numBlocksBelow) const {
+		const Vector3f& normal, Vector3f& centerSumBelow, float& volumeBelow,
+		float& massBelow) const {
 	float r, s;
 
 	if (aabb.belowPlane(position, normal, r, s)) {
-		if (r - s < r + r) {
-			return childrenBelowPlane(position, normal, volumeBelow,
-					centerSumBelow, numBlocksBelow);
+		if (s > -r) {
+			return childrenBelowPlane(position, normal, centerSumBelow,
+					volumeBelow, massBelow);
 		}
 		else {
 			volumeBelow += totalVolume;
+			massBelow += totalMass;
 			centerSumBelow += centerSum;
-			numBlocksBelow += totalBlocks;
 
 			return true;
 		}
@@ -115,36 +122,28 @@ bool BlockTreeNode::belowPlane(const Vector3f& position,
 }
 
 bool BlockTreeNode::add(const Block& block) {
-	const AABB blkBox(Vector3f(block.position)
-			- Vector3f(0.5f, 0.5f, 0.5f),
-			Vector3f(block.position) + Vector3f(0.5f, 0.5f, 0.5f));
-	const AABB olap = aabb.overlap(blkBox);
+	if (!aabb.contains(Vector3f(block.position))) {
+		return false;
+	}
 
-	const float containedVolume = olap.getVolume()
-			* BlockInfo::getInfo(block.type).volume;
-
-	totalVolume += containedVolume;
-	centerSum += olap.getCenter();
-	totalBlocks += olap.getVolume();
+	totalVolume += BlockInfo::getInfo(block.type).volume;
+	totalMass += BlockInfo::getInfo(block.type).mass;
+	centerSum += Vector3f(block.position);
 
 	if (!limitReached) {
-		blocks.push_back(&block); // TODO: account for mass change
+		blocks.push_back(&block);
 
-		if (blocks.size() >= MAX_OBJECTS && level < MAX_DEPTH) {
+		if (blocks.size() >= maxObjects && level < maxDepth) {
 			limitReached = true;
 
 			for (auto* blk : blocks) {
-				const Vector3f p(blk->position);
-				const AABB box(p - Vector3f(0.5f, 0.5f, 0.5f),
-						p + Vector3f(0.5f, 0.5f, 0.5f));
-
 				for (uint32 i = 0; i < 8; ++i) {
-					if (childAABBs[i].intersects(box)) {
+					if (childAABBs[i].contains(Vector3f(blk->position))) {
 						if (children[i] == nullptr) {
 							children[i] = new BlockTreeNode(
 									childAABBs[i].getMinExtents(),
 									childAABBs[i].getMaxExtents(),
-									level + 1, this);
+									maxDepth, maxObjects, level + 1, this);
 						}
 
 						children[i]->add(*blk);
@@ -158,25 +157,18 @@ bool BlockTreeNode::add(const Block& block) {
 		return true;
 	}
 	else {
-		const Vector3f p(block.position);
-		const AABB box(p - Vector3f(0.5f, 0.5f, 0.5f),
-						p + Vector3f(0.5f, 0.5f, 0.5f));
-
-		bool added = false;
-
 		for (uint32 i = 0; i < 8; ++i) {
-			if (childAABBs[i].intersects(box)) {
+			if (childAABBs[i].contains(Vector3f(block.position))) {
 				if (children[i] == nullptr) {
 					children[i] = new BlockTreeNode(
 							childAABBs[i].getMinExtents(),
-							childAABBs[i].getMaxExtents(), level + 1, this);
+							childAABBs[i].getMaxExtents(), maxDepth,
+							maxObjects, level + 1, this);
 				}
 
-				added |= children[i]->add(block);
+				return children[i]->add(block);
 			}
 		}
-
-		return added;
 	}
 
 	return false;
@@ -186,19 +178,17 @@ bool BlockTreeNode::remove(const Block& block) {
 	bool removed = false;
 
 	if (limitReached) {
-		const Vector3f p(block.position);
-		const AABB box(p - Vector3f(0.5f, 0.5f, 0.5f),
-				p + Vector3f(0.5f, 0.5f, 0.5f));
-
 		for (uint32 i = 0; i < 8; ++i) {
-			if (children[i] != nullptr && childAABBs[i].intersects(box)) {
-				removed |= children[i]->remove(block);
+			if (children[i] != nullptr
+					&& childAABBs[i].contains(Vector3f(block.position))) {
+				removed = children[i]->remove(block);
+				break;
 			}
 		}
 	}
 	else {
 		for (uint32 i = 0; i < blocks.size(); ++i) {
-			if (blocks[i]->position == block.position) { // TODO: account for mass change
+			if (blocks[i]->position == block.position) {
 				blocks[i] = blocks.back();
 				blocks.pop_back();
 
@@ -209,17 +199,9 @@ bool BlockTreeNode::remove(const Block& block) {
 	}
 
 	if (removed) {
-		const AABB blkBox(Vector3f(block.position)
-				- Vector3f(0.5f, 0.5f, 0.5f),
-				Vector3f(block.position) + Vector3f(0.5f, 0.5f, 0.5f));
-		const AABB olap = aabb.overlap(blkBox);
-
-		const float containedVolume = olap.getVolume()
-				* BlockInfo::getInfo(block.type).volume;
-
-		totalVolume -= containedVolume;
-		centerSum -= olap.getCenter();
-		totalBlocks -= olap.getVolume();
+		totalVolume -= BlockInfo::getInfo(block.type).volume;
+		totalMass -= BlockInfo::getInfo(block.type).mass;
+		centerSum -= Vector3f(block.position);
 	}
 
 	return removed;
@@ -234,15 +216,15 @@ BlockTreeNode::~BlockTreeNode() {
 }
 
 inline bool BlockTreeNode::childrenBelowPlane(const Vector3f& position,
-		const Vector3f& normal, float& volumeBelow,
-		Vector3f& centerSumBelow, float& numBlocksBelow) const {
+		const Vector3f& normal, Vector3f& centerSumBelow, float& volumeBelow,
+		float& massBelow) const {
 	bool below = false;
 
 	if (limitReached) {
 		for (uint32 i = 0; i < 8; ++i) {
-			if (children[i] != nullptr) {
-				below |= children[i]->belowPlane(position, normal,
-						volumeBelow, centerSumBelow, numBlocksBelow);
+			if (children[i] != nullptr && children[i]->belowPlane(position,
+					normal, centerSumBelow, volumeBelow, massBelow)) {
+				below = true;
 			}
 		}
 
@@ -256,29 +238,62 @@ inline bool BlockTreeNode::childrenBelowPlane(const Vector3f& position,
 		AABB box(p - Vector3f(0.5f, 0.5f, 0.5f),
 				p + Vector3f(0.5f, 0.5f, 0.5f));
 
-		box = aabb.overlap(box);
-
 		if (box.belowPlane(position, normal, r, s)) {
-			const float submerged = (r - s) / (r + r);
+			//const float submerged = (r - s) / (r + r);
 
-			if (submerged < 1.f) {
-				volumeBelow += submerged * BlockInfo::getInfo(blk->type).volume
-						* box.getVolume();
-				centerSumBelow += box.getCenter() + normal * ((-r * submerged)
-						- s);
+			if (s > -r) {
+				const IndexedModel& model =
+						*BlockInfo::getInfo(blk->type).model;
+
+				Vector3f cSum;
+				float submergedV = model.calcSubmergedVolume(position - p,
+						normal, cSum);
+				float partialMass = BlockInfo::getInfo(blk->type).mass
+						* submergedV / BlockInfo::getInfo(blk->type).volume;
+
+				cSum += p * submergedV;
+				
+				volumeBelow += submergedV;
+				massBelow += partialMass;
+				centerSumBelow += cSum;
 			}
 			else {
-				volumeBelow += BlockInfo::getInfo(blk->type).volume
-						* box.getVolume();
+				volumeBelow += BlockInfo::getInfo(blk->type).volume;
+				massBelow += BlockInfo::getInfo(blk->type).mass;
 				centerSumBelow += box.getCenter();
 			}
-				
-			numBlocksBelow += box.getVolume();
 			
 			below = true;
 		}
 	}
 
 	return below;
+}
+
+BlockTree::BlockTree(uint32 maxDepth, uint32 bplIn)
+		: blocksPerLength((uint32)Math::pow(2, maxDepth) * bplIn)
+		, maxDepth(maxDepth)
+		, maxObjects(bplIn * bplIn * bplIn)
+		, root(-Vector3f(blocksPerLength, blocksPerLength, blocksPerLength)
+				- Vector3f(0.5f, 0.5f, 0.5f),
+				Vector3f(blocksPerLength, blocksPerLength, blocksPerLength)
+				- Vector3f(0.5f, 0.5f, 0.5f), maxDepth, maxObjects) {
+}
+
+bool BlockTree::calcSubmergedVolume(const Vector3f& planePosition,
+		const Vector3f& planeNormal, Vector3f& centroid,
+		float& submergedVolume, float& submergedMass) const {
+	submergedVolume = 0.f;
+	submergedMass = 0.f;
+	centroid = Vector3f(0.f, 0.f, 0.f);
+
+	if (!root.belowPlane(planePosition, planeNormal, centroid,
+			submergedVolume, submergedMass) || submergedVolume == 0.f) {
+		return false;
+	}
+
+	centroid /= submergedVolume;
+
+	return true;
 }
 
