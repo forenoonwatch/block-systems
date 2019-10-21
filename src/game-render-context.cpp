@@ -33,7 +33,8 @@ GameRenderContext::GameRenderContext(uint32 width, uint32 height,
 				+ 2 * sizeof(float), GL_DYNAMIC_DRAW, 1)
 		
 		, nearestSampler(*((RenderContext*)this), GL_NEAREST, GL_NEAREST)
-		, linearSampler(*((RenderContext*)this), GL_LINEAR, GL_LINEAR)
+		, linearSampler(*((RenderContext*)this), GL_LINEAR, GL_LINEAR,
+				GL_REPEAT, GL_REPEAT)
 		, linearMipmapSampler(*((RenderContext*)this),
 				GL_LINEAR_MIPMAP_LINEAR, GL_LINEAR_MIPMAP_LINEAR)
 		
