@@ -6,6 +6,7 @@
 #include <engine/math/aabb.hpp>
 
 class Block;
+class BlockTree;
 
 class BlockTreeNode {
 	public:
@@ -56,5 +57,7 @@ class BlockTreeNode {
 		bool childrenBelowPlane(const Vector3f& position,
 				const Vector3f& normal, Vector3f& centerSumBelow,
 				float& volumeBelow, float& massBelow) const;
+
+		friend class BlockTree;
 };
 

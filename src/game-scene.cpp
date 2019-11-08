@@ -196,7 +196,7 @@ void GameScene::load(Game& game) {
 
 	Block block;
 	
-	/*constexpr const int32 n = 1;
+	constexpr const int32 n = 50;
 
 	for (int32 x = 0; x < n; ++x) {
 		for (int32 y = 0; y < n; ++y) {
@@ -211,17 +211,17 @@ void GameScene::load(Game& game) {
 						block.rotation);
 			}
 		}
-	}*/
+	}
 
-	for (int32 i = 0; i < 5; ++i) {
+	/*for (int32 i = 0; i < 5; ++i) {
 		shipComponent.addBlock(BlockInfo::TYPE_BASIC_CUBE,
-				Vector3i(i, 0, 0), Quaternion(1.f, 0.f, 0.f, 0.f));
+				Vector3i(0, i, 0), Quaternion(1.f, 0.f, 0.f, 0.f));
 	}
 
 	for (int32 i = 1; i <= 2; ++i) {
 		shipComponent.addBlock(BlockInfo::TYPE_BASIC_CUBE,
-				Vector3i(4, 0, i), Quaternion(1.f, 0.f, 0.f, 0.f));
-	}
+				Vector3i(i, 4, 0), Quaternion(1.f, 0.f, 0.f, 0.f));
+	}*/
 
 	game.getECS().get<TransformComponent>(ship)
 			.transform.setPosition(Vector3f(0.f, 20.f, 0.f));
@@ -293,9 +293,10 @@ static void toggleFullscreenSystem(Game& game, float deltaTime) {
 		game.getWindow().moveToCenter();
 	}
 	else if (Application::getKeyPressed(Input::KEY_B)) {
-		game.getECS().view<TransformComponent, Ship>().each([](TransformComponent& tfc,
-				Ship& ship) {
+		game.getECS().view<TransformComponent, Ship>().each([](
+				TransformComponent& tfc, Ship& ship) {
 			tfc.transform.setPosition(Vector3f(0.f, 10.f, 0.f));
+			tfc.transform.setRotation(Quaternion(1.f, 0.f, 0.f, 0.f));
 		});
 	}
 }
@@ -305,7 +306,7 @@ inline static void initBlockTypes(Game& game) {
 			BlockInfo::FLAG_OCCLUDES,
 			&game.getAssetManager().getModel("cube"),
 			&game.getAssetManager().getMaterial("wood-planks"),
-			0.8f,
+			0.5f,//0.8f,
 			1.f);
 	BlockInfo::registerType(BlockInfo::TYPE_BASIC_TETRA,
 			0,

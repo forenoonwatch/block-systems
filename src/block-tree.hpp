@@ -1,6 +1,9 @@
 #pragma once
 
 #include "block-tree-node.hpp"
+#include "physics.hpp"
+
+class Transform;
 
 class BlockTree {
 	public:
@@ -14,6 +17,10 @@ class BlockTree {
 				const Vector3f& planeNormal, Vector3f& centroid,
 				float& submergedVolume, float& submergedMass) const;
 
+		void applyBuoyantForce(Physics::Body& body, Transform& transform,
+				const Vector3f& planePosition,
+				const Vector3f& planeNormal) const;
+
 		inline bool add(const Block& block) { return root.add(block); }
 		inline bool remove(const Block& block) { return root.remove(block); }
 
@@ -26,6 +33,21 @@ class BlockTree {
 		uint32 maxObjects;
 
 		BlockTreeNode root;
+
+		static void applyBuoyancyToNode(const BlockTreeNode* node,
+				Physics::Body& body, Transform& transform,
+				const Vector3f& pLocal, const Vector3f& nLocal,
+				Vector3f& centroidSum, float& volumeSum, float& massSum,
+				const Vector3f& localCenter,
+				const Vector3f& localVelocity, const Vector3f& localAngularVelocity,
+				Vector3f& netForce, Vector3f& netTorque);
+		static void applyBuoyancyToChildren(const BlockTreeNode* node,
+				Physics::Body& body, Transform& transform,
+				const Vector3f& pLocal, const Vector3f& nLocal,
+				Vector3f& centroidSum, float& volumeSum, float& massSum,
+				const Vector3f& localCenter,
+				const Vector3f& localVelocity, const Vector3f& localAngularVelocity,
+				Vector3f& netForce, Vector3f& netTorque);
 };
 
 inline bool BlockTree::intersectsRay(const Vector3f& origin,

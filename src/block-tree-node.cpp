@@ -246,19 +246,24 @@ inline bool BlockTreeNode::childrenBelowPlane(const Vector3f& position,
 				Vector3f cSum;
 				float submergedV = model.calcSubmergedVolume(position - p,
 						normal, cSum);
-				float partialMass = BlockInfo::getInfo(blk->type).mass
-						* submergedV / BlockInfo::getInfo(blk->type).volume;
 
-				cSum += p * submergedV;
+				if (submergedV > 0.f) {
+					cSum /= submergedV;
+					cSum += p;
+					cSum *= submergedV;
+
+					float partialMass = BlockInfo::getInfo(blk->type).mass
+							* submergedV / BlockInfo::getInfo(blk->type).volume;
 				
-				volumeBelow += submergedV;
-				massBelow += partialMass;
-				centerSumBelow += cSum;
+					volumeBelow += submergedV;
+					massBelow += partialMass;
+					centerSumBelow += cSum;
+				}
 			}
 			else {
 				volumeBelow += BlockInfo::getInfo(blk->type).volume;
 				massBelow += BlockInfo::getInfo(blk->type).mass;
-				centerSumBelow += box.getCenter();
+				centerSumBelow += p;
 			}
 			
 			below = true;

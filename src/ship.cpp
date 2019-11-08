@@ -110,16 +110,22 @@ void rayShipIntersection(const Matrix4f& shipTransform, const Ship& ship,
 void shipBuoyancySystem(Game& game, float deltaTime) {
 	game.getECS().view<TransformComponent, Ship, Physics::Body>().each([&](
 			TransformComponent& tf, Ship& ship, Physics::Body& body) {
-		const Vector3f pWorld(0.f, 0.f, 0.f);
+		//body.worldCenter = tf.transform.transform(body.localCenter, 1.f);
+
+		/*const Vector3f pWorld(0.f, 0.f, 0.f);
 		const Vector3f nWorld(0.f, 1.f, 0.f);
 
 		const Matrix4f tfi = tf.transform.inverse();
 		const Vector3f p(tfi * Vector4f(pWorld, 1.f));
 		const Vector3f n(tfi * Vector4f(nWorld, 0.f));
 
-		float totalMassBelow = 0.f;
+		const Vector3f vLocal = tf.transform.inverseTransform(body.velocity, 0.f);
+		const Vector3f avLocal = tf.transform.inverseTransform(body.angularVelocity, 0.f);
+
+		Vector3f netForce(0.f, 0.f, 0.f);
+		Vector3f netTorque(0.f, 0.f, 0.f);
 		
-		/*for (auto& pair : ship.blocks) {
+		for (auto& pair : ship.blocks) {
 			const Vector3f pp(pair.first);
 			const AABB box(pp - Vector3f(0.5f, 0.5f, 0.5f),
 					pp + Vector3f(0.5f, 0.5f, 0.5f));
@@ -134,7 +140,7 @@ void shipBuoyancySystem(Game& game, float deltaTime) {
 				Vector3f cob;
 				float submergedV;
 
-				if (r - dPPP < r + r) {
+				if (dPPP > -r) {
 					const IndexedModel& model =
 							*BlockInfo::getInfo(pair.second.type).model;
 
@@ -150,63 +156,47 @@ void shipBuoyancySystem(Game& game, float deltaTime) {
 					submergedV = totalV;
 				}
 				
-				cob = Vector3f(tf.transform.toMatrix() * Vector4f(cob, 1.f));
+				//cob = tf.transform.transform(cob, 1.f);
 				float partialMass = mass * submergedV / totalV;
-				
-				totalMassBelow += partialMass;
 
-				Vector3f rc = cob - body.worldCenter;
+				//Vector3f rc = cob - body.worldCenter;
+				Vector3f rc = cob - body.localCenter;
 
-				Vector3f buoyantForce = nWorld * (-Physics::GRAVITY 
-							* submergedV * Ocean::DENSITY);
+				//Vector3f buoyantForce = (-Physics::GRAVITY 
+				//			* submergedV * Ocean::DENSITY);
+				Vector3f buoyantForce = -n * Physics::GRAVITY.y
+						* submergedV * Ocean::DENSITY;
 
-				Vector3f vc = body.velocity
-						+ Math::cross(body.angularVelocity, rc);
+				//Vector3f vc = body.velocity
+				//		+ Math::cross(body.angularVelocity, rc);
+				Vector3f vc = vLocal
+						+ Math::cross(avLocal, rc);
 				Vector3f dragForce = (partialMass * Ocean::LINEAR_DRAG)
 						* (Ocean::VELOCITY - vc);
 
 				Vector3f totalForce = buoyantForce + dragForce;
 
-				body.force += totalForce;
-				body.torque += Math::cross(rc, totalForce);
+				//body.force += totalForce;
+				//body.torque += Math::cross(rc, totalForce);
+				netForce += totalForce;
+				netTorque += Math::cross(rc, totalForce);
 
 				// drag torque
-				body.torque += (-partialMass * Ocean::ANGULAR_DRAG)
-						* body.angularVelocity;
+				//body.torque += (-partialMass * Ocean::ANGULAR_DRAG)
+				//		* body.angularVelocity;
+				netTorque += (-partialMass * Ocean::ANGULAR_DRAG)
+						* avLocal;
 			}
-		}*/
-
-		Vector3f cob;
-		float submergedV, submergedM;
-
-		if (ship.blockTree.calcSubmergedVolume(p, n, cob, submergedV,
-					submergedM)) {
-			cob = Vector3f(tf.transform.toMatrix() * Vector4f(cob, 1.f));
-			float partialMass = submergedM;//mass * submergedV / totalV;
-
-			totalMassBelow += partialMass;
-			
-			Vector3f rc = cob - body.worldCenter;
-
-			Vector3f buoyantForce = nWorld * (-Physics::GRAVITY 
-						* submergedV * Ocean::DENSITY);
-
-			Vector3f vc = body.velocity
-					+ Math::cross(body.angularVelocity, rc);
-			Vector3f dragForce = (partialMass * Ocean::LINEAR_DRAG)
-					* (Ocean::VELOCITY - vc);
-
-			Vector3f totalForce = buoyantForce + dragForce;
-
-			body.force += totalForce;
-			body.torque += Math::cross(rc, totalForce);
-
-			// drag torque
-			body.torque += (-partialMass * Ocean::ANGULAR_DRAG)
-					* body.angularVelocity;
 		}
 
-		DEBUG_LOG_TEMP("%.2f", totalMassBelow);
+		netForce = tf.transform.transform(netForce, 0.f);
+		netTorque = tf.transform.transform(netTorque, 0.f);
+
+		body.force += netForce;
+		body.torque += netTorque;*/
+
+		ship.blockTree.applyBuoyantForce(body, tf.transform,
+				Ocean::POSITION, Ocean::NORMAL);
 	});
 }
 
