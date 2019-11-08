@@ -2,9 +2,12 @@
 
 #include <engine/core/common.hpp>
 #include <engine/core/memory.hpp>
+#include <engine/core/string.hpp>
 #include <engine/core/array-list.hpp>
 
 #include <engine/math/quaternion.hpp>
+
+class Game;
 
 class IndexedModel;
 class VertexArray;
@@ -17,6 +20,8 @@ class BlockInfo {
 		enum Flags {
 			FLAG_OCCLUDES	= 0b1
 		};
+
+		static void loadBlockInfo(Game& game, const String& fileName);
 
 		static void registerType(uint32 type, uint32 flags,
 				IndexedModel* model, Material* material, float mass,

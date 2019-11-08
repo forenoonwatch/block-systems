@@ -16,20 +16,12 @@
 #include <engine/core/application.hpp>
 #include <engine/math/math.hpp>
 
-#include <engine/core/util.hpp>
-
-#include <cstdlib>
-#include <cctype>
-#include <fstream>
-
 //#define PHYSICS
 
 static void renderMesh(Game&, float);
 static void renderSkybox(Game&, float);
 static void renderOcean(Game&, float);
 static void toggleFullscreenSystem(Game&, float);
-
-static void initBlockTypes(Game&, std::ifstream&);
 
 struct ApplyImpulseSystem {
 	inline ApplyImpulseSystem(ECS::Entity cameraInfo)
@@ -185,8 +177,7 @@ void GameScene::load(Game& game) {
 
 	Ship& shipComponent = game.getECS().get<Ship>(ship);
 
-	std::ifstream blockInfo("./res/block-info.txt");
-	initBlockTypes(game, blockInfo);
+	BlockInfo::loadBlockInfo(game, "./res/block-info.txt");
 
 	BlockInfo::initVertexArrays(*game.getRenderContext(),
 			shipComponent.blockArrays);
@@ -298,89 +289,5 @@ static void toggleFullscreenSystem(Game& game, float deltaTime) {
 			tfc.transform.setRotation(Quaternion(1.f, 0.f, 0.f, 0.f));
 		});
 	}
-}
-
-inline static void initBlockTypes(Game& game, std::ifstream& file) {
-	struct IndexedModel::AllocationHints hints;
-	hints.elementSizes.push_back(3);
-	hints.elementSizes.push_back(2);
-	hints.elementSizes.push_back(3);
-	hints.elementSizes.push_back(3);
-	hints.elementSizes.push_back(16);
-	hints.instancedElementStartIndex = 4;
-
-	String line;
-	ArrayList<String> tokens;
-
-	uint32 typeID = 0;
-
-	// FORMAT: model-name,material-name,mass,volume,model-file-path
-	// n = 5
-
-	while (file.good()) {
-		std::getline(file, line);
-
-		tokens.clear();
-		Util::split(tokens, line, ',');
-
-		if (tokens.size() != 5) {
-			continue;
-		}
-
-		game.getAssetManager().loadStaticMesh(tokens[0], tokens[0],
-				tokens[4], hints);
-
-		BlockInfo::registerType(typeID,
-				0,
-				&game.getAssetManager().getModel(tokens[0]),
-				&game.getAssetManager().getMaterial(tokens[1]),
-				std::atof(tokens[2].c_str()),
-				std::atof(tokens[3].c_str()));
-		
-		++typeID;
-	}
-
-	/*BlockInfo::registerType(BlockInfo::TYPE_BASIC_CUBE,
-			BlockInfo::FLAG_OCCLUDES,
-			&game.getAssetManager().getModel("cube"),
-			&game.getAssetManager().getMaterial("wood-planks"),
-			0.5f,//0.8f,
-			1.f);
-	BlockInfo::registerType(BlockInfo::TYPE_BASIC_TETRA,
-			0,
-			&game.getAssetManager().getModel("tetrahedron"),
-			&game.getAssetManager().getMaterial("wood-planks"),
-			0.2f,
-			0.2f);
-	BlockInfo::registerType(BlockInfo::TYPE_BASIC_PYRAMID,
-			0,
-			&game.getAssetManager().getModel("pyramid"),
-			&game.getAssetManager().getMaterial("wood-planks"),
-			0.4f,
-			0.4f); // TODO: double check this mass
-	BlockInfo::registerType(BlockInfo::TYPE_BASIC_WEDGE,
-			0,
-			&game.getAssetManager().getModel("wedge"),
-			&game.getAssetManager().getMaterial("wood-planks"),
-			0.5f,
-			0.5f);
-	BlockInfo::registerType(BlockInfo::TYPE_BASIC_FIVE_SIXTH,
-			0,
-			&game.getAssetManager().getModel("five-sixths-block"),
-			&game.getAssetManager().getMaterial("wood-planks"),
-			0.8f,
-			0.8f);
-	BlockInfo::registerType(BlockInfo::TYPE_BASIC_WEDGE_2X1,
-			0,
-			&game.getAssetManager().getModel("wedge-2x-1"),
-			&game.getAssetManager().getMaterial("wood-planks"),
-			0.6f,
-			0.6f); // TODO: calculate accurate mass
-	BlockInfo::registerType(BlockInfo::TYPE_BASIC_WEDGE_2X1,
-			0,
-			&game.getAssetManager().getModel("wedge-2x-2"),
-			&game.getAssetManager().getMaterial("wood-planks"),
-			0.4f,
-			0.4f); // TODO: calculate accurate mass*/
 }
 
