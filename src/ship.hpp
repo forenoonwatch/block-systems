@@ -28,19 +28,19 @@ class Ship {
 				, inertiaSum(0.f)
 				, massChanged(false) {}
 
-		void addBlock(enum BlockInfo::BlockType type,
+		void addBlock(uint32 type,
 				const Vector3i& position, const Quaternion& rotation);
 		void removeBlock(Block& block);
 
 		HashMap<Vector3i, Block, HashBlockPosition> blocks;
-		HashMap<enum BlockInfo::BlockType, ArrayList<Matrix4f>> offsets;
-		HashMap<enum BlockInfo::BlockType, ArrayList<Block*>> offsetIndices;
+		HashMap<uint32, ArrayList<Matrix4f>> offsets;
+		HashMap<uint32, ArrayList<Block*>> offsetIndices;
 		
 		BlockTree blockTree;
 
 		ArrayList<Memory::SharedPointer<VertexArray>> blockArrays;
 		
-		HashSet<enum BlockInfo::BlockType> changedBuffers;
+		HashSet<uint32> changedBuffers;
 
 		float totalMass;
 		Vector3f localCenterSum;

@@ -16,12 +16,20 @@
 #include <engine/core/application.hpp>
 #include <engine/math/math.hpp>
 
+#include <engine/core/util.hpp>
+
+#include <cstdlib>
+#include <cctype>
+#include <fstream>
+
+//#define PHYSICS
+
 static void renderMesh(Game&, float);
 static void renderSkybox(Game&, float);
 static void renderOcean(Game&, float);
 static void toggleFullscreenSystem(Game&, float);
 
-static void initBlockTypes(Game&);
+static void initBlockTypes(Game&, std::ifstream&);
 
 struct ApplyImpulseSystem {
 	inline ApplyImpulseSystem(ECS::Entity cameraInfo)
@@ -70,14 +78,16 @@ GameScene::GameScene()
 	addUpdateSystem(::updateOceanProjector);
 	addUpdateSystem(::toggleFullscreenSystem);
 	addUpdateSystem(::updateShipBuildInfo);
+#ifdef PHYSICS
 	addUpdateSystem(Physics::gravitySystem);
+#endif
 
 	addRenderSystem(::renderMesh);
 
-	addRenderSystem(::updateOceanBuffer);
 	addRenderSystem(GameRenderContext::clear);
 	addRenderSystem(GameRenderContext::flushStaticMeshes);
 	addRenderSystem(::shipRenderSystem);
+	addRenderSystem(::updateOceanBuffer);
 	addRenderSystem(::renderOcean);
 	addRenderSystem(GameRenderContext::applyLighting);
 	addRenderSystem(::renderSkybox);
@@ -94,21 +104,6 @@ void GameScene::load(Game& game) {
 	hints.elementSizes.push_back(3);
 	hints.elementSizes.push_back(16);
 	hints.instancedElementStartIndex = 4;
-
-	game.getAssetManager().loadStaticMesh("cube", "cube",
-			"./res/cube.obj", hints);
-	game.getAssetManager().loadStaticMesh("tetrahedron", "tetrahedron",
-			"./res/tetrahedron.obj", hints);
-	game.getAssetManager().loadStaticMesh("pyramid", "pyramid",
-			"./res/pyramid.obj", hints);
-	game.getAssetManager().loadStaticMesh("wedge", "wedge",
-			"./res/wedge.obj", hints);
-	game.getAssetManager().loadStaticMesh("five-sixths-block",
-			"five-sixths-block", "./res/five-sixths-block.obj", hints);
-	game.getAssetManager().loadStaticMesh("wedge-2x-1", "wedge-2x-1",
-			"./res/wedge-2x-1.obj", hints);
-	game.getAssetManager().loadStaticMesh("wedge-2x-2", "wedge-2x-2",
-			"./res/wedge-2x-2.obj", hints);
 
 	game.getAssetManager().loadStaticMesh("plane", "plane",
 			"./res/plane.obj", hints);
@@ -168,17 +163,20 @@ void GameScene::load(Game& game) {
 
 	addUpdateSystem(ShipBuildSystem(cameraEntity));
 	addUpdateSystem(UpdateBuildToolTip(game, cameraEntity));
-	addUpdateSystem(ApplyImpulseSystem(cameraEntity));
-	addUpdateSystem(::shipUpdateMassSystem);
 	addUpdateSystem(::shipUpdateVAOSystem);
-	addUpdateSystem(::shipBuoyancySystem);
 
+#ifdef PHYSICS
+	addUpdateSystem(ApplyImpulseSystem(cameraEntity));
+
+	addUpdateSystem(::shipUpdateMassSystem);
+	addUpdateSystem(::shipBuoyancySystem);
 	addUpdateSystem(Physics::integrateVelocities);
+#endif
 
 	ECS::Entity ship = game.getECS().create();
 	game.getECS().assign<TransformComponent>(ship, Transform());
 	game.getECS().assign<Ship>(ship);
-	game.getECS().assign<ShipBuildInfo>(ship, BlockInfo::TYPE_BASIC_CUBE,
+	game.getECS().assign<ShipBuildInfo>(ship, (uint32)0,
 			Quaternion(1.f, 0.f, 0.f, 0.f));
 
 	game.getECS().assign<Physics::Body>(ship, Vector3f(), Vector3f(),
@@ -187,7 +185,8 @@ void GameScene::load(Game& game) {
 
 	Ship& shipComponent = game.getECS().get<Ship>(ship);
 
-	initBlockTypes(game);
+	std::ifstream blockInfo("./res/block-info.txt");
+	initBlockTypes(game, blockInfo);
 
 	BlockInfo::initVertexArrays(*game.getRenderContext(),
 			shipComponent.blockArrays);
@@ -196,14 +195,14 @@ void GameScene::load(Game& game) {
 
 	Block block;
 	
-	constexpr const int32 n = 50;
+	constexpr const int32 n = 1;
 
 	for (int32 x = 0; x < n; ++x) {
 		for (int32 y = 0; y < n; ++y) {
 			for (int32 z = 0; z < n; ++z) {
 				//block.type = (enum BlockInfo::BlockType)((x + y + z)
 				//		% BlockInfo::NUM_TYPES);
-				block.type = BlockInfo::TYPE_BASIC_CUBE;
+				block.type = 0;
 				block.position = Vector3i(x, y, z);
 				block.rotation = Quaternion(1.f, 0.f, 0.f, 0.f);
 
@@ -224,7 +223,7 @@ void GameScene::load(Game& game) {
 	}*/
 
 	game.getECS().get<TransformComponent>(ship)
-			.transform.setPosition(Vector3f(0.f, 20.f, 0.f));
+			.transform.setPosition(Vector3f(0.f, 0.4f, 0.f));
 
 	DEBUG_LOG_TEMP2("Loaded");
 }
@@ -301,8 +300,47 @@ static void toggleFullscreenSystem(Game& game, float deltaTime) {
 	}
 }
 
-inline static void initBlockTypes(Game& game) {
-	BlockInfo::registerType(BlockInfo::TYPE_BASIC_CUBE,
+inline static void initBlockTypes(Game& game, std::ifstream& file) {
+	struct IndexedModel::AllocationHints hints;
+	hints.elementSizes.push_back(3);
+	hints.elementSizes.push_back(2);
+	hints.elementSizes.push_back(3);
+	hints.elementSizes.push_back(3);
+	hints.elementSizes.push_back(16);
+	hints.instancedElementStartIndex = 4;
+
+	String line;
+	ArrayList<String> tokens;
+
+	uint32 typeID = 0;
+
+	// FORMAT: model-name,material-name,mass,volume,model-file-path
+	// n = 5
+
+	while (file.good()) {
+		std::getline(file, line);
+
+		tokens.clear();
+		Util::split(tokens, line, ',');
+
+		if (tokens.size() != 5) {
+			continue;
+		}
+
+		game.getAssetManager().loadStaticMesh(tokens[0], tokens[0],
+				tokens[4], hints);
+
+		BlockInfo::registerType(typeID,
+				0,
+				&game.getAssetManager().getModel(tokens[0]),
+				&game.getAssetManager().getMaterial(tokens[1]),
+				std::atof(tokens[2].c_str()),
+				std::atof(tokens[3].c_str()));
+		
+		++typeID;
+	}
+
+	/*BlockInfo::registerType(BlockInfo::TYPE_BASIC_CUBE,
 			BlockInfo::FLAG_OCCLUDES,
 			&game.getAssetManager().getModel("cube"),
 			&game.getAssetManager().getMaterial("wood-planks"),
@@ -343,6 +381,6 @@ inline static void initBlockTypes(Game& game) {
 			&game.getAssetManager().getModel("wedge-2x-2"),
 			&game.getAssetManager().getMaterial("wood-planks"),
 			0.4f,
-			0.4f); // TODO: calculate accurate mass
+			0.4f); // TODO: calculate accurate mass*/
 }
 

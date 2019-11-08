@@ -90,19 +90,19 @@ void UpdateBuildToolTip::operator()(Game& game, float deltaTime) {
 
 void updateShipBuildInfo(Game& game, float deltaTime) {
 	game.getECS().view<ShipBuildInfo>().each([&](ShipBuildInfo& sbi) {
-		if (Application::getKeyPressed(Input::KEY_R)) {
+		if (Application::getKeyPressed(Input::KEY_T)) {
 			sbi.rotation = Math::rotate(sbi.rotation, Math::toRadians(90.f),
 					Vector3f(1.f, 0.f, 0.f));
 		}
 
-		if (Application::getKeyPressed(Input::KEY_T)) {
+		if (Application::getKeyPressed(Input::KEY_R)) {
 			sbi.rotation = Math::rotate(sbi.rotation, Math::toRadians(90.f),
 					Vector3f(0.f, 1.f, 0.f));
 		}
 
 		if (Application::getKeyPressed(Input::KEY_F)) {
-			sbi.objectType = (enum BlockInfo::BlockType)(
-					((int32)sbi.objectType + 1) % BlockInfo::NUM_TYPES);
+			sbi.objectType = (uint32)(
+					((int32)sbi.objectType + 1) % BlockInfo::getNumTypes());
 		}
 	});
 }

@@ -14,34 +14,24 @@ class RenderContext;
 
 class BlockInfo {
 	public:
-		enum BlockType {
-			TYPE_BASIC_CUBE,
-			TYPE_BASIC_TETRA,
-			TYPE_BASIC_PYRAMID,
-			TYPE_BASIC_WEDGE,
-			TYPE_BASIC_FIVE_SIXTH,
-			TYPE_BASIC_WEDGE_2X1,
-			TYPE_BASIC_WEDGE_2X2,
-
-			NUM_TYPES
-		};
-
 		enum Flags {
 			FLAG_OCCLUDES	= 0b1
 		};
 
-		static void registerType(enum BlockInfo::BlockType type, uint32 flags,
+		static void registerType(uint32 type, uint32 flags,
 				IndexedModel* model, Material* material, float mass,
 				float volume);
 
 		static void initVertexArrays(RenderContext& renderContext,
 				ArrayList<Memory::SharedPointer<VertexArray>>& vaos);
 
-		static inline BlockInfo& getInfo(enum BlockInfo::BlockType type) {
+		static inline BlockInfo& getInfo(uint32 type) {
 			return blockInfo[(uintptr)type];
 		}
 
-		enum BlockType type;
+		static inline uint32 getNumTypes() { return blockInfo.size(); }
+
+		uint32 type;
 		uint32 flags;
 
 		IndexedModel* model;
@@ -51,14 +41,14 @@ class BlockInfo {
 		float volume;
 	private:
 		inline BlockInfo()
-				: type((enum BlockType)0)
+				: type((uint32)0)
 				, flags(0)
 				, model(nullptr)
 				, material(nullptr)
 				, mass(0.f)
 				, volume(0.f) {}
 
-		inline BlockInfo(enum BlockType type, uint32 flags,
+		inline BlockInfo(uint32 type, uint32 flags,
 					IndexedModel* model, Material* material, float mass,
 					float volume)
 				: type(type)
@@ -72,7 +62,7 @@ class BlockInfo {
 };
 
 struct Block {
-	enum BlockInfo::BlockType type;
+	uint32 type;
 	Vector3i position;
 	Quaternion rotation;
 	uint32 renderIndex;

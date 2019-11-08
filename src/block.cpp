@@ -8,7 +8,7 @@
 
 ArrayList<BlockInfo> BlockInfo::blockInfo;
 
-void BlockInfo::registerType(enum BlockInfo::BlockType type, uint32 flags,
+void BlockInfo::registerType(uint32 type, uint32 flags,
 		IndexedModel* model, Material* material, float mass, float volume) {
 	blockInfo.push_back(BlockInfo(type, flags, model, material, mass, volume));
 }

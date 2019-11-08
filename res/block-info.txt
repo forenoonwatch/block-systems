@@ -1,0 +1,9 @@
+cube,wood-planks,0.5,1.0,./res/cube.obj
+open-floor,wood-planks,0.5,1.0,./res/floor.obj
+open-block,wood-planks,0.5,1.0,./res/open-block.obj
+wall-block,wood-planks,0.5,1.0,./res/wall-block.obj
+port-block,wood-planks,0.5,1.0,./res/port-block.obj
+wall-corner,wood-planks,0.5,1.0,./res/wall-corner.obj
+wedge-wall,wood-planks,0.5,1.0,./res/wedge-wall.obj
+half-nose,wood-planks,0.5,1.0,./res/half-nose.obj
+

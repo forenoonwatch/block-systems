@@ -18,7 +18,7 @@
 
 static Matrix3f calcBlockTensor(const Vector3f& localPos, float mass);
 
-void Ship::addBlock(enum BlockInfo::BlockType type,
+void Ship::addBlock(uint32 type,
 		const Vector3i& position, const Quaternion& rotation) {
 	Block block;
 	block.type = type;

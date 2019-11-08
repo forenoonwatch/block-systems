@@ -10,7 +10,7 @@
 class Game;
 
 struct ShipBuildInfo {
-	enum BlockInfo::BlockType objectType;
+	uint32 objectType;
 	Quaternion rotation;
 	ArrayList<Memory::SharedPointer<VertexArray>> blockArrays;
 };
