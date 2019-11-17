@@ -11,7 +11,6 @@
 #include <engine/core/util.hpp>
 
 #include <cstdlib>
-#include <cctype>
 #include <fstream>
 
 ArrayList<BlockInfo> BlockInfo::blockInfo;

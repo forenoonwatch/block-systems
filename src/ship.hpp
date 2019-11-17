@@ -28,6 +28,8 @@ class Ship {
 				, inertiaSum(0.f)
 				, massChanged(false) {}
 
+		bool load(const String& fileName);
+
 		void addBlock(uint32 type,
 				const Vector3i& position, const Quaternion& rotation);
 		void removeBlock(Block& block);

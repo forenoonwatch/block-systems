@@ -16,7 +16,53 @@
 
 #include <engine/math/aabb.hpp>
 
+#include <engine/core/util.hpp>
+
+#include <cstdlib>
+#include <fstream>
+
 static Matrix3f calcBlockTensor(const Vector3f& localPos, float mass);
+
+bool Ship::load(const String& fileName) {
+	std::ifstream file(fileName);
+
+	// FORMAT: ID, x, y, z, rx, ry, rz, rw
+	// n = 8
+
+	if (file.is_open()) {
+		String line;
+		ArrayList<String> tokens;
+
+		while (file.good()) {
+			std::getline(file, line);
+
+			tokens.clear();
+			Util::split(tokens, line, ',');
+
+			if (tokens.size() < 8) {
+				continue;
+			}
+
+			if (tokens[0].length() == 0 || tokens[0][0] == '#') {
+				continue;
+			}
+
+			addBlock(std::atoi(tokens[0].c_str()),
+					Vector3i(std::atoi(tokens[1].c_str()),
+							std::atoi(tokens[2].c_str()),
+							std::atoi(tokens[3].c_str())),
+					Quaternion(std::atof(tokens[7].c_str()),
+							std::atof(tokens[4].c_str()),
+							std::atof(tokens[5].c_str()),
+							std::atof(tokens[6].c_str())));
+		}
+	}
+	else {
+		return false;
+	}
+
+	return true;
+}
 
 void Ship::addBlock(uint32 type,
 		const Vector3i& position, const Quaternion& rotation) {

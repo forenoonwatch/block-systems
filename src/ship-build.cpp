@@ -93,16 +93,31 @@ void updateShipBuildInfo(Game& game, float deltaTime) {
 		if (Application::getKeyPressed(Input::KEY_T)) {
 			sbi.rotation = Math::rotate(sbi.rotation, Math::toRadians(90.f),
 					Vector3f(1.f, 0.f, 0.f));
+
+			DEBUG_LOG_TEMP("%f, %f, %f, %f", sbi.rotation.x, sbi.rotation.y,
+					sbi.rotation.z, sbi.rotation.w);
 		}
 
 		if (Application::getKeyPressed(Input::KEY_R)) {
 			sbi.rotation = Math::rotate(sbi.rotation, Math::toRadians(90.f),
 					Vector3f(0.f, 1.f, 0.f));
+
+			DEBUG_LOG_TEMP("%f, %f, %f, %f", sbi.rotation.x, sbi.rotation.y,
+					sbi.rotation.z, sbi.rotation.w);
 		}
 
 		if (Application::getKeyPressed(Input::KEY_F)) {
-			sbi.objectType = (uint32)(
-					((int32)sbi.objectType + 1) % BlockInfo::getNumTypes());
+			int32 d = Application::isKeyDown(Input::KEY_LEFT_SHIFT)
+					? -1 : 1;
+			d += (int32)sbi.objectType;
+			if (d < 0) {
+				d = BlockInfo::getNumTypes() - 1;
+			}
+			else if (d >= BlockInfo::getNumTypes()) {
+				d = 0;
+			}
+
+			sbi.objectType = (uint32)(d);
 		}
 	});
 }

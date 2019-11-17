@@ -16,7 +16,7 @@
 #include <engine/core/application.hpp>
 #include <engine/math/math.hpp>
 
-//#define PHYSICS
+#define PHYSICS
 
 static void renderMesh(Game&, float);
 static void renderSkybox(Game&, float);
@@ -104,6 +104,9 @@ void GameScene::load(Game& game) {
 			"./res/bricks-normal.dds", "./res/bricks-material.dds");
 	game.getAssetManager().loadMaterial("wood-planks", "./res/wood-planks.dds",
 			"./res/wood-planks-normal.dds", "./res/wood-planks-material.dds");
+	game.getAssetManager().loadMaterial("plastic", "./res/plastic.dds",
+			"./res/plastic-normal.dds", "./res/plastic-material.dds");
+
 	game.getAssetManager().loadCubeMap("sargasso-diffuse",
 			"./res/sargasso-diffuse.dds");
 	game.getAssetManager().loadCubeMap("sargasso-specular",
@@ -177,14 +180,14 @@ void GameScene::load(Game& game) {
 
 	Ship& shipComponent = game.getECS().get<Ship>(ship);
 
-	BlockInfo::loadBlockInfo(game, "./res/block-info.txt");
+	BlockInfo::loadBlockInfo(game, "./res/block-info.csv");
 
 	BlockInfo::initVertexArrays(*game.getRenderContext(),
 			shipComponent.blockArrays);
 	BlockInfo::initVertexArrays(*game.getRenderContext(),
 			game.getECS().get<ShipBuildInfo>(ship).blockArrays);
 
-	Block block;
+	/*Block block;
 	
 	constexpr const int32 n = 1;
 
@@ -201,7 +204,9 @@ void GameScene::load(Game& game) {
 						block.rotation);
 			}
 		}
-	}
+	}*/
+
+	shipComponent.load("./res/test-ship.csv");
 
 	/*for (int32 i = 0; i < 5; ++i) {
 		shipComponent.addBlock(BlockInfo::TYPE_BASIC_CUBE,
@@ -214,7 +219,7 @@ void GameScene::load(Game& game) {
 	}*/
 
 	game.getECS().get<TransformComponent>(ship)
-			.transform.setPosition(Vector3f(0.f, 0.4f, 0.f));
+			.transform.setPosition(Vector3f(0.f, 2.4f, 0.f));
 
 	DEBUG_LOG_TEMP2("Loaded");
 }

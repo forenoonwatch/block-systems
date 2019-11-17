@@ -27,10 +27,6 @@ class GameRenderContext : public RenderContext {
 				const Matrix4f& transform);
 		inline void renderSkybox(CubeMap& skybox, Sampler& sampler);
 
-		inline virtual void setGame(Game& game) override {
-			this->game = &game;
-		}
-
 		inline void setDiffuseIBL(CubeMap& diffuseIBL) { this->diffuseIBL = &diffuseIBL; }
 		inline void setSpecularIBL(CubeMap& specularIBL) { this->specularIBL = &specularIBL; }
 		inline void setBrdfLUT(Texture& brdfLUT) { this->brdfLUT = &brdfLUT; }
