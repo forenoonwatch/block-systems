@@ -4,6 +4,7 @@
 #include <engine/core/array-list.hpp>
 
 #include <engine/ecs/ecs.hpp>
+#include <engine/ecs/ecs-system.hpp>
 
 #include "block.hpp"
 
@@ -15,26 +16,28 @@ struct ShipBuildInfo {
 	ArrayList<Memory::SharedPointer<VertexArray>> blockArrays;
 };
 
-class ShipBuildSystem {
+class ShipBuildSystem : public ECS::System {
 	public:
 		inline ShipBuildSystem(ECS::Entity cameraInfo)
 				: cameraInfo(cameraInfo) {}
 
-		void operator()(Game&, float);
+		virtual void operator()(Game& game, float deltaTime) override;
 	private:
 		ECS::Entity cameraInfo;
 };
 
-class UpdateBuildToolTip {
+class UpdateBuildToolTip : public ECS::System {
 	public:
 		UpdateBuildToolTip(Game& game, ECS::Entity cameraInfo);
 
-		void operator()(Game& game, float deltaTime);
+		virtual void operator()(Game& game, float deltaTime) override;
 	private:
 		ECS::Entity toolTip;
 		ECS::Entity cameraInfo;
 };
 
-void updateBuildToolTip(Game& game, float deltaTime);
-void updateShipBuildInfo(Game& game, float deltaTime);
+class UpdateShipBuildInfo : public ECS::System {
+	public:
+		virtual void operator()(Game& game, float deltaTime) override;
+};
 

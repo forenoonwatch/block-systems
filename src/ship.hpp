@@ -5,6 +5,8 @@
 #include <engine/core/hash-set.hpp>
 #include <engine/core/hash-map.hpp>
 
+#include <engine/ecs/ecs-system.hpp>
+
 #include "block.hpp"
 #include "block-tree.hpp"
 
@@ -54,10 +56,23 @@ void rayShipIntersection(const Matrix4f& shipTransform, const Ship& ship,
 		const Vector3f& origin, const Vector3f& direction, Block*& block,
 		Vector3f* hitPosition, Vector3f* hitNormal);
 
-void shipBuoyancySystem(Game& game, float deltaTime);
+class ShipBuoyancySystem : public ECS::System {
+	public:
+		virtual void operator()(Game& game, float deltaTime) override;
+};
 
-void shipUpdateMassSystem(Game& game, float deltaTime);
+class ShipUpdateMassSystem : public ECS::System {
+	public:
+		virtual void operator()(Game& game, float deltaTime) override;
+};
 
-void shipUpdateVAOSystem(Game& game, float deltaTime);
-void shipRenderSystem(Game& game, float deltaTime);
+class ShipUpdateVAOSystem : public ECS::System {
+	public:
+		virtual void operator()(Game& game, float deltaTime) override;
+};
+
+class ShipRenderSystem : public ECS::System {
+	public:
+		virtual void operator()(Game& game, float deltaTime) override;
+};
 

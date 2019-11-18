@@ -3,6 +3,8 @@
 #include <engine/math/matrix.hpp>
 #include <engine/serialization/archive.hpp>
 
+#include <engine/ecs/ecs-system.hpp>
+
 class Game;
 
 struct Camera {
@@ -40,7 +42,13 @@ struct CameraComponent {
 	Vector3f rayDirection;
 };
 
-void updateCameraSystem(Game&, float);
+class UpdateCameraSystem : public ECS::System {
+	public:
+		virtual void operator()(Game&, float) override;
+};
 
-void firstPersonCameraSystem(Game&, float);
+class FirstPersonCameraSystem : public ECS::System {
+	public:
+		virtual void operator()(Game&, float) override;
+};
 

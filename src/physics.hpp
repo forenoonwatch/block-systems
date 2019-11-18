@@ -3,6 +3,8 @@
 #include <engine/math/matrix.hpp>
 #include <engine/math/quaternion.hpp>
 
+#include <engine/ecs/ecs-system.hpp>
+
 class Game;
 
 namespace Physics {
@@ -38,8 +40,15 @@ namespace Physics {
 			Matrix3f invInertiaWorld;
 	};
 
-	void gravitySystem(Game& game, float deltaTime);
-	void integrateVelocities(Game& game, float deltaTime);
+	class GravitySystem : public ECS::System {
+		public:
+			virtual void operator()(Game& game, float deltaTime) override;
+	};
+
+	class IntegrateVelocities : public ECS::System {
+		public:
+			virtual void operator()(Game& game, float deltaTime) override;
+	};
 };
 
 #include "physics.inl"

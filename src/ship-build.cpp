@@ -88,7 +88,7 @@ void UpdateBuildToolTip::operator()(Game& game, float deltaTime) {
 	});
 }
 
-void updateShipBuildInfo(Game& game, float deltaTime) {
+void UpdateShipBuildInfo::operator()(Game& game, float deltaTime) {
 	game.getECS().view<ShipBuildInfo>().each([&](ShipBuildInfo& sbi) {
 		if (Application::getKeyPressed(Input::KEY_T)) {
 			sbi.rotation = Math::rotate(sbi.rotation, Math::toRadians(90.f),

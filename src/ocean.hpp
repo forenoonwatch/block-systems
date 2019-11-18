@@ -6,6 +6,8 @@
 
 #include <engine/math/vector.hpp>
 
+#include <engine/ecs/ecs-system.hpp>
+
 class VertexArray;
 class UniformBuffer;
 class RenderContext;
@@ -31,5 +33,8 @@ struct Ocean {
 
 void initOcean(RenderContext& context, Ocean& ocean, uint32 gridLength);
 
-void updateOceanBuffer(Game& game, float deltaTime);
+class UpdateOceanBuffer : public ECS::System {
+	public:
+		virtual void operator()(Game& game, float deltaTime) override;
+};
 

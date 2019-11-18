@@ -111,7 +111,7 @@ GameRenderContext::~GameRenderContext() {
 	delete bloomBlur;
 }
 
-void GameRenderContext::clear(Game& game, float deltaTime) {
+void GameRenderContext::Clear::operator()(Game& game, float deltaTime) {
 	GameRenderContext* grc = (GameRenderContext*)game.getRenderContext();
 	
 	grc->screen.clear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -120,7 +120,8 @@ void GameRenderContext::clear(Game& game, float deltaTime) {
 	grc->target.clear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 }
 
-void GameRenderContext::applyLighting(Game& game, float deltaTime) {
+void GameRenderContext::ApplyLighting::operator()(Game& game,
+		float deltaTime) {
 	GameRenderContext* grc = (GameRenderContext*)game.getRenderContext();
 	
 	grc->setWriteDepth(false);
@@ -146,7 +147,8 @@ void GameRenderContext::applyLighting(Game& game, float deltaTime) {
 	grc->drawQuad(grc->target, grc->lightingShader);
 }
 
-void GameRenderContext::flushStaticMeshes(Game& game, float deltaTime) {
+void GameRenderContext::FlushStaticMeshes::operator()(Game& game,
+		float deltaTime) {
 	GameRenderContext* grc = (GameRenderContext*)game.getRenderContext();
 
 	Material* currentMaterial = nullptr;
@@ -186,7 +188,7 @@ void GameRenderContext::flushStaticMeshes(Game& game, float deltaTime) {
 	grc->staticMeshes.clear();
 }
 
-void GameRenderContext::flush(Game& game, float deltaTime) {
+void GameRenderContext::Flush::operator()(Game& game, float deltaTime) {
 	GameRenderContext* grc = (GameRenderContext*)game.getRenderContext();
 
 	grc->bloomBlur->update();

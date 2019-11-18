@@ -153,7 +153,7 @@ void rayShipIntersection(const Matrix4f& shipTransform, const Ship& ship,
 	}	
 }
 
-void shipBuoyancySystem(Game& game, float deltaTime) {
+void ShipBuoyancySystem::operator()(Game& game, float deltaTime) {
 	game.getECS().view<TransformComponent, Ship, Physics::Body>().each([&](
 			TransformComponent& tf, Ship& ship, Physics::Body& body) {
 		//body.worldCenter = tf.transform.transform(body.localCenter, 1.f);
@@ -246,7 +246,7 @@ void shipBuoyancySystem(Game& game, float deltaTime) {
 	});
 }
 
-void shipUpdateMassSystem(Game& game, float deltaTime) {
+void ShipUpdateMassSystem::operator()(Game& game, float deltaTime) {
 	game.getECS().view<Ship, Physics::Body>().each([&](Ship& ship,
 			Physics::Body& body) {
 		if (ship.massChanged) {
@@ -275,7 +275,7 @@ void shipUpdateMassSystem(Game& game, float deltaTime) {
 	});
 }
 
-void shipUpdateVAOSystem(Game& game, float deltaTime) {
+void ShipUpdateVAOSystem::operator()(Game& game, float deltaTime) {
 	game.getECS().view<Ship>().each([&](Ship& ship) {
 		if (ship.changedBuffers.empty()) {
 			return;
@@ -291,7 +291,7 @@ void shipUpdateVAOSystem(Game& game, float deltaTime) {
 	});
 }
 
-void shipRenderSystem(Game& game, float deltaTime) {
+void ShipRenderSystem::operator()(Game& game, float deltaTime) {
 	Shader& shader = game.getAssetManager().getShader("ship-shader");
 	GameRenderContext* grc = (GameRenderContext*)game.getRenderContext();
 	Material* currentMaterial = nullptr;

@@ -8,7 +8,7 @@
 
 #define CAMERA_SPEED 5.f
 
-void updateCameraSystem(Game& game, float deltaTime) {
+void UpdateCameraSystem::operator()(Game& game, float deltaTime) {
 	game.getECS().view<TransformComponent, CameraComponent>().each([&](
 			TransformComponent& transform, CameraComponent& cc) {
 		Camera& camera = *cc.camera;
@@ -36,7 +36,7 @@ void updateCameraSystem(Game& game, float deltaTime) {
 	});
 }
 
-void firstPersonCameraSystem(Game& game, float deltaTime) {
+void FirstPersonCameraSystem::operator()(Game& game, float deltaTime) {
 	static double lastX = 0.0;
 	static double lastY = 0.0;
 

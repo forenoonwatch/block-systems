@@ -10,6 +10,8 @@
 
 #include <engine/game/game.hpp>
 
+#include <engine/ecs/ecs-system.hpp>
+
 #include "camera.hpp"
 
 class GaussianBlur;
@@ -47,11 +49,26 @@ class GameRenderContext : public RenderContext {
 
 		virtual ~GameRenderContext();
 		
-		/* Pipeline functions */
-		static void clear(Game& game, float deltaTime);
-		static void applyLighting(Game& game, float deltaTime);
-		static void flushStaticMeshes(Game& game, float deltaTime);
-		static void flush(Game& game, float deltaTime);
+		/* Pipeline Systems */
+		class Clear : public ECS::System {
+			public:
+				virtual void operator()(Game& game, float deltaTime) override;
+		};
+
+		class ApplyLighting : public ECS::System {
+			public:
+				virtual void operator()(Game& game, float deltaTime) override;
+		};
+
+		class FlushStaticMeshes : public ECS::System {
+			public:
+				virtual void operator()(Game& game, float deltaTime) override;
+		};
+
+		class Flush : public ECS::System {
+			public:
+				virtual void operator()(Game& game, float deltaTime) override;
+		};
 	private:
 		NULL_COPY_AND_ASSIGN(GameRenderContext);
 

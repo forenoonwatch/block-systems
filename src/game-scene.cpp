@@ -16,14 +16,33 @@
 #include <engine/core/application.hpp>
 #include <engine/math/math.hpp>
 
+#include <engine/ecs/ecs-system.hpp>
+
 #define PHYSICS
 
-static void renderMesh(Game&, float);
-static void renderSkybox(Game&, float);
-static void renderOcean(Game&, float);
-static void toggleFullscreenSystem(Game&, float);
+namespace {
+	class RenderMesh : public ECS::System {
+		public:
+			virtual void operator()(Game&, float) override;
+	};
 
-struct ApplyImpulseSystem {
+	class RenderSkybox : public ECS::System {
+		public:
+			virtual void operator()(Game&, float) override;
+	};
+
+	class RenderOcean : public ECS::System {
+		public:
+			virtual void operator()(Game&, float) override;
+	};
+
+	class ToggleFullscreenSystem : public ECS::System {
+		public:
+			virtual void operator()(Game&, float) override;
+	};
+};
+
+struct ApplyImpulseSystem : public ECS::System {
 	inline ApplyImpulseSystem(ECS::Entity cameraInfo)
 			: cameraInfo(cameraInfo) {}
 
@@ -65,25 +84,25 @@ struct ApplyImpulseSystem {
 
 GameScene::GameScene()
 		: Scene() {
-	addUpdateSystem(::firstPersonCameraSystem);
-	addUpdateSystem(::updateCameraSystem);
-	addUpdateSystem(::updateOceanProjector);
-	addUpdateSystem(::toggleFullscreenSystem);
-	addUpdateSystem(::updateShipBuildInfo);
+	addUpdateSystem(new FirstPersonCameraSystem());
+	addUpdateSystem(new UpdateCameraSystem());
+	addUpdateSystem(new UpdateOceanProjector());
+	addUpdateSystem(new ToggleFullscreenSystem());
+	addUpdateSystem(new UpdateShipBuildInfo());
 #ifdef PHYSICS
-	addUpdateSystem(Physics::gravitySystem);
+	addUpdateSystem(new Physics::GravitySystem());
 #endif
 
-	addRenderSystem(::renderMesh);
+	addRenderSystem(new RenderMesh());
 
-	addRenderSystem(GameRenderContext::clear);
-	addRenderSystem(GameRenderContext::flushStaticMeshes);
-	addRenderSystem(::shipRenderSystem);
-	addRenderSystem(::updateOceanBuffer);
-	addRenderSystem(::renderOcean);
-	addRenderSystem(GameRenderContext::applyLighting);
-	addRenderSystem(::renderSkybox);
-	addRenderSystem(GameRenderContext::flush);
+	addRenderSystem(new GameRenderContext::Clear());
+	addRenderSystem(new GameRenderContext::FlushStaticMeshes());
+	addRenderSystem(new ShipRenderSystem());
+	addRenderSystem(new UpdateOceanBuffer());
+	addRenderSystem(new RenderOcean());
+	addRenderSystem(new GameRenderContext::ApplyLighting());
+	addRenderSystem(new RenderSkybox());
+	addRenderSystem(new GameRenderContext::Flush());
 }
 
 void GameScene::load(Game& game) {
@@ -156,16 +175,16 @@ void GameScene::load(Game& game) {
 	game.getECS().get<Ocean>(cameraEntity).oceanDataBuffer->update(f,
 			4 * sizeof(Vector4f), sizeof(f));
 
-	addUpdateSystem(ShipBuildSystem(cameraEntity));
-	addUpdateSystem(UpdateBuildToolTip(game, cameraEntity));
-	addUpdateSystem(::shipUpdateVAOSystem);
+	addUpdateSystem(new ShipBuildSystem(cameraEntity));
+	addUpdateSystem(new UpdateBuildToolTip(game, cameraEntity));
+	addUpdateSystem(new ShipUpdateVAOSystem());
 
 #ifdef PHYSICS
-	addUpdateSystem(ApplyImpulseSystem(cameraEntity));
+	addUpdateSystem(new ApplyImpulseSystem(cameraEntity));
 
-	addUpdateSystem(::shipUpdateMassSystem);
-	addUpdateSystem(::shipBuoyancySystem);
-	addUpdateSystem(Physics::integrateVelocities);
+	addUpdateSystem(new ShipUpdateMassSystem());
+	addUpdateSystem(new ShipBuoyancySystem());
+	addUpdateSystem(new Physics::IntegrateVelocities());
 #endif
 
 	ECS::Entity ship = game.getECS().create();
@@ -232,7 +251,7 @@ GameScene::~GameScene() {
 	DEBUG_LOG_TEMP2("Removed");
 }
 
-static void renderMesh(Game& game, float deltaTime) {
+void RenderMesh::operator()(Game& game, float deltaTime) {
 	game.getECS().view<TransformComponent, RenderableMesh>().each([&](
 			TransformComponent& transform, RenderableMesh& mesh) {
 		if (mesh.render) {
@@ -243,7 +262,7 @@ static void renderMesh(Game& game, float deltaTime) {
 	});
 }
 
-static void renderSkybox(Game& game, float deltaTime) {
+void RenderSkybox::operator()(Game& game, float deltaTime) {
 	GameRenderContext* grc = (GameRenderContext*)game.getRenderContext();
 
 	Matrix4f mvp = Math::translate(grc->getCamera().viewProjection,
@@ -253,7 +272,7 @@ static void renderSkybox(Game& game, float deltaTime) {
 	grc->renderSkybox(grc->getSpecularIBL(), grc->getLinearMipmapSampler());
 }
 
-static void renderOcean(Game& game, float deltaTime) {
+void RenderOcean::operator()(Game& game, float deltaTime) {
 	GameRenderContext* grc = (GameRenderContext*)game.getRenderContext();
 	Shader& oceanShader = game.getAssetManager().getShader("ocean-deferred");
 	Texture& foam = game.getAssetManager().getTexture("foam");
@@ -270,7 +289,7 @@ static void renderOcean(Game& game, float deltaTime) {
 	});
 }
 
-static void toggleFullscreenSystem(Game& game, float deltaTime) {
+void ToggleFullscreenSystem::operator()(Game& game, float deltaTime) {
 	if (Application::getKeyPressed(Input::KEY_M)) {
 		if (game.getWindow().isFullscreen()) {
 			game.getWindow().setFullscreen(false);

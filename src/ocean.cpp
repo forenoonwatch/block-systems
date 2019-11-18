@@ -47,7 +47,7 @@ void initOcean(RenderContext& context, Ocean& ocean, uint32 gridLength) {
 			OCEAN_BUFFER_SIZE, GL_STREAM_DRAW, 2);
 }
 
-void updateOceanBuffer(Game& game, float deltaTime) {
+void UpdateOceanBuffer::operator()(Game& game, float deltaTime) {
 	game.getECS().view<Ocean, OceanProjector>().each([&](Ocean& ocean,
 			OceanProjector& op) {
 		ocean.oceanFFT->update(deltaTime);
