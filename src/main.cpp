@@ -5,7 +5,9 @@
 
 #include <engine/core/application.hpp>
 
-#include "game-scene.hpp"
+//#include "game-scene.hpp"
+#include "game-scene-2.hpp"
+
 #include "game-render-context.hpp"
 
 int main() {
@@ -26,7 +28,8 @@ int main() {
 	//window.moveToCenter();
 
 	Memory::SharedPointer<Scene> scene =
-			Memory::SharedPointer<Scene>(new GameScene());
+			//Memory::SharedPointer<Scene>(new GameScene());
+			Memory::SharedPointer<Scene>(new GameScene2());
 
 	GameRenderContext renderContext(window.getWidth(), window.getHeight(),
 			Math::toRadians(70.f), 0.1f, 1000.f);

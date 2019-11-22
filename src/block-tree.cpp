@@ -3,6 +3,8 @@
 #include "block.hpp"
 #include "ocean.hpp"
 
+#include "physics.hpp"
+
 #include <engine/math/math.hpp>
 #include <engine/math/transform.hpp>
 

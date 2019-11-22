@@ -1,31 +1,24 @@
 
-inline void Physics::Body::applyForce(const Vector3f& force) {
-	this->force += force * mass;
+inline Physics::ContactManager& Physics::PhysicsEngine::getContactManager() {
+	return contactManager;
 }
 
-inline void Physics::Body::applyForce(const Vector3f& force,
-		const Vector3f& worldPoint) {
-	this->force += force * mass;
-	this->torque += Math::cross(worldPoint - worldCenter, force);
+inline ArrayList<Physics::Body>& Physics::PhysicsEngine::getBodies() {
+	return bodies;
 }
 
-inline void Physics::Body::applyTorque(const Vector3f& torque) {
-	this->torque += torque;
+inline ArrayList<Physics::VelocityState>&
+		Physics::PhysicsEngine::getVelocityStates() {
+	return velocityStates;
 }
 
-inline void Physics::Body::applyImpulse(const Vector3f& impulse) {
-	velocity += impulse;
+inline ArrayList<Physics::ContactConstraint>&
+		Physics::PhysicsEngine::getContacts() {
+	return contacts;
 }
 
-inline void Physics::Body::applyImpulse(const Vector3f& impulse,
-		const Vector3f& worldPoint) {
-	velocity += impulse;
-	angularVelocity += invInertiaWorld
-		* Math::cross(worldPoint - worldCenter, impulse);
-}
-
-inline Vector3f Physics::Body::getVelocityAt(
-		const Vector3f& worldPoint) const {
-	return velocity + Math::cross(angularVelocity, worldPoint - worldCenter);
+inline ArrayList<Physics::ContactConstraintState>&
+		Physics::PhysicsEngine::getContactStates() {
+	return contactStates;
 }
 

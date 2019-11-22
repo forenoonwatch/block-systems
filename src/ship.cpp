@@ -6,6 +6,7 @@
 #include "game-render-context.hpp"
 
 #include "physics.hpp"
+#include "body.hpp"
 
 #include "ocean.hpp"
 

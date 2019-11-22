@@ -1,7 +1,7 @@
 #pragma once
 
 #include "block-tree-node.hpp"
-#include "physics.hpp"
+#include "body.hpp"
 
 class Transform;
 

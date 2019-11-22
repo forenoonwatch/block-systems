@@ -1,7 +1,13 @@
 #pragma once
 
-#include <engine/math/matrix.hpp>
-#include <engine/math/quaternion.hpp>
+#include "body.hpp"
+#include "contact.hpp"
+#include "contact-state.hpp"
+#include "contact-manager.hpp"
+
+#include <engine/core/array-list.hpp>
+
+#include <engine/math/vector.hpp>
 
 #include <engine/ecs/ecs-system.hpp>
 
@@ -10,34 +16,13 @@ class Game;
 namespace Physics {
 	constexpr const Vector3f GRAVITY = Vector3f(0.f, -9.81f, 0.f);
 
-	class Body {
-		public:
-			inline void applyForce(const Vector3f& force);
-			inline void applyForce(const Vector3f& force,
-					const Vector3f& worldPoint);
-
-			inline void applyTorque(const Vector3f& torque);
-
-			inline void applyImpulse(const Vector3f& impulse);
-			inline void applyImpulse(const Vector3f& impulse,
-					const Vector3f& worldPoint);
-
-			inline Vector3f getVelocityAt(const Vector3f& worldPoint) const;
-
-			Vector3f localCenter;
-			Vector3f worldCenter;
-
-			Vector3f velocity;
-			Vector3f angularVelocity;
-
-			Vector3f force;
-			Vector3f torque;
-
-			float mass;
-			float invMass;
-
-			Matrix3f invInertiaLocal;
-			Matrix3f invInertiaWorld;
+	struct VelocityState {
+		inline VelocityState(const Vector3f& v, const Vector3f& w)
+				: v(v)
+				, w(w) {}
+		
+		Vector3f v;
+		Vector3f w;
 	};
 
 	class GravitySystem : public ECS::System {
@@ -45,9 +30,29 @@ namespace Physics {
 			virtual void operator()(Game& game, float deltaTime) override;
 	};
 
-	class IntegrateVelocities : public ECS::System {
+	class PhysicsEngine : public ECS::System {
 		public:
+			PhysicsEngine();
+
+			Body* addBody();
+
 			virtual void operator()(Game& game, float deltaTime) override;
+
+			inline ContactManager& getContactManager();
+
+			inline ArrayList<Body>& getBodies();
+			inline ArrayList<VelocityState>& getVelocityStates();
+			inline ArrayList<ContactConstraint>& getContacts();
+			inline ArrayList<ContactConstraintState>& getContactStates();
+		private:
+			ContactManager contactManager;
+
+			ArrayList<Body> bodies;
+			ArrayList<VelocityState> velocityStates;
+			ArrayList<ContactConstraint> contacts;
+			ArrayList<ContactConstraintState> contactStates;
+
+			void initConstraintStates();
 	};
 };
 
