@@ -1,6 +1,7 @@
 #include "game-scene-2.hpp"
 
 #include "camera.hpp"
+#include "first-person-camera.hpp"
 #include "renderable-mesh.hpp"
 
 #include "util-components.hpp"
@@ -90,6 +91,7 @@ void GameScene2::load(Game& game) {
 	body2->mass = body2->invMass = 1.f;
 	body2->invInertiaLocal = body2->invInertiaWorld
 			= Math::inverse(Matrix3f(0.4f));
+	body2->invInertiaLocal[2] = Vector3f(0.f, 0.f, 0.f);
 	//body2->flags = Physics::Body::FLAG_STATIC;
 	// sphere I^-1 = diag(0.4f * M * R^2)^-1
 
@@ -98,7 +100,7 @@ void GameScene2::load(Game& game) {
 	sphereCollider->body = body2;
 	sphereCollider->radius = 1.f;
 	sphereCollider->restitution = 0.f;
-	sphereCollider->friction = 1.f;
+	sphereCollider->friction = 0.3f;
 
 	ECS::Entity eSphere = game.getECS().create();
 	game.getECS().assign<RenderableMesh>(eSphere,
@@ -106,7 +108,7 @@ void GameScene2::load(Game& game) {
 			&game.getAssetManager().getMaterial("bricks"),
 			true);
 	game.getECS().assign<TransformComponent>(eSphere,
-			Transform(Vector3f(0.00001f, 20.f, 0.f)));
+			Transform(Vector3f(0.00001f, 1.f, 0.f)));
 	game.getECS().assign<Physics::BodyHandle>(eSphere,
 			Physics::BodyHandle(body2));
 
@@ -120,7 +122,7 @@ void GameScene2::load(Game& game) {
 	body->collisionHull = convexCollider;
 	convexCollider->body = body;
 	convexCollider->restitution = 0.f;
-	convexCollider->friction = 1.f;
+	convexCollider->friction = 0.3f;
 	
 	//sphereCollider2 = new Physics::SphereCollider();
 	//body->collisionHull = sphereCollider2;
@@ -129,7 +131,7 @@ void GameScene2::load(Game& game) {
 	//sphereCollider2->restitution = 0.f;
 
 	Quaternion rot = Math::mat4ToQuat(Math::rotate(Matrix4f(1.f),
-			Math::toRadians(5.f), Vector3f(0.f, 0.f, 1.f)));
+			Math::toRadians(0.f), Vector3f(0.f, 0.f, 1.f)));
 
 	ECS::Entity ePlane = game.getECS().create();
 	game.getECS().assign<RenderableMesh>(ePlane,

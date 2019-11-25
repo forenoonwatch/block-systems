@@ -47,8 +47,3 @@ class UpdateCameraSystem : public ECS::System {
 		virtual void operator()(Game&, float) override;
 };
 
-class FirstPersonCameraSystem : public ECS::System {
-	public:
-		virtual void operator()(Game&, float) override;
-};
-
