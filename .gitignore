@@ -2,6 +2,7 @@
 *.swo
 *.o
 *.exe
+*.patch
 
 build-log.txt
 
