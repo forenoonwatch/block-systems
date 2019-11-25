@@ -15,6 +15,15 @@ namespace Physics {
 			enum Flags {
 				FLAG_STATIC = 1
 			};
+			
+			inline Body()
+					: transform()
+					, localCenter()
+					, worldCenter()
+					, velocity()
+					, angularVelocity()
+					, force()
+					, torque() {}
 
 			inline void applyForce(const Vector3f& force);
 			inline void applyForce(const Vector3f& force,
@@ -52,11 +61,16 @@ namespace Physics {
 			uint32 index;
 			uint32 flags;
 		private:
+			NULL_COPY_AND_ASSIGN(Body);
+
 			friend class ContactManager;
 			friend class ContactConstraint;
 	};
 
 	struct BodyHandle {
+		inline explicit BodyHandle(Body* body)
+				: body(body) {}
+
 		Body* body;
 	};
 };

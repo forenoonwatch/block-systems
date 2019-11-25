@@ -2,6 +2,8 @@
 
 #include "collision-hull.hpp"
 
+#include <engine/core/common.hpp>
+
 namespace Physics {
 	class SphereCollider : public CollisionHull {
 		public:

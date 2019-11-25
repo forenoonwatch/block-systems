@@ -14,12 +14,12 @@ inline void Physics::Body::applyTorque(const Vector3f& torque) {
 }
 
 inline void Physics::Body::applyImpulse(const Vector3f& impulse) {
-	velocity += impulse;
+	velocity += impulse * invMass;
 }
 
 inline void Physics::Body::applyImpulse(const Vector3f& impulse,
 		const Vector3f& worldPoint) {
-	velocity += impulse;
+	velocity += impulse * invMass;
 	angularVelocity += invInertiaWorld
 		* Math::cross(worldPoint - worldCenter, impulse);
 }

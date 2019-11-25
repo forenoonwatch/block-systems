@@ -1,7 +1,5 @@
 #include "physics.hpp"
 
-#include "contact-solver.hpp"
-
 #include "util-components.hpp"
 
 #include <engine/game/game.hpp>
@@ -13,69 +11,75 @@ static Quaternion integrateAngularVelocity(const Quaternion& rot,
 
 void Physics::GravitySystem::operator()(Game& game, float deltaTime) {
 	game.getECS().view<Physics::BodyHandle>().each([&](
-			Physics::BodyHandle handle) {
+			Physics::BodyHandle& handle) {
 		if (!(handle.body->flags & Physics::Body::FLAG_STATIC)) {
 			handle.body->applyForce(Physics::GRAVITY);
 		}
 	});
 }
 
-Physics::PhysicsEngine::PhysicsEngine()
-		: contactManager(*this) {}
+Physics::PhysicsEngine::PhysicsEngine() {}
 
 Physics::Body* Physics::PhysicsEngine::addBody() {
-	bodies.emplace_back();
-	bodies.back().index = bodies.size() - 1;
+	Body* body = new Body();
+	body->index = bodies.size();
+	bodies.push_back(body);
 	
-	return &bodies.back();
+	return body;
 }
 
 void Physics::PhysicsEngine::operator()(Game& game, float deltaTime) {
-	contactManager.testCollisions();
-	initConstraintStates();
-
-	velocityStates.clear();
-
 	game.getECS().view<TransformComponent, Physics::BodyHandle>().each([&](
 			TransformComponent& tf, Physics::BodyHandle& handle) {
 		handle.body->transform = tf.transform;
+		handle.body->worldCenter = tf.transform.transform(
+				handle.body->localCenter, 1.f);
+
+		const Matrix3f rot = Math::quatToMat3(tf.transform.getRotation());
+		handle.body->invInertiaWorld = rot * handle.body->invInertiaLocal
+				* Math::transpose(rot);
 	});
 
-	for (auto& body : bodies) {
-		// integrate velocities
-		body.worldCenter = body.transform.transform(body.localCenter, 1.f);
-
-		const Matrix3f rot = Math::quatToMat3(body.transform.getRotation());
-		body.invInertiaWorld = rot * body.invInertiaLocal
-				* Math::transpose(rot);
-			
-		body.velocity += body.force * body.invMass * deltaTime;
-		body.angularVelocity += body.invInertiaWorld * body.torque
-				* deltaTime;
-
-		// TODO: damping
-
-		// add to velocity states
-		velocityStates.emplace_back(body.velocity, body.angularVelocity);
-	}
-
-	ContactSolver contactSolver(*this);
-
-	contactSolver.preSolve(deltaTime);
-
-	for (uint32 i = 0; i < NUM_ITERATIONS; ++i) {
-		contactSolver.solve();
-	}
-
-	contactSolver.flush();
+	contacts.clear();
 
 	for (uint32 i = 0; i < bodies.size(); ++i) {
-		// copy velocity states
-		Body& body = bodies[i];
-		VelocityState& vs = velocityStates[i];
+		Body& a = *bodies[i];
 
-		body.velocity = vs.v;
-		body.angularVelocity = vs.w;
+		for (uint32 j = i + 1; j < bodies.size(); ++j) {
+			Body& b = *bodies[j];
+
+			if ((a.flags & Body::FLAG_STATIC)
+					&& (b.flags & Body::FLAG_STATIC)) {
+				continue;
+			}
+
+			Manifold m(a, b);
+			
+			if (m.testCollision()) {
+				contacts.emplace_back(m);
+			}
+		}
+	}
+
+	for (Body* body : bodies) {
+		// integrate velocities
+		body->velocity += body->force * body->invMass * deltaTime;
+		body->angularVelocity += body->invInertiaWorld * body->torque
+				* deltaTime;
+	}
+
+	for (auto& contact : contacts) {
+		contact.preSolve(deltaTime);
+	}
+
+	for (uint32 i = 0; i < NUM_ITERATIONS; ++i) {
+		for (auto& contact : contacts) {
+			contact.solve();
+		}
+	}
+
+	for (uint32 i = 0; i < bodies.size(); ++i) {
+		Body& body = *bodies[i];
 
 		// integrate positions
 		body.transform.setPosition(body.transform.getPosition()
@@ -85,11 +89,9 @@ void Physics::PhysicsEngine::operator()(Game& game, float deltaTime) {
 				deltaTime));
 	}
 
-	// TODO: sleep
-
-	for (auto& body : bodies) {
-		body.force = Vector3f();
-		body.torque = Vector3f();
+	for (Body* body : bodies) {
+		body->force = Vector3f();
+		body->torque = Vector3f();
 	}
 
 	game.getECS().view<TransformComponent, Physics::BodyHandle>().each([&](
@@ -98,6 +100,12 @@ void Physics::PhysicsEngine::operator()(Game& game, float deltaTime) {
 	});
 
 	contacts.clear();
+}
+
+Physics::PhysicsEngine::~PhysicsEngine() {
+	for (Body* body : bodies) {
+		delete body;
+	}
 }
 
 inline static Quaternion integrateAngularVelocity(const Quaternion& rot,
@@ -110,51 +118,5 @@ inline static Quaternion integrateAngularVelocity(const Quaternion& rot,
 	q = rot + q * 0.5f;
 
 	return Math::normalize(q);
-}
-
-inline void Physics::PhysicsEngine::initConstraintStates() {
-	contactStates.clear();
-
-	for (uint32 i = 0; i < contacts.size(); ++i) {
-		ContactConstraint& cc = contacts[i];
-		
-		contactStates.emplace_back();
-		ContactConstraintState& ccs = contactStates.back();
-
-		ccs.centerA = cc.bodyA->worldCenter;
-		ccs.centerB = cc.bodyB->worldCenter;
-		
-		ccs.iA = cc.bodyA->invInertiaWorld;
-		ccs.iB = cc.bodyB->invInertiaWorld;
-		ccs.mA = cc.bodyA->invMass;
-		ccs.mB = cc.bodyB->invMass;
-		
-		ccs.restitution = cc.restitution;
-		ccs.friction = cc.friction;
-		
-		ccs.indexA = cc.bodyA->index;
-		ccs.indexB = cc.bodyB->index;
-
-		ccs.normal = cc.manifold.normal;
-		
-		ccs.tangents[0] = cc.manifold.tangents[0];
-		ccs.tangents[1] = cc.manifold.tangents[1];
-		
-		ccs.numContacts = cc.manifold.numContacts;
-
-		for (uint32 j = 0; j < ccs.numContacts; ++j) {
-			ContactState& cs = ccs.contacts[j];
-			Contact& cp = cc.manifold.contacts[j];
-
-			cs.rA = cp.position - ccs.centerA;
-			cs.rB = cp.position - ccs.centerB;
-
-			cs.penetration = cp.penetration;
-			
-			cs.normalImpulse = cp.normalImpulse;
-			cs.tangentImpulse[0] = cp.tangentImpulse[0];
-			cs.tangentImpulse[1] = cp.tangentImpulse[1];
-		}
-	}
 }
 

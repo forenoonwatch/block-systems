@@ -3,7 +3,7 @@
 #include "collision-hull.hpp"
 
 namespace Physics {
-	struct Manifold;
+	class Manifold;
 	
 	typedef void (*CollisionCallback)(Manifold&, CollisionHull&,
 			CollisionHull&);

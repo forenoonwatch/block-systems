@@ -155,8 +155,9 @@ void rayShipIntersection(const Matrix4f& shipTransform, const Ship& ship,
 }
 
 void ShipBuoyancySystem::operator()(Game& game, float deltaTime) {
-	game.getECS().view<TransformComponent, Ship, Physics::Body>().each([&](
-			TransformComponent& tf, Ship& ship, Physics::Body& body) {
+	game.getECS().view<TransformComponent, Ship,
+			Physics::BodyHandle>().each([&](TransformComponent& tf, Ship& ship,
+			Physics::BodyHandle& handle) {
 		//body.worldCenter = tf.transform.transform(body.localCenter, 1.f);
 
 		/*const Vector3f pWorld(0.f, 0.f, 0.f);
@@ -242,16 +243,18 @@ void ShipBuoyancySystem::operator()(Game& game, float deltaTime) {
 		body.force += netForce;
 		body.torque += netTorque;*/
 
-		ship.blockTree.applyBuoyantForce(body, tf.transform,
+		ship.blockTree.applyBuoyantForce(*handle.body, tf.transform,
 				Ocean::POSITION, Ocean::NORMAL);
 	});
 }
 
 void ShipUpdateMassSystem::operator()(Game& game, float deltaTime) {
-	game.getECS().view<Ship, Physics::Body>().each([&](Ship& ship,
-			Physics::Body& body) {
+	game.getECS().view<Ship, Physics::BodyHandle>().each([&](Ship& ship,
+			Physics::BodyHandle& handle) {
 		if (ship.massChanged) {
 			ship.massChanged = false;
+
+			Physics::Body& body = *handle.body;
 
 			body.mass = ship.totalMass;
 

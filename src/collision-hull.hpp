@@ -12,7 +12,12 @@ namespace Physics {
 			};
 
 			inline CollisionHull(enum HullType type)
-					: type(type) {}
+					: type(type)
+					, friction(0.f)
+					, restitution(0.f)
+					, body(nullptr) {}
+
+			virtual ~CollisionHull() {}
 
 			float friction;
 			float restitution;
