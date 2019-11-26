@@ -21,9 +21,9 @@ LDLIBS := -L"$(ENGINE_DIR)/bin" -lNXEngine -lglu32 -lopengl32 -L"$(LIB_DIR)/lib"
 CPPFLAGS := -std=c++17 -g -ggdb
 CXXFLAGS := -I$(CURDIR)/src -I$(ENGINE_DIR)/include -I$(LIB_DIR)/include -msse2
 
-all: engine game
+all: game
 
-game: $(BUILD_DIR)/$(TARGET_EXEC) 
+game: engine $(BUILD_DIR)/$(TARGET_EXEC) 
 
 engine:
 	@$(MAKE) -C $(ENGINE_DIR) -f Makefile
