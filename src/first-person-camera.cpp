@@ -72,6 +72,8 @@ void FirstPersonCameraSystem::operator()(Game& game, float deltaTime) {
 
 		transform.transform.setPosition(Vector3f(tf[3]));
 		transform.transform.setRotation(Math::mat4ToQuat(tf));
+		
+		camera.camera->view = transform.transform.toMatrix();
 
 		((GameRenderContext*)game.getRenderContext())->updateCameraBuffer();
 	});

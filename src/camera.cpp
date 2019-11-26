@@ -10,7 +10,6 @@ void UpdateCameraSystem::operator()(Game& game, float deltaTime) {
 			TransformComponent& transform, CameraComponent& cc) {
 		Camera& camera = *cc.camera;
 
-		camera.view = transform.transform.toMatrix();
 		camera.iView = Math::inverse(camera.view);
 
 		const Matrix4f iProjection = Math::inverse(camera.projection);
