@@ -27,7 +27,7 @@ void Physics::collisionSphereSphere(Manifold& manifold, CollisionHull& a,
 
 		manifold.addContact((bodyA->transform.getPosition()
 				+ bodyB->transform.getPosition()) * 0.5f,
-				Math::sqrt(d));
+				rSum - Math::sqrt(d));
 	}
 }
 
