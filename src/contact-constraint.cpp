@@ -119,10 +119,31 @@ void Physics::ContactConstraint::solve() {
 	for (uint32 i = 0; i < manifold.numContacts; ++i) {
 		Contact& cs = manifold.contacts[i];
 
-		// TODO: swap order of normal and tangent impulse
 		Vector3f dv = bodyB->velocity
 				+ Math::cross(bodyB->angularVelocity, cs.rB) - bodyA->velocity
 				- Math::cross(bodyA->angularVelocity, cs.rA);
+
+		for (uint32 j = 0; j < 2; ++j) {
+			float lambda = -Math::dot(dv, manifold.tangents[j]) * cs.tangentMass[j];
+
+			float oldTI = cs.tangentImpulse[j];
+			cs.tangentImpulse[j] = Math::clamp(oldTI + lambda,
+					-cs.normalImpulse * friction, cs.normalImpulse * friction);
+			lambda = cs.tangentImpulse[j] - oldTI;
+
+			Vector3f impulse = manifold.tangents[j] * lambda;
+
+			bodyA->velocity -= impulse * bodyA->invMass;
+			bodyA->angularVelocity -= bodyA->invInertiaWorld
+					* Math::cross(cs.rA, impulse);
+
+			bodyB->velocity += impulse * bodyB->invMass;
+			bodyB->angularVelocity += bodyB->invInertiaWorld
+					* Math::cross(cs.rB, impulse);
+		}
+
+		dv = bodyB->velocity + Math::cross(bodyB->angularVelocity, cs.rB)
+				- bodyA->velocity - Math::cross(bodyA->angularVelocity, cs.rA);
 
 		float rv = Math::dot(dv, manifold.normal);
 
@@ -141,28 +162,6 @@ void Physics::ContactConstraint::solve() {
 		bodyB->velocity += impulse * bodyB->invMass;
 		bodyB->angularVelocity += bodyB->invInertiaWorld
 				* Math::cross(cs.rB, impulse);
-
-		dv = bodyB->velocity + Math::cross(bodyB->angularVelocity, cs.rB)
-				- bodyA->velocity - Math::cross(bodyA->angularVelocity, cs.rA);
-
-		for (uint32 j = 0; j < 2; ++j) {
-			lambda = -Math::dot(dv, manifold.tangents[j]) * cs.tangentMass[j];
-
-			float oldTI = cs.tangentImpulse[j];
-			cs.tangentImpulse[j] = Math::clamp(oldTI + lambda,
-					-cs.normalImpulse * friction, cs.normalImpulse * friction);
-			lambda = cs.tangentImpulse[j] - oldTI;
-
-			impulse = manifold.tangents[j] * lambda;
-
-			bodyA->velocity -= impulse * bodyA->invMass;
-			bodyA->angularVelocity -= bodyA->invInertiaWorld
-					* Math::cross(cs.rA, impulse);
-
-			bodyB->velocity += impulse * bodyB->invMass;
-			bodyB->angularVelocity += bodyB->invInertiaWorld
-					* Math::cross(cs.rB, impulse);
-		}
 	}
 }
 
