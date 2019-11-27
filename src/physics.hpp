@@ -1,7 +1,7 @@
 #pragma once
 
 #include "body.hpp"
-#include "manifold.hpp"
+#include "contact-manager.hpp"
 
 #include <engine/core/array-list.hpp>
 
@@ -31,8 +31,8 @@ namespace Physics {
 
 			~PhysicsEngine();
 		private:
+			ContactManager contactManager;
 			ArrayList<Body*> bodies;
-			ArrayList<Manifold> contacts;
 	};
 };
 

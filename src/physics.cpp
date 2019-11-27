@@ -2,6 +2,8 @@
 
 #include "util-components.hpp"
 
+#include "contact-solver.hpp"
+
 #include <engine/game/game.hpp>
 
 #define NUM_ITERATIONS 10
@@ -22,7 +24,8 @@ void Physics::GravitySystem::operator()(Game& game, float deltaTime) {
 	});
 }
 
-Physics::PhysicsEngine::PhysicsEngine() {}
+Physics::PhysicsEngine::PhysicsEngine()
+		: contactManager(*this) {}
 
 Physics::Body* Physics::PhysicsEngine::addBody() {
 	Body* body = new Body();
@@ -33,6 +36,8 @@ Physics::Body* Physics::PhysicsEngine::addBody() {
 }
 
 void Physics::PhysicsEngine::operator()(Game& game, float deltaTime) {
+	contactManager.testCollisions();
+	
 	game.getECS().view<TransformComponent, Physics::BodyHandle>().each([&](
 			TransformComponent& tf, Physics::BodyHandle& handle) {
 		handle.body->transform = tf.transform;
@@ -44,27 +49,6 @@ void Physics::PhysicsEngine::operator()(Game& game, float deltaTime) {
 				* Math::transpose(rot);
 	});
 
-	contacts.clear();
-
-	for (uint32 i = 0; i < bodies.size(); ++i) {
-		Body& a = *bodies[i];
-
-		for (uint32 j = i + 1; j < bodies.size(); ++j) {
-			Body& b = *bodies[j];
-
-			if ((a.flags & Body::FLAG_STATIC)
-					&& (b.flags & Body::FLAG_STATIC)) {
-				continue;
-			}
-
-			Manifold m(a, b);
-			
-			if (m.testCollision()) {
-				contacts.emplace_back(m);
-			}
-		}
-	}
-
 	for (Body* body : bodies) {
 		// integrate velocities
 		body->velocity += body->force * body->invMass * deltaTime;
@@ -72,14 +56,12 @@ void Physics::PhysicsEngine::operator()(Game& game, float deltaTime) {
 				* deltaTime;
 	}
 
-	for (auto& contact : contacts) {
-		contact.preSolve(deltaTime);
-	}
+	ContactSolver contactSolver(contactManager);
+
+	contactSolver.preSolve(deltaTime);
 
 	for (uint32 i = 0; i < NUM_ITERATIONS; ++i) {
-		for (auto& contact : contacts) {
-			contact.solve();
-		}
+		contactSolver.solve();
 	}
 
 	for (uint32 i = 0; i < bodies.size(); ++i) {
@@ -92,6 +74,8 @@ void Physics::PhysicsEngine::operator()(Game& game, float deltaTime) {
 				body.transform.getRotation(), body.angularVelocity,
 				deltaTime));
 	}
+	
+	contactManager.findNewContacts();
 
 	for (Body* body : bodies) {
 		body->force = Vector3f();
@@ -102,8 +86,6 @@ void Physics::PhysicsEngine::operator()(Game& game, float deltaTime) {
 			TransformComponent& tf, Physics::BodyHandle& handle) {
 		tf.transform = handle.body->transform;
 	});
-
-	contacts.clear();
 }
 
 Physics::PhysicsEngine::~PhysicsEngine() {

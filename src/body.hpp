@@ -22,8 +22,13 @@ namespace Physics {
 					, worldCenter()
 					, velocity()
 					, angularVelocity()
+					, mass(0.f)
+					, invMass(0.f)
+					, invInertiaLocal(0.f)
+					, invInertiaWorld(0.f)
 					, force()
-					, torque() {}
+					, torque()
+					, flags(0) {}
 
 			inline void applyForce(const Vector3f& force);
 			inline void applyForce(const Vector3f& force,
@@ -58,11 +63,16 @@ namespace Physics {
 
 			CollisionHull* collisionHull;
 
-			uint32 index;
 			uint32 flags;
 		private:
 			NULL_COPY_AND_ASSIGN(Body);
 
+			ArrayList<ContactEdge*> contactList;
+			uint32 index;
+
+			inline void removeEdge(ContactEdge* edge);
+
+			friend class PhysicsEngine;
 			friend class ContactManager;
 			friend class ContactConstraint;
 	};

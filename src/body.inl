@@ -37,3 +37,14 @@ inline bool Physics::Body::canCollideWith(const Body& other) const {
 	return true;
 }
 
+inline void Physics::Body::removeEdge(Physics::ContactEdge* edge) {
+	for (uint32 i = 0; i < contactList.size(); ++i) {
+		if (contactList[i] == edge) {
+			contactList[i] = contactList.back();
+			contactList.pop_back();
+
+			return;
+		}
+	}
+}
+
