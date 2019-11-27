@@ -1,7 +1,9 @@
 #include "game-scene-2.hpp"
 
 #include "camera.hpp"
-#include "first-person-camera.hpp"
+//#include "first-person-camera.hpp"
+#include "orbit-camera.hpp"
+
 #include "renderable-mesh.hpp"
 
 #include "util-components.hpp"
@@ -18,6 +20,17 @@
 #include <engine/core/application.hpp>
 #include <engine/math/math.hpp>
 
+namespace {
+	struct Player {
+		float moveSpeed;
+	};
+
+	class PlayerControlSystem : public ECS::System {
+		public:
+			virtual void operator()(Game&, float) override;
+	};
+};
+
 GameScene2::GameScene2()
 		: Scene()
 		, physicsEngine(new Physics::PhysicsEngine())
@@ -25,9 +38,11 @@ GameScene2::GameScene2()
 		, sphereCollider2(nullptr)
 		, convexCollider(nullptr) {
 
-	addUpdateSystem(new FirstPersonCameraSystem());
+	//addUpdateSystem(new FirstPersonCameraSystem());
+	addUpdateSystem(new OrbitCameraSystem());
 	addUpdateSystem(new UpdateCameraSystem());
 	addUpdateSystem(new ToggleFullscreenSystem());
+	addUpdateSystem(new ::PlayerControlSystem());
 	
 	addUpdateSystem(new Physics::GravitySystem());
 	addUpdateSystem(physicsEngine);
@@ -80,18 +95,19 @@ void GameScene2::load(Game& game) {
 			.getCubeMap("sargasso-specular"));
 	grc->setBrdfLUT(game.getAssetManager().getTexture("schlick-brdf"));
 
-	ECS::Entity cameraEntity = game.getECS().create();
+	/*ECS::Entity cameraEntity = game.getECS().create();
 
 	game.getECS().assign<TransformComponent>(cameraEntity, Transform());
 	game.getECS().assign<CameraComponent>(cameraEntity,
-			&((GameRenderContext*)game.getRenderContext())->getCamera());
+			&((GameRenderContext*)game.getRenderContext())->getCamera());*/
 
 	// body 2
 	Physics::Body* body2 = physicsEngine->addBody();
 	body2->mass = body2->invMass = 1.f;
-	body2->invInertiaLocal = body2->invInertiaWorld
-			= Math::inverse(Matrix3f(0.4f));
-	body2->invInertiaLocal[2] = Vector3f(0.f, 0.f, 0.f);
+	body2->invInertiaLocal = Matrix3f(0.f);
+	//body2->invInertiaLocal = body2->invInertiaWorld
+	//		= Math::inverse(Matrix3f(0.4f));
+	//body2->invInertiaLocal[2] = Vector3f(0.f, 0.f, 0.f); // lock Z axis 
 	//body2->flags = Physics::Body::FLAG_STATIC;
 	// sphere I^-1 = diag(0.4f * M * R^2)^-1
 
@@ -142,6 +158,11 @@ void GameScene2::load(Game& game) {
 			rot, Vector3f(1.f, 1.f, 1.f)));
 	game.getECS().assign<Physics::BodyHandle>(ePlane,
 			Physics::BodyHandle(body));
+
+	game.getECS().assign<CameraComponent>(eSphere,
+			&((GameRenderContext*)game.getRenderContext())->getCamera());
+	game.getECS().assign<CameraDistanceComponent>(eSphere, 2.f, 1.2f, 10.f);
+	game.getECS().assign<Player>(eSphere, 0.1f);
 }
 
 void GameScene2::unload(Game& game) {
@@ -159,5 +180,40 @@ void GameScene2::unload(Game& game) {
 }
 
 GameScene2::~GameScene2() {
+}
+
+void ::PlayerControlSystem::operator()(Game& game, float deltaTime) {
+	game.getECS().view<TransformComponent, Player, CameraComponent,
+			Physics::BodyHandle>().each([&](auto& tf,
+			auto& plr, auto& cc, auto& handle) {
+		Vector3f v(0.f, 0.f, 0.f);
+
+		if (Application::isKeyDown(Input::KEY_W)) {
+			v.z -= 1.f;
+		}
+
+		if (Application::isKeyDown(Input::KEY_S)) {
+			v.z += 1.f;
+		}
+
+		if (Application::isKeyDown(Input::KEY_A)) {
+			v.x -= 1.f;
+		}
+
+		if (Application::isKeyDown(Input::KEY_D)) {
+			v.x += 1.f;
+		}
+
+		v = Vector3f(cc.camera->view * Vector4f(v, 0.f));
+		v.y = 0.f;
+		v = Math::dot(v, v) < 0.000001f ? v : Math::normalize(v)
+				* plr.moveSpeed;
+		
+		if (Application::isKeyDown(Input::KEY_SPACE)) {
+			v.y += 1.f;
+		}
+
+		handle.body->velocity += v;
+	});
 }
 

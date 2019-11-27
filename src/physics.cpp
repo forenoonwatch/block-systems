@@ -15,6 +15,10 @@ void Physics::GravitySystem::operator()(Game& game, float deltaTime) {
 		if (!(handle.body->flags & Physics::Body::FLAG_STATIC)) {
 			handle.body->applyForce(Physics::GRAVITY);
 		}
+		else {
+			// TODO: FIXME: TEMP: remove this
+			handle.body->velocity = Vector3f(1.f, 0.f, 0.f);
+		}
 	});
 }
 
