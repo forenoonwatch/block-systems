@@ -23,7 +23,9 @@ CXXFLAGS := -I$(CURDIR)/src -I$(ENGINE_DIR)/include -I$(LIB_DIR)/include -msse2
 
 all: game
 
-game: engine $(BUILD_DIR)/$(TARGET_EXEC) 
+game: engine game_only
+
+game_only: $(BUILD_DIR)/$(TARGET_EXEC)
 
 engine:
 	@$(MAKE) -C $(ENGINE_DIR) -f Makefile
@@ -46,4 +48,4 @@ $(BUILD_DIR)/%.cpp.o: %.cpp
 	@$(MKDIR_P) $(dir $@)
 	@$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c $< -o $@
 
-.PHONY: all clean run engine game
+.PHONY: all clean run engine game game_only
