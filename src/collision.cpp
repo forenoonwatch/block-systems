@@ -59,6 +59,9 @@ void Physics::collisionSphereConvex(Manifold& manifold, CollisionHull& a,
 		manifold.addContact(bodyA->transform.getPosition()
 				- Vector3f(tf[1]) * ((d + d - sphere->radius) * 0.5f),
 				sphere->radius - d);
+
+		//manifold.addContact(bodyA->transform.getPosition()
+		//		- Vector3f(tf[1]) * d, sphere->radius - d);
 	}
 }
 

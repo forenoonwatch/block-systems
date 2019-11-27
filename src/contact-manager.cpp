@@ -40,12 +40,38 @@ void Physics::ContactManager::testCollisions() {
 
 		// TODO: remove contact if fails broadphase check
 
-		//Manifold* manifold = &constraint.manifold;
-		// TODO: old/new manifold thing
+		Manifold* manifold = &constraint.manifold;
+		Manifold oldManifold = constraint.manifold;
+
+		Vector3f ot0 = oldManifold.tangents[0];
+		Vector3f ot1 = oldManifold.tangents[1];
 
 		constraint.testCollision();
+
+		for (uint32 i = 0; i < manifold->numContacts; ++i) {
+			Contact& c = manifold->contacts[i];
+			c.tangentImpulse[0] = c.tangentImpulse[1] = c.normalImpulse = 0.f;
+
+			for (uint32 j = 0; j < oldManifold.numContacts; ++j) {
+				Contact& oc = oldManifold.contacts[j];
+
+				if (c.fp.key == oc.fp.key) {
+					c.normalImpulse = oc.normalImpulse;
+
+					Vector3f friction = ot0 * oc.tangentImpulse[0]
+							+ ot1 * oc.tangentImpulse[1];
+
+					c.tangentImpulse[0] = Math::dot(friction,
+							manifold->tangents[0]);
+					c.tangentImpulse[1] = Math::dot(friction,
+							manifold->tangents[1]);
+
+					break;
+				}
+			}
+		}
 	
-		// TODO: warm starting stuff	
+		// TODO: fire contact listeners if any
 	}
 }
 

@@ -31,6 +31,7 @@ namespace Physics {
 			// bool sensor;
 
 			friend class ContactConstraint;
+			friend class ContactManager;
 	};
 };
 
