@@ -22,7 +22,9 @@ void Physics::ContactManager::findNewContacts() {
 }
 
 void Physics::ContactManager::testCollisions() {
-	for (auto& constraint : contactList) {
+	for (uint32 i = 0; i < contactList.size(); ++i) {
+		ContactConstraint& constraint = contactList[i];
+
 		CollisionHull* hullA = constraint.hullA;
 		CollisionHull* hullB = constraint.hullB;
 		
@@ -34,7 +36,8 @@ void Physics::ContactManager::testCollisions() {
 		// TODO: if neither body is awake, skip
 
 		if (!bodyA->canCollideWith(*bodyB)) {
-			removeContact(constraint);
+			removeContact(i);
+			--i;
 			continue;
 		}
 
