@@ -7,8 +7,9 @@
 #include <engine/math/transform.hpp>
 
 namespace Physics {
-	class CollisionHull;
 	class ContactEdge;
+	class PhysicsEngine;
+	class CollisionHull;
 
 	class Body {
 		public:
@@ -22,7 +23,7 @@ namespace Physics {
 				FLAG_KINEMATIC		= 64  // no collision, integration
 			};
 			
-			inline Body()
+			inline Body(PhysicsEngine& physicsEngine)
 					: transform()
 					, localCenter()
 					, worldCenter()
@@ -34,8 +35,11 @@ namespace Physics {
 					, invInertiaWorld(0.f)
 					, force()
 					, torque()
-					, flags(0)
-					, sleepTime(0.f) {}
+					, physicsEngine(&physicsEngine)
+					, sleepTime(0.f)
+					, flags(0) {}
+
+			void setCollisionHull(CollisionHull* hull);
 
 			inline void applyForce(const Vector3f& force);
 			inline void applyForce(const Vector3f& force,
@@ -65,6 +69,8 @@ namespace Physics {
 
 			inline bool isInIsland() const;
 
+			inline CollisionHull* getCollisionHull();
+
 			Transform transform;
 
 			Vector3f localCenter;
@@ -82,14 +88,15 @@ namespace Physics {
 			Matrix3f invInertiaLocal;
 			Matrix3f invInertiaWorld;
 
-			CollisionHull* collisionHull;
-
 			uint32 flags;
 		private:
 			NULL_COPY_AND_ASSIGN(Body);
 
+			PhysicsEngine* physicsEngine;
+
+			CollisionHull* collisionHull;
+
 			ArrayList<ContactEdge*> contactList;
-			uint32 index;
 			float sleepTime;
 
 			inline void removeEdge(ContactEdge* edge);

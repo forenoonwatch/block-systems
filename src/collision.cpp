@@ -13,8 +13,8 @@ void Physics::collisionSphereSphere(Manifold& manifold, CollisionHull& a,
 	Body* bodyA = a.body;
 	Body* bodyB = b.body;
 	
-	SphereCollider* sphereA = (SphereCollider*)bodyA->collisionHull;
-	SphereCollider* sphereB = (SphereCollider*)bodyB->collisionHull;
+	SphereCollider* sphereA = (SphereCollider*)bodyA->getCollisionHull();
+	SphereCollider* sphereB = (SphereCollider*)bodyB->getCollisionHull();
 
 	Vector3f ds = bodyB->transform.getPosition()
 			- bodyA->transform.getPosition();

@@ -14,6 +14,8 @@ class Game;
 namespace Physics {
 	constexpr const Vector3f GRAVITY = Vector3f(0.f, -9.81f, 0.f);
 
+	class CollisionHull;
+
 	class GravitySystem : public ECS::System {
 		public:
 			virtual void operator()(Game& game, float deltaTime) override;
@@ -27,12 +29,16 @@ namespace Physics {
 
 			virtual void operator()(Game& game, float deltaTime) override;
 
+			void addHull(Body& body, CollisionHull& hull);
+
 			inline ArrayList<Body*>& getBodies();
 
 			~PhysicsEngine();
 		private:
 			ContactManager contactManager;
 			ArrayList<Body*> bodies;
+
+			bool newHull;
 	};
 };
 

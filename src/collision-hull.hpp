@@ -2,6 +2,9 @@
 
 #include <engine/core/common.hpp>
 
+#include <engine/math/aabb.hpp>
+#include <engine/math/transform.hpp>
+
 namespace Physics {
 	class Body;
 
@@ -19,6 +22,8 @@ namespace Physics {
 					, restitution(0.f)
 					, body(nullptr) {}
 
+			virtual AABB computeAABB(const Transform& tf) const = 0;
+
 			virtual ~CollisionHull() {}
 
 			float friction;
@@ -31,6 +36,7 @@ namespace Physics {
 			int32 broadphaseIndex;
 
 			friend class Broadphase;
+			friend class ContactManager;
 	};
 };
 

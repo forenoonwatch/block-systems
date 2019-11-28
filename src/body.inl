@@ -94,3 +94,7 @@ inline bool Physics::Body::isInIsland() const {
 	return flags & Physics::Body::FLAG_ISLAND;
 }
 
+inline Physics::CollisionHull* Physics::Body::getCollisionHull() {
+	return collisionHull;
+}
+

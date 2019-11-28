@@ -7,6 +7,8 @@ namespace Physics {
 		public:
 			inline ConvexCollider()
 					: CollisionHull(CollisionHull::TYPE_CONVEX_HULL) {}
+
+			virtual AABB computeAABB(const Transform& tf) const override;
 		private:
 	};
 };

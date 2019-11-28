@@ -4,6 +4,7 @@
 
 #include "contact-constraint.hpp"
 #include "island.hpp"
+#include "collision-hull.hpp"
 
 #include <engine/game/game.hpp>
 
@@ -21,17 +22,22 @@ void Physics::GravitySystem::operator()(Game& game, float deltaTime) {
 }
 
 Physics::PhysicsEngine::PhysicsEngine()
-		: contactManager(*this) {}
+		: contactManager(*this)
+		, newHull(false) {}
 
 Physics::Body* Physics::PhysicsEngine::addBody() {
-	Body* body = new Body();
-	body->index = bodies.size();
+	Body* body = new Body(*this);
 	bodies.push_back(body);
 	
 	return body;
 }
 
 void Physics::PhysicsEngine::operator()(Game& game, float deltaTime) {
+	if (newHull) {
+		newHull = false;
+		contactManager.getBroadphase().updatePairs();
+	}
+
 	contactManager.testCollisions();
 	
 	game.getECS().view<TransformComponent, Physics::BodyHandle>().each([&](
@@ -39,6 +45,9 @@ void Physics::PhysicsEngine::operator()(Game& game, float deltaTime) {
 		handle.body->transform = tf.transform;
 		handle.body->worldCenter = tf.transform.transform(
 				handle.body->localCenter, 1.f);
+
+		// TODO: find a way to update the broadphase for the bodies if
+		// transform was manally set
 	});
 
 	for (Body* body : bodies) {
@@ -96,7 +105,7 @@ void Physics::PhysicsEngine::operator()(Game& game, float deltaTime) {
 
 		island.solve(deltaTime);
 	}
-	
+
 	contactManager.findNewContacts();
 
 	for (Body* body : bodies) {
@@ -108,6 +117,12 @@ void Physics::PhysicsEngine::operator()(Game& game, float deltaTime) {
 			TransformComponent& tf, Physics::BodyHandle& handle) {
 		tf.transform = handle.body->transform;
 	});
+}
+
+void Physics::PhysicsEngine::addHull(Body& body, CollisionHull& hull) {
+	newHull = true;
+	contactManager.getBroadphase().insert(hull,
+			hull.computeAABB(body.transform));
 }
 
 Physics::PhysicsEngine::~PhysicsEngine() {

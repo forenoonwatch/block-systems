@@ -5,19 +5,15 @@
 #include "collision-hull.hpp"
 
 Physics::ContactManager::ContactManager(PhysicsEngine& physicsEngine)
-		: physicsEngine(&physicsEngine) {
-
-}
+		: physicsEngine(&physicsEngine)
+		, broadphase(*this) {}
 
 void Physics::ContactManager::findNewContacts() {
-	for (uint32 i = 0; i < physicsEngine->getBodies().size(); ++i) {
-		Body* a = physicsEngine->getBodies()[i];
-
-		for (uint32 j = i + 1; j < physicsEngine->getBodies().size(); ++j) {
-			Body* b = physicsEngine->getBodies()[j];
-
-			addContact(*a->collisionHull, *b->collisionHull);
-		}
+	broadphase.updatePairs();
+	
+	for (Body* body : physicsEngine->getBodies()) {
+		broadphase.update(body->collisionHull->broadphaseIndex,
+				body->collisionHull->computeAABB(body->transform));
 	}
 }
 
@@ -43,7 +39,12 @@ void Physics::ContactManager::testCollisions() {
 			continue;
 		}
 
-		// TODO: remove contact if fails broadphase check
+		if (!broadphase.testOverlap(hullA->broadphaseIndex,
+				hullB->broadphaseIndex)) {
+			removeContact(i);
+			--i;
+			continue;
+		}
 
 		Manifold* manifold = &constraint.manifold;
 		Manifold oldManifold = constraint.manifold;

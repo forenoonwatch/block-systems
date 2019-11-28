@@ -113,11 +113,10 @@ void GameScene2::load(Game& game) {
 	// sphere I^-1 = diag(0.4f * M * R^2)^-1
 
 	sphereCollider = new Physics::SphereCollider();
-	body2->collisionHull = sphereCollider;
-	sphereCollider->body = body2;
 	sphereCollider->radius = 1.f;
 	sphereCollider->restitution = 0.f;
 	sphereCollider->friction = 0.3f;
+	body2->setCollisionHull(sphereCollider);
 
 	ECS::Entity eSphere = game.getECS().create();
 	game.getECS().assign<RenderableMesh>(eSphere,
@@ -137,10 +136,9 @@ void GameScene2::load(Game& game) {
 			| Physics::Body::FLAG_AWAKE;
 
 	convexCollider = new Physics::ConvexCollider();
-	body->collisionHull = convexCollider;
-	convexCollider->body = body;
 	convexCollider->restitution = 0.f;
 	convexCollider->friction = 0.3f;
+	body->setCollisionHull(convexCollider);
 	
 	//sphereCollider2 = new Physics::SphereCollider();
 	//body->collisionHull = sphereCollider2;
