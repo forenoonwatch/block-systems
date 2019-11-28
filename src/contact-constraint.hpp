@@ -18,6 +18,11 @@ namespace Physics {
 			void solve();
 
 			void testCollision();
+
+			inline void setInIsland() { flags |= FLAG_ISLAND; }
+
+			inline bool isInIsland() const { return flags & FLAG_ISLAND; }
+			inline bool isColliding() const { return flags & FLAG_COLLIDING; }
 		private:
 			CollisionHull* hullA;
 			CollisionHull* hullB;

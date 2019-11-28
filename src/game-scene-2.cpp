@@ -108,7 +108,8 @@ void GameScene2::load(Game& game) {
 	//body2->invInertiaLocal = body2->invInertiaWorld
 	//		= Math::inverse(Matrix3f(0.4f));
 	//body2->invInertiaLocal[2] = Vector3f(0.f, 0.f, 0.f); // lock Z axis 
-	//body2->flags = Physics::Body::FLAG_STATIC;
+	body2->flags = Physics::Body::FLAG_DYNAMIC | Physics::Body::FLAG_ACTIVE
+			| Physics::Body::FLAG_AWAKE;
 	// sphere I^-1 = diag(0.4f * M * R^2)^-1
 
 	sphereCollider = new Physics::SphereCollider();
@@ -132,7 +133,8 @@ void GameScene2::load(Game& game) {
 	Physics::Body* body = physicsEngine->addBody();
 	body->mass = body->invMass = 0.f;
 	body->invInertiaLocal = body->invInertiaWorld = Matrix3f(0.f);
-	body->flags = Physics::Body::FLAG_STATIC;
+	body->flags = Physics::Body::FLAG_STATIC | Physics::Body::FLAG_ACTIVE
+			| Physics::Body::FLAG_AWAKE;
 
 	convexCollider = new Physics::ConvexCollider();
 	body->collisionHull = convexCollider;

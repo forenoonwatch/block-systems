@@ -28,7 +28,7 @@ namespace Physics {
 			Contact contacts[MAX_CONTACTS];
 			uint32 numContacts;
 
-			// bool sensor;
+			// TODO: bool sensor;
 
 			friend class ContactConstraint;
 			friend class ContactManager;
@@ -42,6 +42,6 @@ inline void Physics::Manifold::setPair(CollisionHull& a, CollisionHull& b) {
 	hullA = &a;
 	hullB = &b;
 
-	// sensor = a.sensor || b.sensor;
+	// TODO: sensor = a.sensor || b.sensor;
 }
 

@@ -13,7 +13,13 @@ namespace Physics {
 	class Body {
 		public:
 			enum Flags {
-				FLAG_STATIC = 1
+				FLAG_AWAKE			= 1,  // if the object is awake
+				FLAG_ACTIVE			= 2,  // if the object can have calcs done
+				FLAG_ALLOW_SLEEP	= 4,  // if sleep allowed
+				FLAG_ISLAND			= 8,  // marker for island building
+				FLAG_DYNAMIC		= 16, // collision, integration
+				FLAG_STATIC			= 32, // collision, no integration
+				FLAG_KINEMATIC		= 64  // no collision, integration
 			};
 			
 			inline Body()
@@ -44,6 +50,19 @@ namespace Physics {
 
 			inline bool canCollideWith(const Body& other) const;
 
+			inline void setToAwake();
+			inline void setInIsland();
+
+			inline bool isAwake() const;
+			inline bool isActive() const;
+			inline bool canSleep() const;
+
+			inline bool isDynamic() const;
+			inline bool isStatic() const;
+			inline bool isKinematic() const;
+
+			inline bool isInIsland() const;
+
 			Transform transform;
 
 			Vector3f localCenter;
@@ -73,6 +92,7 @@ namespace Physics {
 			inline void removeEdge(ContactEdge* edge);
 
 			friend class PhysicsEngine;
+			friend class Island;
 			friend class ContactManager;
 			friend class ContactConstraint;
 	};

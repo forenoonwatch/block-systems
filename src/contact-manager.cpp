@@ -33,7 +33,9 @@ void Physics::ContactManager::testCollisions() {
 
 		constraint.flags &= ~ContactConstraint::FLAG_ISLAND;
 
-		// TODO: if neither body is awake, skip
+		if (!bodyA->isAwake() && !bodyB->isAwake()) {
+			continue;
+		}
 
 		if (!bodyA->canCollideWith(*bodyB)) {
 			removeContact(i);
@@ -95,7 +97,8 @@ void Physics::ContactManager::addContact(CollisionHull& a, CollisionHull& b) {
 
 	contactList.emplace_back(a, b);
 
-	// TODO: awaken A and B
+	bodyA->setToAwake();
+	bodyB->setToAwake();
 }
 
 void Physics::ContactManager::removeContact(ContactConstraint& constraint) {
@@ -111,7 +114,8 @@ void Physics::ContactManager::removeContact(uint32 i) {
 	contactList[i].bodyA->removeEdge(&contactList[i].edgeA);
 	contactList[i].bodyB->removeEdge(&contactList[i].edgeB);
 
-	// TODO: wake up A and B
+	contactList[i].bodyA->setToAwake();
+	contactList[i].bodyB->setToAwake();
 	
 	contactList[i] = contactList.back();
 	contactList.pop_back();

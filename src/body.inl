@@ -48,3 +48,39 @@ inline void Physics::Body::removeEdge(Physics::ContactEdge* edge) {
 	}
 }
 
+inline void Physics::Body::setToAwake() {
+	flags |= Physics::Body::FLAG_AWAKE;
+}
+
+inline void Physics::Body::setInIsland() {
+	flags |= Physics::Body::FLAG_ISLAND;
+}
+
+inline bool Physics::Body::isAwake() const {
+	return flags & Physics::Body::FLAG_AWAKE;
+}
+
+inline bool Physics::Body::isActive() const {
+	return flags & Physics::Body::FLAG_ACTIVE;
+}
+
+inline bool Physics::Body::canSleep() const {
+	return flags & Physics::Body::FLAG_ALLOW_SLEEP;
+}
+
+inline bool Physics::Body::isDynamic() const {
+	return flags & Physics::Body::FLAG_DYNAMIC;
+}
+
+inline bool Physics::Body::isStatic() const {
+	return flags & Physics::Body::FLAG_STATIC;
+}
+
+inline bool Physics::Body::isKinematic() const {
+	return flags & Physics::Body::FLAG_KINEMATIC;
+}
+
+inline bool Physics::Body::isInIsland() const {
+	return flags & Physics::Body::FLAG_ISLAND;
+}
+

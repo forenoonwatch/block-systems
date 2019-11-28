@@ -2,19 +2,15 @@
 
 #include "util-components.hpp"
 
-#include "contact-solver.hpp"
+#include "contact-constraint.hpp"
+#include "island.hpp"
 
 #include <engine/game/game.hpp>
-
-#define NUM_ITERATIONS 10
-
-static Quaternion integrateAngularVelocity(const Quaternion& rot,
-		const Vector3f& angularVelocity, float deltaTime);
 
 void Physics::GravitySystem::operator()(Game& game, float deltaTime) {
 	game.getECS().view<Physics::BodyHandle>().each([&](
 			Physics::BodyHandle& handle) {
-		if (!(handle.body->flags & Physics::Body::FLAG_STATIC)) {
+		if (handle.body->isDynamic()) {
 			handle.body->applyForce(Physics::GRAVITY);
 		}
 		else {
@@ -43,36 +39,62 @@ void Physics::PhysicsEngine::operator()(Game& game, float deltaTime) {
 		handle.body->transform = tf.transform;
 		handle.body->worldCenter = tf.transform.transform(
 				handle.body->localCenter, 1.f);
-
-		const Matrix3f rot = Math::quatToMat3(tf.transform.getRotation());
-		handle.body->invInertiaWorld = rot * handle.body->invInertiaLocal
-				* Math::transpose(rot);
 	});
 
 	for (Body* body : bodies) {
-		// integrate velocities
-		body->velocity += body->force * body->invMass * deltaTime;
-		body->angularVelocity += body->invInertiaWorld * body->torque
-				* deltaTime;
+		body->flags &= ~Body::FLAG_ISLAND;
 	}
 
-	ContactSolver contactSolver(contactManager);
-
-	contactSolver.preSolve(deltaTime);
-
-	for (uint32 i = 0; i < NUM_ITERATIONS; ++i) {
-		contactSolver.solve();
-	}
+	ArrayList<Body*> bodyStack;
 
 	for (uint32 i = 0; i < bodies.size(); ++i) {
-		Body& body = *bodies[i];
+		Body* seed = bodies[i];
 
-		// integrate positions
-		body.transform.setPosition(body.transform.getPosition()
-				+ body.velocity * deltaTime);
-		body.transform.setRotation(integrateAngularVelocity(
-				body.transform.getRotation(), body.angularVelocity,
-				deltaTime));
+		if (seed->isInIsland() || !seed->isAwake() || seed->isStatic()) {
+			continue;
+		}
+
+		Island island;
+
+		seed->setInIsland();
+
+		bodyStack.clear();
+		bodyStack.push_back(seed);
+
+		while (!bodyStack.empty()) {
+			Body* body = bodyStack.back();
+			bodyStack.pop_back();
+
+			island.add(*body);
+
+			body->setToAwake();
+
+			if (body->isStatic()) {
+				continue;
+			}
+
+			for (ContactEdge* edge : body->contactList) {
+				ContactConstraint* cc = edge->constraint;
+
+				if (cc->isInIsland() || !cc->isColliding()) {
+					continue;
+				}
+
+				// TODO: skip sensors
+
+				cc->setInIsland();
+				island.add(*cc);
+
+				if (edge->other->isInIsland()) {
+					continue;
+				}
+
+				bodyStack.push_back(edge->other);
+				edge->other->setInIsland();
+			}
+		}
+
+		island.solve(deltaTime);
 	}
 	
 	contactManager.findNewContacts();
@@ -92,17 +114,5 @@ Physics::PhysicsEngine::~PhysicsEngine() {
 	for (Body* body : bodies) {
 		delete body;
 	}
-}
-
-inline static Quaternion integrateAngularVelocity(const Quaternion& rot,
-		const Vector3f& angularVelocity, float deltaTime) {
-	// wxyz
-	Quaternion q(0.f, angularVelocity.x * deltaTime,
-			angularVelocity.y * deltaTime, angularVelocity.z * deltaTime);
-
-	q *= rot;
-	q = rot + q * 0.5f;
-
-	return Math::normalize(q);
 }
 
