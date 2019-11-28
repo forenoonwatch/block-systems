@@ -34,6 +34,12 @@ inline bool Physics::Body::canCollideWith(const Body& other) const {
 		return false;
 	}
 
+	if (!isDynamic() && !other.isDynamic()) {
+		return false;
+	}
+
+	// TODO: layers: aka collision groups
+
 	return true;
 }
 
