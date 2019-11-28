@@ -1,5 +1,7 @@
 #pragma once
 
+#include <engine/core/common.hpp>
+
 namespace Physics {
 	class Body;
 
@@ -26,6 +28,9 @@ namespace Physics {
 
 			const enum HullType type;
 		private:
+			int32 broadphaseIndex;
+
+			friend class Broadphase;
 	};
 };
 

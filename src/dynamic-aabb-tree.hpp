@@ -1,7 +1,9 @@
 #pragma once
 
-#include <engine/core/common.hpp>
+#include <engine/core/array-list.hpp>
 #include <engine/math/aabb.hpp>
+
+// TODO: replace with ArrayList<Node>
 
 class DynamicAABBTree {
 	public:
@@ -12,11 +14,16 @@ class DynamicAABBTree {
 
 		bool update(int32 id, const AABB& aabb);
 
+		template <typename T>
+		void query(T& callback, const AABB& aabb) const;
+
 		inline void* getUserData(int32 id) const;
 		inline const AABB& getFatAABB(int32 id) const;
 
 		~DynamicAABBTree();
 	private:
+		NULL_COPY_AND_ASSIGN(DynamicAABBTree);
+
 		struct Node {
 			static constexpr const int32 NULL_NODE = -1;
 
@@ -57,11 +64,5 @@ class DynamicAABBTree {
 		void addToFreeList(int32);
 };
 
-inline void* DynamicAABBTree::getUserData(int32 id) const {
-	return nodes[id].userData;
-}
-
-inline const AABB& DynamicAABBTree::getFatAABB(int32 id) const {
-	return nodes[id].aabb;
-}
+#include "dynamic-aabb-tree.inl"
 
