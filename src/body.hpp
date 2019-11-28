@@ -34,7 +34,8 @@ namespace Physics {
 					, invInertiaWorld(0.f)
 					, force()
 					, torque()
-					, flags(0) {}
+					, flags(0)
+					, sleepTime(0.f) {}
 
 			inline void applyForce(const Vector3f& force);
 			inline void applyForce(const Vector3f& force,
@@ -51,6 +52,7 @@ namespace Physics {
 			inline bool canCollideWith(const Body& other) const;
 
 			inline void setToAwake();
+			inline void setToSleep();
 			inline void setInIsland();
 
 			inline bool isAwake() const;
@@ -88,6 +90,7 @@ namespace Physics {
 
 			ArrayList<ContactEdge*> contactList;
 			uint32 index;
+			float sleepTime;
 
 			inline void removeEdge(ContactEdge* edge);
 

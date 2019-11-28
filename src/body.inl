@@ -52,6 +52,10 @@ inline void Physics::Body::setToAwake() {
 	flags |= Physics::Body::FLAG_AWAKE;
 }
 
+inline void Physics::Body::setToSleep() {
+	flags &= ~Physics::Body::FLAG_AWAKE;
+}
+
 inline void Physics::Body::setInIsland() {
 	flags |= Physics::Body::FLAG_ISLAND;
 }
