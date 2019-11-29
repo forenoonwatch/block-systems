@@ -16,6 +16,7 @@
 
 #include "convex-collider.hpp"
 #include "sphere-collider.hpp"
+#include "plane-collider.hpp"
 
 #include <engine/core/application.hpp>
 #include <engine/math/math.hpp>
@@ -36,7 +37,9 @@ GameScene2::GameScene2()
 		, physicsEngine(new Physics::PhysicsEngine())
 		, sphereCollider(nullptr)
 		, sphereCollider2(nullptr)
-		, convexCollider(nullptr) {
+		, convexCollider(nullptr)
+		, convexCollider2(nullptr)
+		, planeCollider(nullptr) {
 
 	//addUpdateSystem(new FirstPersonCameraSystem());
 	addUpdateSystem(new OrbitCameraSystem());
@@ -134,10 +137,10 @@ void GameScene2::load(Game& game) {
 
 	Physics::Body* body = physicsEngine->addBody(bodyHints);
 
-	convexCollider = new Physics::ConvexCollider();
-	convexCollider->restitution = 0.f;
-	convexCollider->friction = 0.3f;
-	body->setCollisionHull(convexCollider);
+	planeCollider = new Physics::PlaneCollider();
+	planeCollider->restitution = 0.f;
+	planeCollider->friction = 0.3f;
+	body->setCollisionHull(planeCollider);
 	
 	//sphereCollider2 = new Physics::SphereCollider();
 	//body->collisionHull = sphereCollider2;
@@ -168,6 +171,10 @@ void GameScene2::unload(Game& game) {
 	if (convexCollider != nullptr) {
 		delete convexCollider;
 	}
+
+	if (convexCollider2 != nullptr) {
+		delete convexCollider2;
+	}
 	
 	if (sphereCollider != nullptr) {
 		delete sphereCollider;
@@ -175,6 +182,10 @@ void GameScene2::unload(Game& game) {
 	
 	if (sphereCollider2 != nullptr) {
 		delete sphereCollider2;
+	}
+
+	if (planeCollider != nullptr) {
+		delete planeCollider;
 	}
 }
 

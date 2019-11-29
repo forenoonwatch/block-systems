@@ -35,8 +35,12 @@ Physics::ContactConstraint::ContactConstraint(CollisionHull& a,
 
 void Physics::ContactConstraint::testCollision() {
 	manifold.numContacts = 0;
-	COLLISION_DISPATCH[bodyA->collisionHull->type][bodyB->collisionHull->type]
-			(manifold, *(bodyA->collisionHull), *(bodyB->collisionHull));
+	CollisionCallback cb = COLLISION_DISPATCH[bodyA->collisionHull->type]
+			[bodyB->collisionHull->type];
+
+	if (cb != nullptr) {
+		cb(manifold, *(bodyA->collisionHull), *(bodyB->collisionHull));
+	}
 
 	if (manifold.numContacts > 0) {
 		if (flags & FLAG_COLLIDING) {

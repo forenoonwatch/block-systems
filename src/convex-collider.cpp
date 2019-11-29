@@ -3,6 +3,9 @@
 #define EXTENT_DIST	1e6f
 #define THICKNESS	0.1f
 
+Physics::ConvexCollider::ConvexCollider()
+		: CollisionHull(CollisionHull::TYPE_CONVEX_HULL) {}
+
 AABB Physics::ConvexCollider::computeAABB(const Transform& tf) const {
 	// TODO: make this actually reflect a convex collider and not a plane
 	

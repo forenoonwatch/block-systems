@@ -6,6 +6,7 @@ namespace Physics {
 	class PhysicsEngine;
 	class SphereCollider;
 	class ConvexCollider;
+	class PlaneCollider;
 };
 
 class GameScene2 : public Scene {
@@ -21,6 +22,10 @@ class GameScene2 : public Scene {
 		
 		Physics::SphereCollider* sphereCollider;
 		Physics::SphereCollider* sphereCollider2;
+
 		Physics::ConvexCollider* convexCollider;
+		Physics::ConvexCollider* convexCollider2;
+
+		Physics::PlaneCollider* planeCollider;
 };
 

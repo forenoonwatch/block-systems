@@ -18,6 +18,8 @@ namespace Physics {
 
 			inline Body* getBodyA() { return hullA->body; }
 			inline Body* getBodyB() { return hullB->body; }
+
+			inline const Vector3f& getNormal() const { return normal; }
 		private:
 			CollisionHull* hullA;
 			CollisionHull* hullB;
