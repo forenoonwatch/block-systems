@@ -101,15 +101,15 @@ void GameScene2::load(Game& game) {
 	game.getECS().assign<CameraComponent>(cameraEntity,
 			&((GameRenderContext*)game.getRenderContext())->getCamera());*/
 
+	Physics::BodyHints bodyHints;
+	bodyHints.mass = 1.f;
+	bodyHints.type = Physics::BodyType::DYNAMIC;
+
 	// body 2
-	Physics::Body* body2 = physicsEngine->addBody();
-	body2->mass = body2->invMass = 1.f;
-	body2->invInertiaLocal = Matrix3f(0.f);
+	Physics::Body* body2 = physicsEngine->addBody(bodyHints);
 	//body2->invInertiaLocal = body2->invInertiaWorld
 	//		= Math::inverse(Matrix3f(0.4f));
 	//body2->invInertiaLocal[2] = Vector3f(0.f, 0.f, 0.f); // lock Z axis 
-	body2->flags = Physics::Body::FLAG_DYNAMIC | Physics::Body::FLAG_ACTIVE
-			| Physics::Body::FLAG_AWAKE;
 	// sphere I^-1 = diag(0.4f * M * R^2)^-1
 
 	sphereCollider = new Physics::SphereCollider();
@@ -129,11 +129,10 @@ void GameScene2::load(Game& game) {
 			Physics::BodyHandle(body2));
 
 	// body 1 
-	Physics::Body* body = physicsEngine->addBody();
-	body->mass = body->invMass = 0.f;
-	body->invInertiaLocal = body->invInertiaWorld = Matrix3f(0.f);
-	body->flags = Physics::Body::FLAG_STATIC | Physics::Body::FLAG_ACTIVE
-			| Physics::Body::FLAG_AWAKE;
+	bodyHints.mass = 0.f;
+	bodyHints.type = Physics::BodyType::STATIC;
+
+	Physics::Body* body = physicsEngine->addBody(bodyHints);
 
 	convexCollider = new Physics::ConvexCollider();
 	convexCollider->restitution = 0.f;
@@ -213,7 +212,7 @@ void ::PlayerControlSystem::operator()(Game& game, float deltaTime) {
 			v.y += 1.f;
 		}
 
-		handle.body->velocity += v;
+		handle.body->getVelocity() += v;
 	});
 }
 

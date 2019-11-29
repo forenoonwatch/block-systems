@@ -16,8 +16,8 @@ void Physics::collisionSphereSphere(Manifold& manifold, CollisionHull& a,
 	SphereCollider* sphereA = (SphereCollider*)bodyA->getCollisionHull();
 	SphereCollider* sphereB = (SphereCollider*)bodyB->getCollisionHull();
 
-	Vector3f ds = bodyB->transform.getPosition()
-			- bodyA->transform.getPosition();
+	Vector3f ds = bodyB->getTransform().getPosition()
+			- bodyA->getTransform().getPosition();
 
 	float d = Math::dot(ds, ds);
 	float rSum = sphereA->radius + sphereB->radius;
@@ -25,8 +25,8 @@ void Physics::collisionSphereSphere(Manifold& manifold, CollisionHull& a,
 	if (d < rSum * rSum) {
 		manifold.setNormal(Math::normalize(ds));
 
-		manifold.addContact((bodyA->transform.getPosition()
-				+ bodyB->transform.getPosition()) * 0.5f,
+		manifold.addContact((bodyA->getTransform().getPosition()
+				+ bodyB->getTransform().getPosition()) * 0.5f,
 				rSum - Math::sqrt(d));
 	}
 }
@@ -43,11 +43,11 @@ void Physics::collisionSphereConvex(Manifold& manifold, CollisionHull& a,
 
 	SphereCollider* sphere = (SphereCollider*)&a;
 
-	Matrix4f tf = bodyB->transform.toMatrix();
+	Matrix4f tf = bodyB->getTransform().toMatrix();
 	Vector3f normal(tf[1]);
 
-	float d = Math::dot(normal, bodyA->transform.getPosition()
-			- bodyB->transform.getPosition());
+	float d = Math::dot(normal, bodyA->getTransform().getPosition()
+			- bodyB->getTransform().getPosition());
 
 	if (d < sphere->radius) {
 		if (bodyA == manifold.getBodyA()) {
@@ -56,7 +56,7 @@ void Physics::collisionSphereConvex(Manifold& manifold, CollisionHull& a,
 
 		manifold.setNormal(normal);
 
-		manifold.addContact(bodyA->transform.getPosition()
+		manifold.addContact(bodyA->getTransform().getPosition()
 				- Vector3f(tf[1]) * ((d + d - sphere->radius) * 0.5f),
 				sphere->radius - d);
 

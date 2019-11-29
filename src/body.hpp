@@ -11,34 +11,33 @@ namespace Physics {
 	class PhysicsEngine;
 	class CollisionHull;
 
+	enum class BodyType {
+		DYNAMIC,
+		STATIC,
+		KINEMATIC
+	};
+
+	struct BodyHints {
+		BodyHints();
+
+		BodyType type;
+
+		bool active;
+		bool awake;
+		bool allowSleep;
+
+		Vector3f velocity;
+		Vector3f angularVelocity;
+
+		Vector3f force;
+		Vector3f torque;
+
+		float mass;
+		Matrix3f invInertiaLocal;
+	};
+
 	class Body {
 		public:
-			enum Flags {
-				FLAG_AWAKE			= 1,  // if the object is awake
-				FLAG_ACTIVE			= 2,  // if the object can have calcs done
-				FLAG_ALLOW_SLEEP	= 4,  // if sleep allowed
-				FLAG_ISLAND			= 8,  // marker for island building
-				FLAG_DYNAMIC		= 16, // collision, integration
-				FLAG_STATIC			= 32, // collision, no integration
-				FLAG_KINEMATIC		= 64  // no collision, integration
-			};
-			
-			inline Body(PhysicsEngine& physicsEngine)
-					: transform()
-					, localCenter()
-					, worldCenter()
-					, velocity()
-					, angularVelocity()
-					, mass(0.f)
-					, invMass(0.f)
-					, invInertiaLocal(0.f)
-					, invInertiaWorld(0.f)
-					, force()
-					, torque()
-					, physicsEngine(&physicsEngine)
-					, sleepTime(0.f)
-					, flags(0) {}
-
 			void setCollisionHull(CollisionHull* hull);
 
 			inline void applyForce(const Vector3f& force);
@@ -51,13 +50,24 @@ namespace Physics {
 			inline void applyImpulse(const Vector3f& impulse,
 					const Vector3f& worldPoint);
 
-			inline Vector3f getVelocityAt(const Vector3f& worldPoint) const;
-
 			inline bool canCollideWith(const Body& other) const;
 
 			inline void setToAwake();
 			inline void setToSleep();
 			inline void setInIsland();
+			inline void setNotInIsland();
+
+			inline void setLocalCenter(const Vector3f& localCenter);
+
+			inline void setVelocity(const Vector3f& velocity);
+			inline void setAngularVelocity(const Vector3f& angularVelocity);
+
+			inline void setForce(const Vector3f& force);
+			inline void setTorque(const Vector3f& torque);
+
+			inline void setMass(float mass);
+
+			inline void setInvInertiaLocal(const Matrix3f& invInertiaLocal);
 
 			inline bool isAwake() const;
 			inline bool isActive() const;
@@ -69,7 +79,54 @@ namespace Physics {
 
 			inline bool isInIsland() const;
 
+			inline Vector3f getVelocityAt(const Vector3f& worldPoint) const;
+			
+			inline const Transform& getTransform() const;
+
+			inline Vector3f& getLocalCenter();
+			inline const Vector3f& getLocalCenter() const;
+
+			inline const Vector3f& getWorldCenter() const;
+
+			inline Vector3f& getVelocity();
+			inline const Vector3f& getVelocity() const;
+
+			inline Vector3f& getAngularVelocity();
+			inline const Vector3f& getAngularVelocity() const;
+
+			inline Vector3f& getForce();
+			inline const Vector3f& getForce() const;
+
+			inline Vector3f& getTorque();
+			inline const Vector3f& getTorque() const;
+
+			inline float getMass() const;
+			inline float getInvMass() const;
+
+			inline Matrix3f& getInvInertiaLocal();
+			inline const Matrix3f& getInvInertiaLocal() const;
+
+			inline const Matrix3f& getInvInertiaWorld() const;
+
 			inline CollisionHull* getCollisionHull();
+		private:
+			enum Flags {
+				FLAG_AWAKE			= 1,  // if the object is awake
+				FLAG_ACTIVE			= 2,  // if the object can have calcs done
+				FLAG_ALLOW_SLEEP	= 4,  // if sleep allowed
+				FLAG_ISLAND			= 8,  // marker for island building
+				FLAG_DYNAMIC		= 16, // collision, integration
+				FLAG_STATIC			= 32, // collision, no integration
+				FLAG_KINEMATIC		= 64  // no collision, integration
+			};
+
+			NULL_COPY_AND_ASSIGN(Body);
+
+			Body(PhysicsEngine& physicsEngine, const BodyHints& hints);
+
+			inline void removeEdge(ContactEdge* edge);
+
+			PhysicsEngine* physicsEngine;
 
 			Transform transform;
 
@@ -88,18 +145,13 @@ namespace Physics {
 			Matrix3f invInertiaLocal;
 			Matrix3f invInertiaWorld;
 
-			uint32 flags;
-		private:
-			NULL_COPY_AND_ASSIGN(Body);
-
-			PhysicsEngine* physicsEngine;
-
 			CollisionHull* collisionHull;
 
 			ArrayList<ContactEdge*> contactList;
-			float sleepTime;
 
-			inline void removeEdge(ContactEdge* edge);
+			float sleepTime;
+			
+			uint32 flags;
 
 			friend class PhysicsEngine;
 			friend class Island;

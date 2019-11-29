@@ -50,8 +50,10 @@ void BlockTree::applyBuoyantForce(Physics::Body& body, Transform& transform,
 	const Vector3f pLocal = transform.inverseTransform(planePosition, 1.f);
 	const Vector3f nLocal = transform.inverseTransform(planeNormal, 0.f);
 	
-	const Vector3f vLocal = transform.inverseTransform(body.velocity, 0.f);
-	const Vector3f avLocal = transform.inverseTransform(body.angularVelocity, 0.f);
+	const Vector3f vLocal
+			= transform.inverseTransform(body.getVelocity(), 0.f);
+	const Vector3f avLocal
+			= transform.inverseTransform(body.getAngularVelocity(), 0.f);
 
 	Vector3f centroidSum(0.f, 0.f, 0.f);
 	float volumeSum = 0.f;
@@ -62,13 +64,13 @@ void BlockTree::applyBuoyantForce(Physics::Body& body, Transform& transform,
 
 	applyBuoyancyToNode(&root, body, transform, pLocal, nLocal,
 			centroidSum, volumeSum, massSum,
-			body.localCenter, vLocal, avLocal,
+			body.getLocalCenter(), vLocal, avLocal,
 			netForce, netTorque);
 
 	if (volumeSum > 0.f) {
 		centroidSum /= volumeSum;
 
-		applyBuoyancy(body.localCenter, vLocal, avLocal,
+		applyBuoyancy(body.getLocalCenter(), vLocal, avLocal,
 				nLocal * Physics::GRAVITY.y,
 				netForce, netTorque,
 				centroidSum, volumeSum, massSum);
@@ -77,8 +79,8 @@ void BlockTree::applyBuoyantForce(Physics::Body& body, Transform& transform,
 	netForce = transform.transform(netForce, 0.f);
 	netTorque = transform.transform(netTorque, 0.f);
 
-	body.force += netForce;
-	body.torque += netTorque;
+	body.getForce() += netForce;
+	body.getTorque() += netTorque;
 }
 
 inline void BlockTree::applyBuoyancyToNode(const BlockTreeNode* node,

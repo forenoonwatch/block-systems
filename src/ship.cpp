@@ -256,24 +256,22 @@ void ShipUpdateMassSystem::operator()(Game& game, float deltaTime) {
 
 			Physics::Body& body = *handle.body;
 
-			body.mass = ship.totalMass;
+			body.setMass(ship.totalMass);
 
-			if (body.mass > 0.f) {
-				body.invMass = 1.f / body.mass;
-				body.localCenter = ship.localCenterSum * body.invMass;
+			if (body.getMass() > 0.f) {
+				body.setLocalCenter(ship.localCenterSum * body.getInvMass());
 				
 				const Matrix3f inertia = ship.inertiaSum
-						- (Matrix3f(Math::dot(body.localCenter,
-							body.localCenter))
-						- Math::outerProduct(body.localCenter,
-							body.localCenter)) * body.mass;
+						- (Matrix3f(Math::dot(body.getLocalCenter(),
+							body.getLocalCenter()))
+						- Math::outerProduct(body.getLocalCenter(),
+							body.getLocalCenter())) * body.getMass();
 
-				body.invInertiaLocal = Math::inverse(inertia);
+				body.setInvInertiaLocal(Math::inverse(inertia));
 			}
 			else {
-				body.invMass = 0.f;
-				body.localCenter = Vector3f(0.f, 0.f, 0.f);
-				body.invInertiaLocal = Matrix3f(0.f);
+				body.setLocalCenter(Vector3f(0.f, 0.f, 0.f));
+				body.setInvInertiaLocal(Matrix3f(0.f));
 			}
 		}
 	});

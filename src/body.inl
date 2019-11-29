@@ -66,6 +66,39 @@ inline void Physics::Body::setInIsland() {
 	flags |= Physics::Body::FLAG_ISLAND;
 }
 
+inline void Physics::Body::setNotInIsland() {
+	flags &= ~Physics::Body::FLAG_ISLAND;
+}
+
+inline void Physics::Body::setLocalCenter(const Vector3f& localCenter) {
+	this->localCenter = localCenter;
+}
+
+inline void Physics::Body::setVelocity(const Vector3f& velocity) {
+	this->velocity = velocity;
+}
+
+inline void Physics::Body::setAngularVelocity(const Vector3f& angularVelocity) {
+	this->angularVelocity = angularVelocity;
+}
+
+inline void Physics::Body::setForce(const Vector3f& force) {
+	this->force = force;
+}
+
+inline void Physics::Body::setTorque(const Vector3f& torque) {
+	this->torque = torque;
+}
+
+inline void Physics::Body::setMass(float mass) {
+	this->mass = mass;
+	invMass = mass == 0.f ? 0.f : 1.f / mass;
+}
+
+inline void Physics::Body::setInvInertiaLocal(const Matrix3f& invInertiaLocal) {
+	this->invInertiaLocal = invInertiaLocal;
+}
+
 inline bool Physics::Body::isAwake() const {
 	return flags & Physics::Body::FLAG_AWAKE;
 }
@@ -92,6 +125,74 @@ inline bool Physics::Body::isKinematic() const {
 
 inline bool Physics::Body::isInIsland() const {
 	return flags & Physics::Body::FLAG_ISLAND;
+}
+
+inline const Transform& Physics::Body::getTransform() const {
+	return transform;
+}
+
+inline Vector3f& Physics::Body::getLocalCenter() {
+	return localCenter;
+}
+
+inline const Vector3f& Physics::Body::getLocalCenter() const {
+	return localCenter;
+}
+
+inline const Vector3f& Physics::Body::getWorldCenter() const {
+	return worldCenter;
+}
+
+inline Vector3f& Physics::Body::getVelocity() {
+	return velocity;
+}
+
+inline const Vector3f& Physics::Body::getVelocity() const {
+	return velocity;
+}
+
+inline Vector3f& Physics::Body::getAngularVelocity() {
+	return angularVelocity;
+}
+
+inline const Vector3f& Physics::Body::getAngularVelocity() const {
+	return angularVelocity;
+}
+
+inline Vector3f& Physics::Body::getForce() {
+	return force;
+}
+
+inline const Vector3f& Physics::Body::getForce() const {
+	return force;
+}
+
+inline Vector3f& Physics::Body::getTorque() {
+	return torque;
+}
+
+inline const Vector3f& Physics::Body::getTorque() const {
+	return torque;
+}
+
+inline float Physics::Body::getMass() const {
+	return mass;
+}
+
+inline float Physics::Body::getInvMass() const {
+	return invMass;
+}
+
+inline Matrix3f& Physics::Body::getInvInertiaLocal() {
+	return invInertiaLocal;
+}
+
+inline const Matrix3f& Physics::Body::getInvInertiaLocal() const {
+	return invInertiaLocal;
+}
+
+inline const Matrix3f& Physics::Body::getInvInertiaWorld() const {
+	return invInertiaWorld;
 }
 
 inline Physics::CollisionHull* Physics::Body::getCollisionHull() {

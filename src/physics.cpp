@@ -16,7 +16,7 @@ void Physics::GravitySystem::operator()(Game& game, float deltaTime) {
 		}
 		else {
 			// TODO: FIXME: TEMP: remove this
-			handle.body->velocity = Vector3f(1.f, 0.f, 0.f);
+			handle.body->setVelocity(Vector3f(1.f, 0.f, 0.f));
 		}
 	});
 }
@@ -25,8 +25,8 @@ Physics::PhysicsEngine::PhysicsEngine()
 		: contactManager(*this)
 		, newHull(false) {}
 
-Physics::Body* Physics::PhysicsEngine::addBody() {
-	Body* body = new Body(*this);
+Physics::Body* Physics::PhysicsEngine::addBody(const BodyHints& hints) {
+	Body* body = new Body(*this, hints);
 	bodies.push_back(body);
 	
 	return body;
@@ -51,7 +51,7 @@ void Physics::PhysicsEngine::operator()(Game& game, float deltaTime) {
 	});
 
 	for (Body* body : bodies) {
-		body->flags &= ~Body::FLAG_ISLAND;
+		body->setNotInIsland();
 	}
 
 	ArrayList<Body*> bodyStack;

@@ -25,7 +25,7 @@ namespace Physics {
 		public:
 			PhysicsEngine();
 
-			Body* addBody();
+			Body* addBody(const BodyHints& hints);
 
 			virtual void operator()(Game& game, float deltaTime) override;
 
