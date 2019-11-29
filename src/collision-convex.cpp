@@ -9,6 +9,8 @@
 
 #include <engine/math/math.hpp>
 
+#include <cfloat>
+
 void Physics::collisionConvexConvex(Manifold& manifold, CollisionHull& a,
 		CollisionHull& b) {
 	// TODO: implement
@@ -31,7 +33,7 @@ void Physics::collisionSphereConvex(Manifold& manifold, CollisionHull& a,
 	if (d < sphere->radius) {
 		manifold.setNormal(-normal);
 		manifold.addContact(bodyA->getTransform().getPosition()
-				- Vector3f(tf[1]) * ((d + d - sphere->radius) * 0.5f),
+				- normal * ((d + d - sphere->radius) * 0.5f),
 				sphere->radius - d);
 	}
 }
@@ -42,14 +44,22 @@ void Physics::collisionConvexSphere(Manifold& manifold, CollisionHull& a,
 	manifold.setNormal(-manifold.getNormal());
 }
 
-void Physics::collisionPlaneConvex(Manifold& manifold, CollisionHull& a,
-		CollisionHull& b) {
-	// TODO: implement
-}
-
 void Physics::collisionConvexPlane(Manifold& manifold, CollisionHull& a,
 		CollisionHull& b) {
-	collisionPlaneConvex(manifold, b, a);
+	Body* bodyA = a.body;
+	Body* bodyB = b.body;
+
+	ConvexCollider* conv = (ConvexCollider*)&a;
+
+	Matrix4f tf = bodyB->getTransform().toMatrix();
+	Vector3f normal(tf[1]);
+
+	manifold.setNormal(-normal);
+}
+
+void Physics::collisionPlaneConvex(Manifold& manifold, CollisionHull& a,
+		CollisionHull& b) {
+	collisionConvexPlane(manifold, b, a);
 	manifold.setNormal(-manifold.getNormal());
 }
 

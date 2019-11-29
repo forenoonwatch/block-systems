@@ -73,6 +73,8 @@ void GameScene2::load(Game& game) {
 			"./res/plane.obj", hints);
 	game.getAssetManager().loadStaticMesh("sphere", "sphere",
 			"./res/sphere.obj", hints);
+	game.getAssetManager().loadStaticMesh("cube", "cube",
+			"./res/cube.obj", hints);
 	
 	game.getAssetManager().loadMaterial("bricks", "./res/bricks.dds",
 			"./res/bricks-normal.dds", "./res/bricks-material.dds");
@@ -115,15 +117,39 @@ void GameScene2::load(Game& game) {
 	//body2->invInertiaLocal[2] = Vector3f(0.f, 0.f, 0.f); // lock Z axis 
 	// sphere I^-1 = diag(0.4f * M * R^2)^-1
 
-	sphereCollider = new Physics::SphereCollider();
-	sphereCollider->radius = 1.f;
-	sphereCollider->restitution = 0.f;
-	sphereCollider->friction = 0.3f;
-	body2->setCollisionHull(sphereCollider);
+	//sphereCollider = new Physics::SphereCollider();
+	//sphereCollider->radius = 1.f;
+	//sphereCollider->restitution = 0.f;
+	//sphereCollider->friction = 0.3f;
+	//body2->setCollisionHull(sphereCollider);
+	
+	convexCollider = new Physics::ConvexCollider(game.getAssetManager()
+			.getModel("plane"));
+	convexCollider->restitution = 0.f;
+	convexCollider->friction = 0.3f;
+	body2->setCollisionHull(convexCollider);
+
+	DEBUG_LOG_TEMP2("VERTICES");
+	
+	for (const auto& v : convexCollider->getVertices()) {
+		DEBUG_LOG_TEMP("%.2f, %.2f, %.2f", v.x, v.y, v.z);
+	}
+
+	DEBUG_LOG_TEMP2("NORMALS");
+	
+	for (const auto& v : convexCollider->getNormals()) {
+		DEBUG_LOG_TEMP("%.2f, %.2f, %.2f", v.x, v.y, v.z);
+	}
+
+	DEBUG_LOG_TEMP2("EDGES");
+
+	for (const auto& v : convexCollider->getEdges()) {
+		DEBUG_LOG_TEMP("%.2f, %.2f, %.2f", v.x, v.y, v.z);
+	}
 
 	ECS::Entity eSphere = game.getECS().create();
 	game.getECS().assign<RenderableMesh>(eSphere,
-			&game.getAssetManager().getVertexArray("sphere"),
+			&game.getAssetManager().getVertexArray("cube"),
 			&game.getAssetManager().getMaterial("bricks"),
 			true);
 	game.getECS().assign<TransformComponent>(eSphere,
