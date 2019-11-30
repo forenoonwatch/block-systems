@@ -31,10 +31,12 @@ void Physics::collisionSphereConvex(Manifold& manifold, CollisionHull& a,
 			- bodyB->getTransform().getPosition());
 
 	if (d < sphere->radius) {
+		FeaturePair fp;
+		fp.key = 0;
+
 		manifold.setNormal(-normal);
 		manifold.addContact(bodyA->getTransform().getPosition()
-				- normal * ((d + d - sphere->radius) * 0.5f),
-				sphere->radius - d);
+				- normal * d, sphere->radius - d, fp);
 	}
 }
 
@@ -55,11 +57,26 @@ void Physics::collisionConvexPlane(Manifold& manifold, CollisionHull& a,
 	Vector3f normal(tf[1]);
 
 	manifold.setNormal(-normal);
+
+	for (uint32 i = 0; i < conv->getVertices().size(); ++i) {
+		Vector3f v = bodyA->getTransform().transform(conv->getVertices()[i],
+				1.f);
+
+		float d = Math::dot(normal, v - bodyB->getTransform().getPosition());
+
+		if (d < 0.f) {
+			FeaturePair fp;
+			fp.key = i;
+
+			manifold.addContact(v - normal * d, -d, fp);
+		}
+	}
 }
 
 void Physics::collisionPlaneConvex(Manifold& manifold, CollisionHull& a,
 		CollisionHull& b) {
 	collisionConvexPlane(manifold, b, a);
 	manifold.setNormal(-manifold.getNormal());
+	// TODO: flip feature pairs
 }
 

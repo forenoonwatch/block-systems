@@ -3,7 +3,7 @@
 #include <engine/math/vector.hpp>
 
 namespace Physics {
-	constexpr const uint32 MAX_CONTACTS = 1;
+	constexpr const uint32 MAX_CONTACTS = 8; // TODO: do not limit contacts
 
 	class Body;
 	class ContactConstraint;

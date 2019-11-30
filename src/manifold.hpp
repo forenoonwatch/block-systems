@@ -12,7 +12,8 @@ namespace Physics {
 
 			inline void setPair(CollisionHull& a, CollisionHull& b);
 
-			void addContact(const Vector3f& point, float penetration);
+			void addContact(const Vector3f& point, float penetration,
+					const FeaturePair& fp);
 
 			inline void setNormal(const Vector3f& n) { normal = n; }
 

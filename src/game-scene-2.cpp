@@ -109,13 +109,13 @@ void GameScene2::load(Game& game) {
 	Physics::BodyHints bodyHints;
 	bodyHints.mass = 1.f;
 	bodyHints.type = Physics::BodyType::DYNAMIC;
+	bodyHints.invInertiaLocal = Math::inverse(Matrix3f(0.4f));
+	// sphere I^-1 = diag(0.4f * M * R^2)^-1
 
 	// body 2
 	Physics::Body* body2 = physicsEngine->addBody(bodyHints);
-	//body2->invInertiaLocal = body2->invInertiaWorld
-	//		= Math::inverse(Matrix3f(0.4f));
+	
 	//body2->invInertiaLocal[2] = Vector3f(0.f, 0.f, 0.f); // lock Z axis 
-	// sphere I^-1 = diag(0.4f * M * R^2)^-1
 
 	//sphereCollider = new Physics::SphereCollider();
 	//sphereCollider->radius = 1.f;
@@ -124,28 +124,13 @@ void GameScene2::load(Game& game) {
 	//body2->setCollisionHull(sphereCollider);
 	
 	convexCollider = new Physics::ConvexCollider(game.getAssetManager()
-			.getModel("plane"));
-	convexCollider->restitution = 0.f;
+			.getModel("cube"));
+	convexCollider->restitution = 0.01f;
 	convexCollider->friction = 0.3f;
 	body2->setCollisionHull(convexCollider);
 
-	DEBUG_LOG_TEMP2("VERTICES");
-	
-	for (const auto& v : convexCollider->getVertices()) {
-		DEBUG_LOG_TEMP("%.2f, %.2f, %.2f", v.x, v.y, v.z);
-	}
-
-	DEBUG_LOG_TEMP2("NORMALS");
-	
-	for (const auto& v : convexCollider->getNormals()) {
-		DEBUG_LOG_TEMP("%.2f, %.2f, %.2f", v.x, v.y, v.z);
-	}
-
-	DEBUG_LOG_TEMP2("EDGES");
-
-	for (const auto& v : convexCollider->getEdges()) {
-		DEBUG_LOG_TEMP("%.2f, %.2f, %.2f", v.x, v.y, v.z);
-	}
+	Quaternion q = Math::mat4ToQuat(Math::rotate(Matrix4f(1.f), 0.5f,
+			Vector3f(0.f, 0.f, 1.f)));
 
 	ECS::Entity eSphere = game.getECS().create();
 	game.getECS().assign<RenderableMesh>(eSphere,
@@ -153,13 +138,14 @@ void GameScene2::load(Game& game) {
 			&game.getAssetManager().getMaterial("bricks"),
 			true);
 	game.getECS().assign<TransformComponent>(eSphere,
-			Transform(Vector3f(0.00001f, 1.f, 0.f)));
+			Transform(Vector3f(0.00001f, 15.f, 0.f), q, Vector3f(1.f)));
 	game.getECS().assign<Physics::BodyHandle>(eSphere,
 			Physics::BodyHandle(body2));
 
 	// body 1 
 	bodyHints.mass = 0.f;
 	bodyHints.type = Physics::BodyType::STATIC;
+	bodyHints.invInertiaLocal = Matrix3f(0.f);
 
 	Physics::Body* body = physicsEngine->addBody(bodyHints);
 

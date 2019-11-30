@@ -23,10 +23,13 @@ void Physics::collisionSphereSphere(Manifold& manifold, CollisionHull& a,
 	float rSum = sphereA->radius + sphereB->radius;
 
 	if (d < rSum * rSum) {
+		FeaturePair fp;
+		fp.key = 0;
+
 		manifold.setNormal(Math::normalize(ds));
 		manifold.addContact((bodyA->getTransform().getPosition()
 				+ bodyB->getTransform().getPosition()) * 0.5f,
-				rSum - Math::sqrt(d));
+				rSum - Math::sqrt(d), fp);
 	}
 }
 
@@ -44,10 +47,12 @@ void Physics::collisionSpherePlane(Manifold& manifold, CollisionHull& a,
 			- bodyB->getTransform().getPosition());
 
 	if (d < sphere->radius) {
+		FeaturePair fp;
+		fp.key = 0;
+
 		manifold.setNormal(-normal);
 		manifold.addContact(bodyA->getTransform().getPosition()
-				- Vector3f(tf[1]) * ((d + d - sphere->radius) * 0.5f),
-				sphere->radius - d);
+				- normal * d, sphere->radius - d, fp);
 	}
 }
 
@@ -55,5 +60,6 @@ void Physics::collisionPlaneSphere(Manifold& manifold, CollisionHull& a,
 		CollisionHull& b) {
 	collisionSpherePlane(manifold, b, a);
 	manifold.setNormal(-manifold.getNormal());
+	// TODO: flip feature pairs
 }
 
