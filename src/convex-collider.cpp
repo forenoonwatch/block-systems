@@ -4,95 +4,93 @@
 
 #define EPSILON 1e-6f
 
+// TODO: get rid of all these ugly macros
+#define IS_ZERO(n) ((n) > -EPSILON && (n) < EPSILON)
+
+#define DOT_PARALLEL(d) (d < -(1.f - EPSILON) || d > (1.f - EPSILON))
+#define DOT_ORTHOGONAL(d) IS_ZERO(d)
+
 namespace {
-	struct VertexIndex {
-		inline VertexIndex(const Vector3f& vertex, uint32 index)
-				: vertex(vertex)
-				, index(index) {}
-
-		Vector3f vertex;
-		uint32 index;
-	};
-
-	struct Edge {
-		inline Edge(uint32 i0 = 0, uint32 i1 = 0)
-				: i0(i0)
-				, i1(i1) {}
-
-		uint32 i0;
-		uint32 i1;
-	};
-
-
-	struct Face {
+	struct FaceData {
 		Vector3f centroid;
 		Vector3f normal;
-		Edge edges[3];
-		uint32 numEdges;
+		ArrayList<Physics::Edge> edges;
 	};
+
+	// TODO: move this to math class
+	constexpr bool v3Equal(const Vector3f& a, const Vector3f& b) {
+		const Vector3f& vd = b - a;
+
+		return IS_ZERO(vd.x) && IS_ZERO(vd.y) && IS_ZERO(vd.z);
+	}
 };
 
-static void removeRedundantEdges(const ArrayList<Vector3f>& vertices,
+using namespace Physics;
+
+static void mergeCoplanarFaces(ArrayList<FaceData>& faces);
+
+static void initializeFaces(const ArrayList<FaceData>& faceData,
 		ArrayList<Face>& faces);
-static void removeDuplicateEdges(const ArrayList<Vector3f>& vertices,
+static void initializeEdges(const ArrayList<FaceData>& faceData,
 		ArrayList<Edge>& edges);
 
-static bool isCoplanar(const Face& f0, const Face& f1);
-static bool isCollinear(const Vector3f& e00, const Vector3f& e01,
-		const Vector3f& e10, const Vector3f& e11);
+static void mergeFaces(FaceData& f0, FaceData& f1);
+
+static bool isCoplanar(const FaceData& f0, const FaceData& f1);
+static bool isCollinear(const Edge& e0, const Edge& e1);
 
 Physics::ConvexCollider::ConvexCollider(const IndexedModel& model)
 		: CollisionHull(CollisionHull::TYPE_CONVEX_HULL) {
 	const uint32* indices = model.getIndices();
 
-	ArrayList<Face> faces;
-
 	for (uint32 i = 0; i < model.getElementArraySize(0); i += 3) {
 		vertices.push_back(model.getElement3f(0, i));
 	}
+
+	ArrayList<FaceData> faceData;
 
 	for (uint32 i = 0; i < model.getNumIndices(); i += 3) {
 		uint32 i0 = 3 * indices[i];
 		uint32 i1 = 3 * indices[i + 1];
 		uint32 i2 = 3 * indices[i + 2];
 
-		Vector3f centroid = (model.getElement3f(0, i0)
-				+ model.getElement3f(0, i1) + model.getElement3f(0, i2)) / 3.f;
+		const Vector3f& v0 = model.getElement3f(0, i0);
+		const Vector3f& v1 = model.getElement3f(0, i1);
+		const Vector3f& v2 = model.getElement3f(0, i2);
 
+		Vector3f centroid = (v0 + v1 + v2) / 3.f;
 		Vector3f normal = (model.getElement3f(2, i0)
 				+ model.getElement3f(2, i1) + model.getElement3f(2, i2)) / 3.f;
-
-		normals.push_back(normal);
 		
-		Face f;
-		f.centroid = centroid;
-		f.normal = normal;
+		FaceData fd;
+		fd.centroid = centroid;
+		fd.normal = normal;
 
-		f.edges[0] = Edge(indices[i], indices[i + 1]);
-		f.edges[1] = Edge(indices[i], indices[i + 2]);
-		f.edges[2] = Edge(indices[i + 1], indices[i + 2]);
-		f.numEdges = 3;
+		Edge e;
 
-		faces.push_back(f);
+		e.v0 = v0;
+		e.v1 = v1;
+		fd.edges.push_back(e);
+
+		e.v0 = v0;
+		e.v1 = v2;
+		fd.edges.push_back(e);
+
+		e.v0 = v1;
+		e.v1 = v2;
+		fd.edges.push_back(e);
+
+		faceData.push_back(fd);
 	}
 
-	removeRedundantEdges(vertices, faces);
+	mergeCoplanarFaces(faceData);
 
-	ArrayList<Edge> candidateEdges;
+	initializeFaces(faceData, faces);
+	initializeEdges(faceData, edges);
 
-	for (const Face& face : faces) {
-		for (uint32 i = 0; i < face.numEdges; ++i) {
-			candidateEdges.push_back(face.edges[i]);
-		}
-	}
+	initializeFaceAxes();
+	initializeEdgeAxes();
 
-	removeDuplicateEdges(vertices, candidateEdges);
-
-	for (const Edge& e : candidateEdges) {
-		edges.push_back(Math::normalize(vertices[e.i1] - vertices[e.i0]));
-	}
-
-	removeDuplicateNormals();
 	removeDuplicateVertices();
 }
 
@@ -100,30 +98,75 @@ AABB Physics::ConvexCollider::computeAABB(const Transform& tf) const {
 	return AABB(&vertices[0], vertices.size()).transform(tf.toMatrix());
 }
 
-inline void Physics::ConvexCollider::removeDuplicateNormals() {
-	for (uint32 i = 0; i < normals.size(); ++i) {
-		Vector3f n0 = normals[i];
+inline void Physics::ConvexCollider::initializeFaceAxes() {
+	for (uint32 i = 0; i < faces.size(); ++i) {
+		Face& face = faces[i];
 
-		for (uint32 j = i + 1; j < normals.size(); ++j) {
-			float d = Math::dot(n0, normals[j]);
+		int32 axisIndex = -1;
 
-			if (d < -(1.f - EPSILON) || d > (1.f - EPSILON)) {
-				normals[j] = normals.back();
-				normals.pop_back();
-				--j;
+		for (int32 j = 0; j < faceAxes.size(); ++j) {
+			float d = Math::dot(faceAxes[j].axis, face.normal);
+
+			if (DOT_PARALLEL(d)) {
+				axisIndex = j;
+				break;
 			}
 		}
+
+		if (axisIndex != -1) {
+			faceAxes[axisIndex].indices.push_back(i);
+		}
+		else {
+			Axis a;
+			a.axis = face.normal;
+			a.indices.push_back(i);
+
+			faceAxes.push_back(a);
+		}
 	}
+
+	faceAxes.shrink_to_fit();
+}
+
+inline void Physics::ConvexCollider::initializeEdgeAxes() {
+	for (uint32 i = 0; i < edges.size(); ++i) {
+		Edge& edge = edges[i];
+		Vector3f en = Math::normalize(edge.v1 - edge.v0);
+
+		int32 axisIndex = -1;
+
+		for (int32 j = 0; j < edgeAxes.size(); ++j) {
+			float d = Math::dot(edgeAxes[j].axis, en);
+
+			if (DOT_PARALLEL(d)) {
+				axisIndex = j;
+				break;
+			}
+		}
+
+		if (axisIndex != -1) {
+			edgeAxes[axisIndex].indices.push_back(i);
+		}
+		else {
+			Axis a;
+			a.axis = en;
+			a.indices.push_back(i);
+
+			edgeAxes.push_back(a);
+		}
+	}
+
+	edgeAxes.shrink_to_fit();
 }
 
 inline void Physics::ConvexCollider::removeDuplicateVertices() {
-	ArrayList<VertexIndex> uniqueVertices;
+	ArrayList<Vector3f> uniqueVertices;
 
 	for (uint32 i = 0; i < vertices.size(); ++i) {
 		bool unique = true;
 
-		for (const VertexIndex& vi : uniqueVertices) {
-			Vector3f vd = vi.vertex - vertices[i];
+		for (const Vector3f& v : uniqueVertices) {
+			Vector3f vd = v - vertices[i];
 
 			if (vd.x > -EPSILON && vd.x < EPSILON && vd.y > -EPSILON
 					&& vd.y < EPSILON && vd.z > -EPSILON && vd.z < EPSILON) {
@@ -133,104 +176,158 @@ inline void Physics::ConvexCollider::removeDuplicateVertices() {
 		}
 
 		if (unique) {
-			uniqueVertices.emplace_back(vertices[i], i);
+			uniqueVertices.push_back(vertices[i]);
 		}
 	}
 
 	vertices.clear();
-
-	for (VertexIndex& vi : uniqueVertices) {
-		vertices.push_back(vi.vertex);
-	}
+	vertices.insert(vertices.begin(), uniqueVertices.begin(),
+			uniqueVertices.end());
+	vertices.shrink_to_fit();
 }
 
-inline static void removeRedundantEdges(const ArrayList<Vector3f>& vertices,
-		ArrayList<Face>& faces) {
+inline static void mergeCoplanarFaces(ArrayList<FaceData>& faces) {
 	for (uint32 i = 0; i < faces.size(); ++i) {
-		Face& f0 = faces[i];
+		FaceData& f0 = faces[i];
 
 		for (uint32 j = i + 1; j < faces.size(); ++j) {
-			Face& f1 = faces[j];
+			FaceData& f1 = faces[j];
 
-			if (!isCoplanar(f0, f1)) {
-				continue;
-			}
+			if (isCoplanar(f0, f1)) {
+				mergeFaces(f0, f1);
 
-			for (uint32 k = 0; k < f0.numEdges; ++k) {
-				Edge& e0 = f0.edges[k];
-
-				for (uint32 l = 0; l < f1.numEdges; ++l) {
-					Edge& e1 = f1.edges[l];
-					
-					if (isCollinear(vertices[e0.i0], vertices[e0.i1],
-							vertices[e1.i0], vertices[e1.i1])) {
-						--f0.numEdges;
-						--f1.numEdges;
-
-						f0.edges[k] = f0.edges[f0.numEdges];
-						f1.edges[l] = f1.edges[f1.numEdges];
-
-						--k;
-						--l;
-					}
-				}
+				faces[j] = faces.back();
+				faces.pop_back();
+				--j;
 			}
 		}
 	}
 }
 
-inline static void removeDuplicateEdges(const ArrayList<Vector3f>& vertices,
+inline static void initializeFaces(const ArrayList<FaceData>& faceData,
+		ArrayList<Face>& faces) {
+	EdgePlane ep;
+	
+	for (const FaceData& fd : faceData) {
+		Face f;
+		f.centroid = fd.centroid;
+		f.normal = fd.normal;
+
+		// flip inward-facing normal
+		if (Math::dot(f.centroid, f.normal) < 0.f) {
+			f.normal = -f.normal;
+		}
+
+		for (const Edge& e : fd.edges) {
+			ep.position = e.v0;
+			ep.normal = Math::normalize(Math::cross(f.normal, e.v1 - e.v0));
+
+			// flip inward-facing normal
+			if (Math::dot(ep.normal, ep.position - f.centroid) < 0.f) {
+				ep.normal = -ep.normal;
+			}
+
+			f.edgePlanes.push_back(ep);
+		}
+
+		faces.push_back(f);
+	}
+
+	faces.shrink_to_fit();
+}
+
+inline static void initializeEdges(const ArrayList<FaceData>& faceData,
 		ArrayList<Edge>& edges) {
+	for (const FaceData& fd : faceData) {
+		for (const Edge& e0 : fd.edges) {
+			edges.push_back(e0);
+		}
+	}
+
 	for (uint32 i = 0; i < edges.size(); ++i) {
 		Edge& e0 = edges[i];
-		Vector3f v0 = Math::normalize(vertices[e0.i1] - vertices[e0.i0]);
 
 		for (uint32 j = i + 1; j < edges.size(); ++j) {
 			Edge& e1 = edges[j];
 
-			if ((e0.i0 == e1.i0 && e0.i1 == e1.i1)
-					|| (e0.i0 == e1.i1 && e0.i1 == e1.i0)) {
+			if (isCollinear(e0, e1)) {
 				edges[j] = edges.back();
 				edges.pop_back();
-				--j;
 
-				continue;
-			}
-
-			Vector3f v1 = Math::normalize(vertices[e1.i1] - vertices[e1.i0]);
-			float d = Math::dot(v0, v1);
-
-			if (d < -(1.f - EPSILON) || d > (1.f - EPSILON)) {
-				edges[j] = edges.back();
-				edges.pop_back();
 				--j;
 			}
 		}
 	}
+
+	edges.shrink_to_fit();
 }
 
-inline static bool isCoplanar(const Face& f0, const Face& f1) {
+inline static void mergeFaces(FaceData& f0, FaceData& f1) {
+	for (uint32 i = 0; i < f0.edges.size(); ++i) {
+		Edge& e0 = f0.edges[i];
+
+		for (uint32 j = 0; j < f1.edges.size(); ++j) {
+			Edge& e1 = f1.edges[j];
+
+			if (isCollinear(e0, e1)) {
+				f0.edges[i] = f0.edges.back();
+				f0.edges.pop_back();
+
+				f1.edges[j] = f1.edges.back();
+				f1.edges.pop_back();
+
+				--i;
+				--j;
+			}
+		}
+	}
+
+	f0.centroid = (f0.centroid + f1.centroid) * 0.5f;
+
+	f0.edges.insert(f0.edges.end(), f1.edges.begin(),
+			f1.edges.end());
+}
+
+inline static bool isCoplanar(const FaceData& f0, const FaceData& f1) {
 	float d = Math::dot(f0.normal, f1.normal);
 
-	if (d < -(1.f - EPSILON) || d > (1.f - EPSILON)) {
+	if (DOT_PARALLEL(d)) {
 		d = Math::dot(f0.normal, Math::normalize(f1.centroid - f0.centroid));
-
-		return d > -EPSILON && d < EPSILON;
+		return DOT_ORTHOGONAL(d);
 	}
 
 	return false;
 }
 
-inline static bool isCollinear(const Vector3f& e00, const Vector3f& e01,
-		const Vector3f& e10, const Vector3f& e11) {
-	Vector3f n0 = Math::normalize(e01 - e00);
-	Vector3f n1 = Math::normalize(e11 - e10);
+inline static bool isCollinear(const Edge& e0, const Edge& e1) {
+	const Vector3f v0 = Math::normalize(e0.v1 - e0.v0);
+	const Vector3f v1 = Math::normalize(e1.v1 - e1.v0);
 
-	float d = Math::dot(n0, n1);
+	float d = Math::dot(v0, v1);
 
-	if (d < -(1.f - EPSILON) || d > (1.f - EPSILON)) {
-		d = Math::dot(n0, Math::normalize(e11 - e00));
-		return d < -(1.f - EPSILON) || d > (1.f - EPSILON);
+	if (DOT_PARALLEL(d)) {
+		Vector3f n;
+
+		if (v3Equal(e0.v0, e1.v0)) {
+			if (v3Equal(e0.v1, e1.v1)) {
+				return true;
+			}
+
+			n = e1.v1 - e0.v1;
+		}
+		else if (v3Equal(e0.v1, e1.v0)) {
+			if (v3Equal(e0.v0, e1.v1)) {
+				return true;
+			}
+
+			n = e1.v1 - e0.v0;
+		}
+		else {
+			n = e1.v1 - e0.v0;
+		}
+		
+		d = Math::dot(v0, Math::normalize(n));
+		return DOT_PARALLEL(d);
 	}
 
 	return false;

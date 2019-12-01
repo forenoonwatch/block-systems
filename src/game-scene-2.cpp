@@ -129,6 +129,61 @@ void GameScene2::load(Game& game) {
 	convexCollider->friction = 0.3f;
 	body2->setCollisionHull(convexCollider);
 
+	DEBUG_LOG_TEMP2("VERTICES");
+
+	for (const auto& v : convexCollider->getVertices()) {
+		DEBUG_LOG_TEMP("%.2f, %.2f, %.2f", v.x, v.y, v.z);
+	}
+
+	DEBUG_LOG_TEMP2("FACES");
+
+	for (uint32 i = 0; i < convexCollider->getFaces().size(); ++i) {
+		const auto& f = convexCollider->getFaces()[i];
+
+		DEBUG_LOG_TEMP("F %d:", i);
+
+		Vector3f v = f.centroid;
+		DEBUG_LOG_TEMP("C: %.2f, %.2f, %.2f", v.x, v.y, v.z);
+		v = f.normal;
+		DEBUG_LOG_TEMP("N: %.2f, %.2f, %.2f", v.x, v.y, v.z);
+
+		for (const auto& ep : f.edgePlanes) {
+			v = ep.normal;
+			DEBUG_LOG_TEMP("\tFN: %.2f, %.2f, %.2f", v.x, v.y, v.z);
+		}
+	}
+
+	DEBUG_LOG_TEMP("EDGES: %d", convexCollider->getEdges().size());
+
+	for (uint32 i = 0; i < convexCollider->getEdges().size(); ++i) {
+		const auto& e = convexCollider->getEdges()[i];
+
+		Vector3f v = (e.v1 + e.v0) * 0.5f;
+		DEBUG_LOG_TEMP("EC %d: %.2f, %.2f, %.2f", i, v.x, v.y, v.z);
+	}
+
+	DEBUG_LOG_TEMP2("FACE AXES");
+
+	for (const auto& a : convexCollider->getFaceAxes()) {
+		Vector3f v = a.axis;
+		DEBUG_LOG_TEMP("FA: %.2f, %.2f, %.2f", v.x, v.y, v.z);
+
+		for (const auto& i : a.indices) {
+			DEBUG_LOG_TEMP("\t%d", i);
+		}
+	}
+
+	DEBUG_LOG_TEMP2("EDGE AXES");
+
+	for (const auto& a : convexCollider->getEdgeAxes()) {
+		Vector3f v = a.axis;
+		DEBUG_LOG_TEMP("EA: %.2f, %.2f, %.2f", v.x, v.y, v.z);
+
+		for (const auto& i : a.indices) {
+			DEBUG_LOG_TEMP("\t%d", i);
+		}
+	}
+
 	Quaternion q = Math::mat4ToQuat(Math::rotate(Matrix4f(1.f), 0.5f,
 			Vector3f(0.f, 0.f, 1.f)));
 
