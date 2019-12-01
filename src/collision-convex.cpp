@@ -13,7 +13,42 @@
 
 void Physics::collisionConvexConvex(Manifold& manifold, CollisionHull& a,
 		CollisionHull& b) {
-	// TODO: implement
+	Body* bodyA = a.body;
+	Body* bodyB = b.body;
+
+	ConvexCollider* hullA = (ConvexCollider*)&a;
+	ConvexCollider* hullB = (ConvexCollider*)&b;
+
+	Matrix4f tfA = bodyA->getTransform().toMatrix();
+	Matrix4f tfB = bodyB->getTransform().toMatrix();
+
+	Matrix4f tfBtoA = Math::inverse(tfA) * tfB; // A^-1B -> B into A space
+	Matrix4f tfAtoB = Math::inverse(tfB) * tfA; // B^-1A -> A into B space
+
+	// TODO: verify correctness of converting things into the right space
+
+	for (const Axis& a : hullA->getFaceAxes()) {
+		// project all a.vertices onto a.axis
+		// given: a.axis is in A-space
+		// need: a.axis in B-space
+		// B^-1A * a.axis
+		// project all b.vertices onto B^-1A * a.axis
+	}
+
+	for (const Axis& a : hullB->getFaceAxes()) {
+		// project all a.vertices onto A^-1B * a.axis
+		// project all b.vertices onto a.axis
+	}
+
+	for (const Axis& ea : hullA->getEdgeAxes()) {
+		for (const Axis& eb : hullB->getEdgeAxes()) {
+			// axis = cross(ea.axis, A^-1B * eb.axis)
+			// do cross product parallelism check
+
+			// project all a.vertices onto axis
+			// project all b.vertices onto A^-1B * axis
+		}
+	}
 }
 
 // TODO: make these actually sphere-convex collisions
