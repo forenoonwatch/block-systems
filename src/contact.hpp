@@ -9,7 +9,7 @@ namespace Physics {
 	class ContactConstraint;
 	class Manifold;
 
-	union FeaturePair {
+	union FeaturePair { // TODO: potentially swap to uint64 and 4 uint16s 
 		struct {
 			uint8 inR;
 			uint8 outR;

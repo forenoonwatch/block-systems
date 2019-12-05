@@ -11,6 +11,22 @@
 
 #include <cfloat>
 
+#define EPSILON 1e-6f
+
+// TODO: move all this to math in the core engine
+static constexpr bool isZero(float n) {
+	return n > -EPSILON && n < EPSILON;
+}
+
+static constexpr bool isZeroVector(const Vector3f& v) {
+	return isZero(v.x) && isZero(v.y) && isZero(v.z);
+}
+
+static bool checkAxisPenetration(const Physics::ConvexCollider& hullA,
+		const Physics::ConvexCollider& hullB, const Vector3f& axisA,
+		const Vector3f& axisB, uint32 axisID, float& minPenetration,
+		uint32& minAxisID);
+
 void Physics::collisionConvexConvex(Manifold& manifold, CollisionHull& a,
 		CollisionHull& b) {
 	Body* bodyA = a.body;
@@ -27,28 +43,70 @@ void Physics::collisionConvexConvex(Manifold& manifold, CollisionHull& a,
 
 	// TODO: verify correctness of converting things into the right space
 
+	float minPenetration = 0.f;
+	uint32 minAxisID = 0;
+
+	uint32 axisID = 0;
+
 	for (const Axis& a : hullA->getFaceAxes()) {
-		// project all a.vertices onto a.axis
-		// given: a.axis is in A-space
-		// need: a.axis in B-space
-		// B^-1A * a.axis
-		// project all b.vertices onto B^-1A * a.axis
+		Vector3f axisA = a.axis;
+		Vector3f axisB(tfAtoB * Vector4f(axisA, 0.f));
+
+		if (!checkAxisPenetration(*hullA, *hullB, axisA, axisB, axisID,
+				minPenetration, minAxisID)) {
+			return;
+		}
+
+		++axisID;
 	}
 
 	for (const Axis& a : hullB->getFaceAxes()) {
-		// project all a.vertices onto A^-1B * a.axis
-		// project all b.vertices onto a.axis
+		Vector3f axisB = a.axis;
+		Vector3f axisA(tfBtoA * Vector4f(axisB, 0.f));
+
+		if (!checkAxisPenetration(*hullA, *hullB, axisA, axisB, axisID,
+				minPenetration, minAxisID)) {
+			return;
+		}
+
+		++axisID;
 	}
 
 	for (const Axis& ea : hullA->getEdgeAxes()) {
 		for (const Axis& eb : hullB->getEdgeAxes()) {
-			// axis = cross(ea.axis, A^-1B * eb.axis)
-			// do cross product parallelism check
+			Vector3f axisA = Math::cross(ea.axis,
+					Vector3f(tfBtoA * Vector4f(eb.axis, 0.f)));
 
-			// project all a.vertices onto axis
-			// project all b.vertices onto A^-1B * axis
+			// axis parallelism check
+			if (isZeroVector(axisA)) {
+				// ea.axis x eb.exis are very near parallel and in the plane P
+				// try an axis perpendicular to ea.axis that lies in P
+				Vector3f n = Math::cross(ea.axis, axisA);
+				axisA = Math::cross(ea.axis, n);
+
+				// legitimately still parallel, continue
+				if (isZeroVector(axisA)) {
+					continue;
+				}
+			}
+
+			axisA = Math::normalize(axisA);
+			Vector3f axisB(tfAtoB * Vector4f(axisA, 0.f));
+
+			if (!checkAxisPenetration(*hullA, *hullB, axisA, axisB, axisID,
+					minPenetration, minAxisID)) {
+				return;
+			}
+
+			++axisID;
 		}
 	}
+
+	// TODO: classify plane or edge collision
+	
+	// TODO: find reference and incident planes
+	
+	// TODO: generate manifold info
 }
 
 // TODO: make these actually sphere-convex collisions
@@ -113,5 +171,42 @@ void Physics::collisionPlaneConvex(Manifold& manifold, CollisionHull& a,
 	collisionConvexPlane(manifold, b, a);
 	manifold.setNormal(-manifold.getNormal());
 	// TODO: flip feature pairs
+}
+
+static bool checkAxisPenetration(const Physics::ConvexCollider& hullA,
+		const Physics::ConvexCollider& hullB, const Vector3f& axisA,
+		const Vector3f& axisB, uint32 axisID, float& minPenetration,
+		uint32& minAxisID) {
+	float sA = -FLT_MAX;
+	float sB = FLT_MAX;
+
+	for (const Vector3f& v : hullA.getVertices()) {
+		float s = Math::dot(v, axisA);
+
+		if (s > sA) {
+			sA = s;
+		}
+	}
+	
+	for (const Vector3f& v : hullB.getVertices()) {
+		float s = Math::dot(v, axisB);
+
+		if (s < sB) {
+			sB = s;
+		}
+	}
+
+	if (sA > sB) {
+		float pen = sA - sB;
+
+		if (pen < minPenetration) {
+			minPenetration = pen;
+			minAxisID = axisID;
+		}
+
+		return true;
+	}
+
+	return false;
 }
 

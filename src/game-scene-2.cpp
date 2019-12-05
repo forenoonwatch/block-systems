@@ -129,7 +129,7 @@ void GameScene2::load(Game& game) {
 	convexCollider->friction = 0.3f;
 	body2->setCollisionHull(convexCollider);
 
-	DEBUG_LOG_TEMP2("VERTICES");
+	/*DEBUG_LOG_TEMP2("VERTICES");
 
 	for (const auto& v : convexCollider->getVertices()) {
 		DEBUG_LOG_TEMP("%.2f, %.2f, %.2f", v.x, v.y, v.z);
@@ -182,10 +182,10 @@ void GameScene2::load(Game& game) {
 		for (const auto& i : a.indices) {
 			DEBUG_LOG_TEMP("\t%d", i);
 		}
-	}
+	}*/
 
-	Quaternion q = Math::mat4ToQuat(Math::rotate(Matrix4f(1.f), 0.5f,
-			Vector3f(0.f, 0.f, 1.f)));
+	Quaternion q = Math::mat4ToQuat(Math::rotate(Matrix4f(1.f),
+			Math::toRadians(45.f), Vector3f(1.f, 0.f, 0.f)));
 
 	ECS::Entity eSphere = game.getECS().create();
 	game.getECS().assign<RenderableMesh>(eSphere,
@@ -193,9 +193,9 @@ void GameScene2::load(Game& game) {
 			&game.getAssetManager().getMaterial("bricks"),
 			true);
 	game.getECS().assign<TransformComponent>(eSphere,
-			Transform(Vector3f(0.00001f, 15.f, 0.f), q, Vector3f(1.f)));
-	game.getECS().assign<Physics::BodyHandle>(eSphere,
-			Physics::BodyHandle(body2));
+			Transform(Vector3f(-0.45f, 0.f, 0.f), q, Vector3f(1.f)));
+//	game.getECS().assign<Physics::BodyHandle>(eSphere,
+//			Physics::BodyHandle(body2));
 
 	// body 1 
 	bodyHints.mass = 0.f;
@@ -216,17 +216,17 @@ void GameScene2::load(Game& game) {
 	//sphereCollider2->restitution = 0.f;
 
 	Quaternion rot = Math::mat4ToQuat(Math::rotate(Matrix4f(1.f),
-			Math::toRadians(0.f), Vector3f(0.f, 0.f, 1.f)));
+			Math::toRadians(0.f), Vector3f(0.f, 1.f, 0.f)));
 
 	ECS::Entity ePlane = game.getECS().create();
 	game.getECS().assign<RenderableMesh>(ePlane,
-			&game.getAssetManager().getVertexArray("plane"),
+			&game.getAssetManager().getVertexArray("cube"),
 			&game.getAssetManager().getMaterial("bricks"),
 			true);
-	game.getECS().assign<TransformComponent>(ePlane, Transform(Vector3f(),
+	game.getECS().assign<TransformComponent>(ePlane, Transform(Vector3f(0.45f, 0.f, 0.f),
 			rot, Vector3f(1.f, 1.f, 1.f)));
-	game.getECS().assign<Physics::BodyHandle>(ePlane,
-			Physics::BodyHandle(body));
+//	game.getECS().assign<Physics::BodyHandle>(ePlane,
+//			Physics::BodyHandle(body));
 
 	game.getECS().assign<CameraComponent>(eSphere,
 			&((GameRenderContext*)game.getRenderContext())->getCamera());
