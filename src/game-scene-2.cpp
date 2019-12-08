@@ -38,6 +38,8 @@ namespace {
 			Physics::PhysicsEngine* pe;
 			Physics::GravitySystem* gs;
 	};
+
+	void printCC(const Physics::ConvexCollider*);
 };
 
 GameScene2::GameScene2()
@@ -84,6 +86,9 @@ void GameScene2::load(Game& game) {
 			"./res/sphere.obj", hints);
 	game.getAssetManager().loadStaticMesh("cube", "cube",
 			"./res/cube.obj", hints);
+
+	game.getAssetManager().loadStaticMesh("platform", "platform",
+			"./res/platform.obj", hints);
 	
 	game.getAssetManager().loadMaterial("bricks", "./res/bricks.dds",
 			"./res/bricks-normal.dds", "./res/bricks-material.dds");
@@ -136,73 +141,12 @@ void GameScene2::load(Game& game) {
 	
 	convexCollider = new Physics::ConvexCollider(game.getAssetManager()
 			.getModel("cube"));
-	convexCollider->restitution = 0.01f;
+	convexCollider->restitution = 0.15f;
 	convexCollider->friction = 0.3f;
 	body2->setCollisionHull(convexCollider);
 
-	/*DEBUG_LOG_TEMP2("VERTICES");
-
-	for (const auto& v : convexCollider->getVertices()) {
-		DEBUG_LOG_TEMP("%.2f, %.2f, %.2f", v.x, v.y, v.z);
-	}
-
-	DEBUG_LOG_TEMP2("FACES");
-
-	for (uint32 i = 0; i < convexCollider->getFaces().size(); ++i) {
-		const auto& f = convexCollider->getFaces()[i];
-
-		DEBUG_LOG_TEMP("F %d:", i);
-
-		Vector3f v = f.centroid;
-		DEBUG_LOG_TEMP("C: %.2f, %.2f, %.2f", v.x, v.y, v.z);
-		v = f.normal;
-		DEBUG_LOG_TEMP("N: %.2f, %.2f, %.2f", v.x, v.y, v.z);
-
-		for (const auto& ep : f.edgePlanes) {
-			v = ep.normal;
-			DEBUG_LOG_TEMP("\tFN: %.2f, %.2f, %.2f", v.x, v.y, v.z);
-			DEBUG_LOG_TEMP("\t\tEID: %d", ep.edgeID);
-		}
-
-		for (const auto& v : f.vertices) {
-			DEBUG_LOG_TEMP("\tFV: %.2f, %.2f, %.2f", v.v.x, v.v.y, v.v.z);
-			DEBUG_LOG_TEMP("\t\tEID: %d", v.edgeID);
-		}
-	}
-
-	DEBUG_LOG_TEMP("EDGES: %d", convexCollider->getEdges().size());
-
-	for (uint32 i = 0; i < convexCollider->getEdges().size(); ++i) {
-		const auto& e = convexCollider->getEdges()[i];
-
-		Vector3f v = (e.v1 + e.v0) * 0.5f;
-		DEBUG_LOG_TEMP("EC %d: %.2f, %.2f, %.2f", i, v.x, v.y, v.z);
-	}
-
-	DEBUG_LOG_TEMP2("FACE AXES");
-
-	for (const auto& a : convexCollider->getFaceAxes()) {
-		Vector3f v = a.axis;
-		DEBUG_LOG_TEMP("FA: %.2f, %.2f, %.2f", v.x, v.y, v.z);
-
-		for (const auto& i : a.indices) {
-			DEBUG_LOG_TEMP("\t%d", i);
-		}
-	}
-
-	DEBUG_LOG_TEMP2("EDGE AXES");
-
-	for (const auto& a : convexCollider->getEdgeAxes()) {
-		Vector3f v = a.axis;
-		DEBUG_LOG_TEMP("EA: %.2f, %.2f, %.2f", v.x, v.y, v.z);
-
-		for (const auto& i : a.indices) {
-			DEBUG_LOG_TEMP("\t%d", i);
-		}
-	}*/
-
 	Quaternion q = Math::mat4ToQuat(Math::rotate(Matrix4f(1.f),
-			Math::toRadians(44.f), Vector3f(1.f, 0.f, 0.f)));
+			Math::toRadians(89.f), Vector3f(1.f, 0.f, 0.f)));
 
 	ECS::Entity eSphere = game.getECS().create();
 	game.getECS().assign<RenderableMesh>(eSphere,
@@ -233,17 +177,19 @@ void GameScene2::load(Game& game) {
 	//sphereCollider2->restitution = 0.f;
 
 	convexCollider2 = new Physics::ConvexCollider(game.getAssetManager()
-			.getModel("cube"));
-	convexCollider2->restitution = 0.f;
+			.getModel("platform"));
+	convexCollider2->restitution = 0.1f;
 	convexCollider2->friction = 0.3f;
 	body->setCollisionHull(convexCollider2);
+
+	printCC(convexCollider2);
 
 	Quaternion rot = Math::mat4ToQuat(Math::rotate(Matrix4f(1.f),
 			Math::toRadians(0.f), Vector3f(0.f, 1.f, 0.f)));
 
 	ECS::Entity ePlane = game.getECS().create();
 	game.getECS().assign<RenderableMesh>(ePlane,
-			&game.getAssetManager().getVertexArray("cube"),
+			&game.getAssetManager().getVertexArray("platform"),
 			&game.getAssetManager().getMaterial("bricks"),
 			true);
 	game.getECS().assign<TransformComponent>(ePlane,
@@ -311,7 +257,7 @@ void ::PlayerControlSystem::operator()(Game& game, float deltaTime) {
 				* plr.moveSpeed;
 		
 		if (Application::isKeyDown(Input::KEY_SPACE)) {
-			v.y += 1.f;
+			v.y += 0.5f;
 		}
 
 		if (Application::getKeyPressed(Input::KEY_N)) {
@@ -320,6 +266,72 @@ void ::PlayerControlSystem::operator()(Game& game, float deltaTime) {
 		}
 
 		handle.body->getVelocity() += v;
+		handle.body->setToAwake();
 	});
 }
+
+namespace {
+	void printCC(const Physics::ConvexCollider* convexCollider) {
+		DEBUG_LOG_TEMP2("VERTICES");
+
+		for (const auto& v : convexCollider->getVertices()) {
+			DEBUG_LOG_TEMP("%.2f, %.2f, %.2f", v.x, v.y, v.z);
+		}
+
+		DEBUG_LOG_TEMP2("FACES");
+
+		for (uint32 i = 0; i < convexCollider->getFaces().size(); ++i) {
+			const auto& f = convexCollider->getFaces()[i];
+
+			DEBUG_LOG_TEMP("F %d:", i);
+
+			Vector3f v = f.centroid;
+			DEBUG_LOG_TEMP("C: %.2f, %.2f, %.2f", v.x, v.y, v.z);
+			v = f.normal;
+			DEBUG_LOG_TEMP("N: %.2f, %.2f, %.2f", v.x, v.y, v.z);
+
+			for (const auto& ep : f.edgePlanes) {
+				v = ep.normal;
+				DEBUG_LOG_TEMP("\tFN: %.2f, %.2f, %.2f", v.x, v.y, v.z);
+				DEBUG_LOG_TEMP("\t\tEID: %d", ep.edgeID);
+			}
+
+			for (const auto& v : f.vertices) {
+				DEBUG_LOG_TEMP("\tFV: %.2f, %.2f, %.2f", v.v.x, v.v.y, v.v.z);
+				DEBUG_LOG_TEMP("\t\tEID: %d", v.edgeID);
+			}
+		}
+
+		DEBUG_LOG_TEMP("EDGES: %d", convexCollider->getEdges().size());
+
+		for (uint32 i = 0; i < convexCollider->getEdges().size(); ++i) {
+			const auto& e = convexCollider->getEdges()[i];
+
+			Vector3f v = (e.v1 + e.v0) * 0.5f;
+			DEBUG_LOG_TEMP("EC %d: %.2f, %.2f, %.2f", i, v.x, v.y, v.z);
+		}
+
+		DEBUG_LOG_TEMP2("FACE AXES");
+
+		for (const auto& a : convexCollider->getFaceAxes()) {
+			Vector3f v = a.axis;
+			DEBUG_LOG_TEMP("FA: %.2f, %.2f, %.2f", v.x, v.y, v.z);
+
+			for (const auto& i : a.indices) {
+				DEBUG_LOG_TEMP("\t%d", i);
+			}
+		}
+
+		DEBUG_LOG_TEMP2("EDGE AXES");
+
+		for (const auto& a : convexCollider->getEdgeAxes()) {
+			Vector3f v = a.axis;
+			DEBUG_LOG_TEMP("EA: %.2f, %.2f, %.2f", v.x, v.y, v.z);
+
+			for (const auto& i : a.indices) {
+				DEBUG_LOG_TEMP("\t%d", i);
+			}
+		}
+	}
+};
 
