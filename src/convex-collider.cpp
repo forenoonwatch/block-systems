@@ -63,8 +63,10 @@ Physics::ConvexCollider::ConvexCollider(const IndexedModel& model)
 		const Vector3f& v2 = model.getElement3f(0, i2);
 
 		Vector3f centroid = (v0 + v1 + v2) / 3.f;
-		Vector3f normal = (model.getElement3f(2, i0)
-				+ model.getElement3f(2, i1) + model.getElement3f(2, i2)) / 3.f;
+		//Vector3f normal = (model.getElement3f(2, i0)
+		//		+ model.getElement3f(2, i1) + model.getElement3f(2, i2)) / 3.f;
+		
+		Vector3f normal = Math::normalize(Math::cross(v1 - v0, v2 - v0));
 		
 		FaceData fd;
 		fd.centroid = centroid;
