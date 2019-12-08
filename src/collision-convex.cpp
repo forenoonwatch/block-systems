@@ -13,8 +13,8 @@
 
 #define EPSILON 1e-6f
 
-#define PEN_BIAS_REL	0.f // default: 0.95f
-#define PEN_BIAS_ABS	0.01f
+#define PEN_BIAS_REL	-0.95f // default: 0.95f
+#define PEN_BIAS_ABS	-0.01f
 
 // TODO: move all this to math in the core engine
 static constexpr bool isZero(float n) {
@@ -95,6 +95,7 @@ void Physics::collisionConvexConvex(Manifold& manifold, CollisionHull& a,
 
 	float minFacePen = FLT_MAX;
 	float minEdgePen = FLT_MAX;
+
 	uint32 minFaceAxisID = 0;
 	uint32 minEdgeAxisID = 0;
 
@@ -161,6 +162,7 @@ void Physics::collisionConvexConvex(Manifold& manifold, CollisionHull& a,
 				}
 			}
 			
+			axisA = Math::normalize(axisA);
 			abDotL = Math::dot(axisA, abA);
 
 			if (abDotL < 0.f) {
@@ -168,7 +170,6 @@ void Physics::collisionConvexConvex(Manifold& manifold, CollisionHull& a,
 				abDotL = -abDotL;
 			}
 
-			axisA = Math::normalize(axisA);
 			Vector3f axisB(tfAtoB * Vector4f(axisA, 0.f));
 
 			if (!checkAxisPenetration(*hullA, *hullB, abDotL, axisA, axisB,
@@ -239,8 +240,6 @@ void Physics::collisionConvexConvex(Manifold& manifold, CollisionHull& a,
 				contactPoint);
 		
 		manifold.setNormal(normal);
-
-		// TODO: figure out why this is fucky
 
 		FeaturePair fp;
 		fp.key = minAxisID;
@@ -337,7 +336,6 @@ static bool checkAxisPenetration(const Physics::ConvexCollider& hullA,
 	}
 
 	s = tDotL - (sA - sB);
-	//DEBUG_LOG_TEMP("%.2f = %.2f - (%.2f - %.2f)", s, tDotL, sA, sB);
 
 	if (s < 0.f) {
 		if (-s < minPenetration) {
@@ -360,7 +358,7 @@ inline static void calcEdgeContact(const Physics::ConvexCollider& hullA,
 	uint32 aID = minAxisID - (hullA.getFaceAxes().size()
 			+ hullB.getFaceAxes().size());
 
-	uint32 edgeIDA = aID / hullA.getEdgeAxes().size();
+	uint32 edgeIDA = aID / hullB.getEdgeAxes().size();
 	uint32 edgeIDB = aID % hullB.getEdgeAxes().size();
 
 	float aMax = -FLT_MAX;
@@ -512,6 +510,12 @@ inline static void calcContactPoints(const Physics::Face& referenceFace,
 
 inline static void planeClip(const ArrayList<VertexData>& inVertices,
 		ArrayList<VertexData>& outVertices, const Physics::EdgePlane& plane) {
+	if (inVertices.empty()) {
+		return;
+	}
+
+	// TODO: figure out why there would be less than 2 vertices
+
 	VertexData a = inVertices.back();
 
 	for (const VertexData& b : inVertices) {
