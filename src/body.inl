@@ -1,12 +1,16 @@
 
 inline void Physics::Body::applyForce(const Vector3f& force) {
 	this->force += force * mass;
+
+	setToAwake();
 }
 
 inline void Physics::Body::applyForce(const Vector3f& force,
 		const Vector3f& worldPoint) {
 	this->force += force * mass;
 	this->torque += Math::cross(worldPoint - worldCenter, force);
+
+	setToAwake();
 }
 
 inline void Physics::Body::applyTorque(const Vector3f& torque) {
@@ -15,6 +19,8 @@ inline void Physics::Body::applyTorque(const Vector3f& torque) {
 
 inline void Physics::Body::applyImpulse(const Vector3f& impulse) {
 	velocity += impulse * invMass;
+
+	setToAwake();
 }
 
 inline void Physics::Body::applyImpulse(const Vector3f& impulse,
@@ -22,6 +28,8 @@ inline void Physics::Body::applyImpulse(const Vector3f& impulse,
 	velocity += impulse * invMass;
 	angularVelocity += invInertiaWorld
 		* Math::cross(worldPoint - worldCenter, impulse);
+	
+	setToAwake();
 }
 
 inline Vector3f Physics::Body::getVelocityAt(
@@ -55,11 +63,20 @@ inline void Physics::Body::removeEdge(Physics::ContactEdge* edge) {
 }
 
 inline void Physics::Body::setToAwake() {
-	flags |= Physics::Body::FLAG_AWAKE;
+	if (!(flags & Physics::Body::FLAG_AWAKE)) {
+		flags |= Physics::Body::FLAG_AWAKE;
+		sleepTime = 0.f;
+	}
 }
 
 inline void Physics::Body::setToSleep() {
 	flags &= ~Physics::Body::FLAG_AWAKE;
+	sleepTime = 0.f;
+
+	velocity = Vector3f();
+	angularVelocity = Vector3f();
+	force = Vector3f();
+	torque = Vector3f();
 }
 
 inline void Physics::Body::setInIsland() {
