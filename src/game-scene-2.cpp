@@ -28,13 +28,22 @@ namespace {
 
 	class PlayerControlSystem : public ECS::System {
 		public:
+			PlayerControlSystem(Physics::PhysicsEngine* pe,
+						Physics::GravitySystem* gs)
+					: pe(pe)
+					, gs(gs) {}
+
 			virtual void operator()(Game&, float) override;
+		private:
+			Physics::PhysicsEngine* pe;
+			Physics::GravitySystem* gs;
 	};
 };
 
 GameScene2::GameScene2()
 		: Scene()
 		, physicsEngine(new Physics::PhysicsEngine())
+		, gravitySystem(new Physics::GravitySystem())
 		, sphereCollider(nullptr)
 		, sphereCollider2(nullptr)
 		, convexCollider(nullptr)
@@ -45,9 +54,9 @@ GameScene2::GameScene2()
 	addUpdateSystem(new OrbitCameraSystem());
 	addUpdateSystem(new UpdateCameraSystem());
 	addUpdateSystem(new ToggleFullscreenSystem());
-	addUpdateSystem(new ::PlayerControlSystem());
+	addUpdateSystem(new ::PlayerControlSystem(physicsEngine, gravitySystem));
 	
-	addUpdateSystem(new Physics::GravitySystem());
+	addUpdateSystem(gravitySystem);
 	addUpdateSystem(physicsEngine);
 
 	addRenderSystem(new RenderMesh());
@@ -109,8 +118,10 @@ void GameScene2::load(Game& game) {
 	Physics::BodyHints bodyHints;
 	bodyHints.mass = 1.f;
 	bodyHints.type = Physics::BodyType::DYNAMIC;
-	bodyHints.invInertiaLocal = Math::inverse(Matrix3f(0.4f));
+	//bodyHints.invInertiaLocal = Math::inverse(Matrix3f(0.4f));
+	bodyHints.invInertiaLocal = Math::inverse(Matrix3f(1.f / 6.f));
 	// sphere I^-1 = diag(0.4f * M * R^2)^-1
+	// cube I^1 = diag(mass / 6.f) * size
 
 	// body 2
 	Physics::Body* body2 = physicsEngine->addBody(bodyHints);
@@ -150,6 +161,12 @@ void GameScene2::load(Game& game) {
 		for (const auto& ep : f.edgePlanes) {
 			v = ep.normal;
 			DEBUG_LOG_TEMP("\tFN: %.2f, %.2f, %.2f", v.x, v.y, v.z);
+			DEBUG_LOG_TEMP("\t\tEID: %d", ep.edgeID);
+		}
+
+		for (const auto& v : f.vertices) {
+			DEBUG_LOG_TEMP("\tFV: %.2f, %.2f, %.2f", v.v.x, v.v.y, v.v.z);
+			DEBUG_LOG_TEMP("\t\tEID: %d", v.edgeID);
 		}
 	}
 
@@ -185,7 +202,7 @@ void GameScene2::load(Game& game) {
 	}*/
 
 	Quaternion q = Math::mat4ToQuat(Math::rotate(Matrix4f(1.f),
-			Math::toRadians(45.f), Vector3f(1.f, 0.f, 0.f)));
+			Math::toRadians(44.f), Vector3f(1.f, 0.f, 0.f)));
 
 	ECS::Entity eSphere = game.getECS().create();
 	game.getECS().assign<RenderableMesh>(eSphere,
@@ -193,9 +210,9 @@ void GameScene2::load(Game& game) {
 			&game.getAssetManager().getMaterial("bricks"),
 			true);
 	game.getECS().assign<TransformComponent>(eSphere,
-			Transform(Vector3f(-0.45f, 0.f, 0.f), q, Vector3f(1.f)));
-//	game.getECS().assign<Physics::BodyHandle>(eSphere,
-//			Physics::BodyHandle(body2));
+			Transform(Vector3f(0.2f, 20.f, 0.4f), q, Vector3f(1.f)));
+	game.getECS().assign<Physics::BodyHandle>(eSphere,
+			Physics::BodyHandle(body2));
 
 	// body 1 
 	bodyHints.mass = 0.f;
@@ -204,16 +221,22 @@ void GameScene2::load(Game& game) {
 
 	Physics::Body* body = physicsEngine->addBody(bodyHints);
 
-	planeCollider = new Physics::PlaneCollider();
-	planeCollider->restitution = 0.f;
-	planeCollider->friction = 0.3f;
-	body->setCollisionHull(planeCollider);
+	//planeCollider = new Physics::PlaneCollider();
+	//planeCollider->restitution = 0.f;
+	//planeCollider->friction = 0.3f;
+	//body->setCollisionHull(planeCollider);
 	
 	//sphereCollider2 = new Physics::SphereCollider();
 	//body->collisionHull = sphereCollider2;
 	//sphereCollider2->body = body;
 	//sphereCollider2->radius = 1.f;
 	//sphereCollider2->restitution = 0.f;
+
+	convexCollider2 = new Physics::ConvexCollider(game.getAssetManager()
+			.getModel("cube"));
+	convexCollider2->restitution = 0.f;
+	convexCollider2->friction = 0.3f;
+	body->setCollisionHull(convexCollider2);
 
 	Quaternion rot = Math::mat4ToQuat(Math::rotate(Matrix4f(1.f),
 			Math::toRadians(0.f), Vector3f(0.f, 1.f, 0.f)));
@@ -223,10 +246,11 @@ void GameScene2::load(Game& game) {
 			&game.getAssetManager().getVertexArray("cube"),
 			&game.getAssetManager().getMaterial("bricks"),
 			true);
-	game.getECS().assign<TransformComponent>(ePlane, Transform(Vector3f(0.45f, 0.f, 0.f),
-			rot, Vector3f(1.f, 1.f, 1.f)));
-//	game.getECS().assign<Physics::BodyHandle>(ePlane,
-//			Physics::BodyHandle(body));
+	game.getECS().assign<TransformComponent>(ePlane,
+			Transform(Vector3f(0.f, 0.f, 0.f), rot,
+			Vector3f(1.f, 1.f, 1.f)));
+	game.getECS().assign<Physics::BodyHandle>(ePlane,
+			Physics::BodyHandle(body));
 
 	game.getECS().assign<CameraComponent>(eSphere,
 			&((GameRenderContext*)game.getRenderContext())->getCamera());
@@ -288,6 +312,11 @@ void ::PlayerControlSystem::operator()(Game& game, float deltaTime) {
 		
 		if (Application::isKeyDown(Input::KEY_SPACE)) {
 			v.y += 1.f;
+		}
+
+		if (Application::getKeyPressed(Input::KEY_N)) {
+			(*gs)(game, deltaTime);
+			(*pe)(game, deltaTime);
 		}
 
 		handle.body->getVelocity() += v;

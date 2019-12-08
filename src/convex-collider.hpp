@@ -16,13 +16,28 @@ namespace Physics {
 	struct EdgePlane { // TODO: potentially replace with an abcd plane
 		Vector3f position;
 		Vector3f normal;
+		uint32 edgeID;
+	};
+
+	struct FaceVertex {
+		inline FaceVertex(const Vector3f& v, uint32 edgeID)
+				: v(v)
+				, edgeID(edgeID) {}
+
+		Vector3f v;
+		uint32 edgeID;
 	};
 
 	struct Face {
 		Vector3f centroid;
 		Vector3f normal;
 		ArrayList<EdgePlane> edgePlanes;
+		ArrayList<FaceVertex> vertices;
 	};
+
+	// TODO: replace Vector3f vertices with struct FaceVertex
+	// generate edgeID for each vertex in loop by incrementing counter
+	//
 
 	struct Axis {
 		Vector3f axis;

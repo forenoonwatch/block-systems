@@ -36,7 +36,11 @@ static void initializeEdges(const ArrayList<FaceData>& faceData,
 
 static void mergeFaces(FaceData& f0, FaceData& f1);
 
+static void generateFaceVertices(const ArrayList<Edge>& edgeData,
+		ArrayList<FaceVertex>& vertices, uint32& edgeID);
+
 static bool isCoplanar(const FaceData& f0, const FaceData& f1);
+
 static bool isCollinear(const Edge& e0, const Edge& e1);
 
 Physics::ConvexCollider::ConvexCollider(const IndexedModel& model)
@@ -207,6 +211,9 @@ inline static void mergeCoplanarFaces(ArrayList<FaceData>& faces) {
 inline static void initializeFaces(const ArrayList<FaceData>& faceData,
 		ArrayList<Face>& faces) {
 	EdgePlane ep;
+
+	uint32 faceEdgeID = 0;
+	uint32 vertexEdgeID = 0;
 	
 	for (const FaceData& fd : faceData) {
 		Face f;
@@ -221,6 +228,7 @@ inline static void initializeFaces(const ArrayList<FaceData>& faceData,
 		for (const Edge& e : fd.edges) {
 			ep.position = e.v0;
 			ep.normal = Math::normalize(Math::cross(f.normal, e.v1 - e.v0));
+			ep.edgeID = faceEdgeID++;
 
 			// flip inward-facing normal
 			if (Math::dot(ep.normal, ep.position - f.centroid) < 0.f) {
@@ -229,6 +237,8 @@ inline static void initializeFaces(const ArrayList<FaceData>& faceData,
 
 			f.edgePlanes.push_back(ep);
 		}
+
+		generateFaceVertices(fd.edges, f.vertices, vertexEdgeID);
 
 		faces.push_back(f);
 	}
@@ -239,8 +249,12 @@ inline static void initializeFaces(const ArrayList<FaceData>& faceData,
 inline static void initializeEdges(const ArrayList<FaceData>& faceData,
 		ArrayList<Edge>& edges) {
 	for (const FaceData& fd : faceData) {
-		for (const Edge& e0 : fd.edges) {
-			edges.push_back(e0);
+		for (const Edge& ed : fd.edges) {
+			Edge e;
+			e.v0 = ed.v0;
+			e.v1 = ed.v1;
+
+			edges.push_back(e);
 		}
 	}
 
@@ -260,6 +274,49 @@ inline static void initializeEdges(const ArrayList<FaceData>& faceData,
 	}
 
 	edges.shrink_to_fit();
+}
+
+inline static void generateFaceVertices(const ArrayList<Edge>& edgeData,
+		ArrayList<FaceVertex>& vertices, uint32& edgeID) {
+	const Vector3f stopPoint = edgeData.front().v0;
+	Vector3f searchPoint = edgeData.front().v1;
+
+	uint32 baseEdgeID = edgeID;
+	vertices.emplace_back(edgeData.front().v1, edgeID);
+	++edgeID;
+
+	ArrayList<bool> visited(edgeData.size(), false);
+
+	do {
+		for (uint32 i = 1; i < edgeData.size(); ++i) {
+			if (visited[i]) {
+				continue;
+			}
+
+			if (v3Equal(edgeData[i].v0, searchPoint)) {
+				vertices.emplace_back(edgeData[i].v1, edgeID);
+				searchPoint = edgeData[i].v1;
+				visited[i] = true;
+
+				++edgeID;
+
+				break;
+			}
+			else if (v3Equal(edgeData[i].v1, searchPoint)) {
+				vertices.emplace_back(edgeData[i].v0, edgeID);
+				searchPoint = edgeData[i].v0;
+				visited[i] = true;
+
+				++edgeID;
+
+				break;
+			}
+		}
+	}
+	while (!v3Equal(searchPoint, stopPoint));
+
+	//vertices.back().edgeID = baseEdgeID;
+	//--edgeID;
 }
 
 inline static void mergeFaces(FaceData& f0, FaceData& f1) {

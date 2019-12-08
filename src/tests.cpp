@@ -9,6 +9,7 @@
 #include <engine/core/asset-loader.hpp>
 
 #include <cfloat>
+#include <utility>
 
 #define EPSILON 1e-6f
 
@@ -20,6 +21,24 @@ static constexpr bool isZero(float n) {
 static constexpr bool isZeroVector(const Vector3f& v) {
 	return isZero(v.x) && isZero(v.y) && isZero(v.z);
 }
+
+namespace {
+	struct VertexData {
+		inline VertexData() {
+			fp.key = ~0;
+		}
+
+		inline VertexData(const Physics::FaceVertex& fv)
+				: v(fv.v) {
+			fp.key = ~0;
+			fp.inI = fp.outI = fv.edgeID;
+		}
+
+		Vector3f v;
+		Physics::FeaturePair fp;
+		float depth;
+	};
+};
 
 static void generateManifold(Vector3f& normal,
 		ArrayList<Physics::Contact>& contacts,
@@ -46,6 +65,14 @@ static const Physics::Face* findSupportFace(
 		uint32 minAxisID);
 static const Physics::Face* findIncidentFace(
 		const Physics::ConvexCollider& hull, const Vector3f& normal);
+
+static void calcContactPoints(const Physics::Face& referenceFace,
+		const Physics::Face& incidentFace, const Matrix4f& refToInc,
+		const Matrix4f& incToWorld, ArrayList<VertexData>& points);
+
+static void clip(const ArrayList<VertexData>& inVertices,
+		ArrayList<VertexData>& outVertices, 
+		const ArrayList<Physics::EdgePlane>& planes);
 
 static void runSATTest();
 
@@ -216,46 +243,49 @@ static void generateManifold(Vector3f& normal,
 		const Face* referenceFace;
 		const Face* incidentFace;
 
+		ArrayList<VertexData> contactPoints;
+		bool flip = false;
+
 		if (minAxisID < hullA->getFaceAxes().size()) {
 			DEBUG_LOG_TEMP2("REFERENCE FACE IS ON HULL A");
 			referenceFace = findSupportFace(*hullA, abA, minAxisID);
 			Vector3f rN(tfAtoB * Vector4f(referenceFace->normal, 0.f));
 
 			incidentFace = findIncidentFace(*hullB, rN);
+
+			normal = Vector3f(mA * Vector4f(referenceFace->normal, 0.f));
+			calcContactPoints(*referenceFace, *incidentFace, tfAtoB, mB,
+					contactPoints);
 		}
 		else {
-			//minAxisID -= hullA->getFaceAxes().size();
 			DEBUG_LOG_TEMP2("REFERENCE FACE IS ON HULL B");
 			referenceFace = findSupportFace(*hullB, -abB,
 					minAxisID - hullA->getFaceAxes().size());
 			Vector3f rN(tfBtoA * Vector4f(referenceFace->normal, 0.f));
 
 			incidentFace = findIncidentFace(*hullA, rN);
-			// TODO: see if anything needs to be flagged as flipped
+
+			// TODO: double check if negating is necessary
+			normal = Vector3f(mB * Vector4f(-referenceFace->normal, 0.f));
+			calcContactPoints(*referenceFace, *incidentFace, tfBtoA, mA,
+					contactPoints);
+			flip = true;
 		}
-
-		// TODO:
-		// - project reference edge-normals into incident-space
-		// - clip incident hull vertices against reference edge normals
-		// - planar project clipped points onto reference face
-		// - move points into world space
-		// - generate contact points
-		// - TODO: figure out how to match pairs
-
-		DEBUG_LOG_TEMP("RC: (%.2f, %.2f, %.2f)", referenceFace->centroid.x,
-				referenceFace->centroid.y, referenceFace->centroid.z);
-		DEBUG_LOG_TEMP("RN: (%.2f, %.2f, %.2f)", referenceFace->normal.x,
-				referenceFace->normal.y, referenceFace->normal.z);
-
-		DEBUG_LOG_TEMP("IC: (%.2f, %.2f, %.2f)", incidentFace->centroid.x,
-				incidentFace->centroid.y, incidentFace->centroid.z);
-		DEBUG_LOG_TEMP("IN: (%.2f, %.2f, %.2f)", incidentFace->normal.x,
-				incidentFace->normal.y, incidentFace->normal.z);
 		
-		// TODO: clip incident face by orthogonal edges of reference face
+		for (VertexData& cp : contactPoints) {
+			if (flip) {
+				std::swap(cp.fp.inI, cp.fp.inR);
+				std::swap(cp.fp.outI, cp.fp.outR);
+			}
 
-		// TODO: planar project clipped points onto reference face
-		// bring into world space and set as contact points
+			Contact c;
+			c.rA = cp.v - tfA.getPosition();
+			c.rB = cp.v - tfB.getPosition();
+			c.penetration = cp.depth;
+			c.fp = cp.fp;
+
+			contacts.push_back(c);
+		}
 	}
 	else {
 		Vector3f contactPoint;
@@ -414,5 +444,129 @@ inline static const Physics::Face* findIncidentFace(
 	}
 
 	return fOut;
+}
+
+inline static void clip(const ArrayList<Physics::FaceVertex>& inVertices,
+		ArrayList<VertexData>& outVertices, 
+		const ArrayList<Physics::EdgePlane>& planes) {
+	ArrayList<VertexData> temp;
+	temp.insert(temp.begin(), inVertices.begin(), inVertices.end());
+
+	clip(temp, outVertices, planes);
+}
+
+inline static void calcContactPoints(const Physics::Face& referenceFace,
+		const Physics::Face& incidentFace, const Matrix4f& refToInc,
+		const Matrix4f& incToWorld, ArrayList<VertexData>& points) {
+	ArrayList<Physics::EdgePlane> incPlanes;
+
+	for (const auto& ep : referenceFace.edgePlanes) {
+		Physics::EdgePlane ip;
+		ip.position = Vector3f(refToInc * Vector4f(ep.position, 1.f));
+		ip.normal = Vector3f(refToInc * Vector4f(ep.normal, 0.f));
+
+		incPlanes.push_back(ip);
+	}
+
+	clip(incidentFace.vertices, points, incPlanes);
+
+	Vector3f refCentroid(refToInc * Vector4f(referenceFace.centroid, 1.f));
+	Vector3f refNormal(refToInc * Vector4f(referenceFace.normal, 0.f));
+
+	for (uint32 i = 0; i < points.size(); ++i) {
+		float d = Math::dot(refNormal, points[i].v - refCentroid);
+
+		// discard point if it is above plane
+		if (d > 0.f) {
+			points[i] = points.back();
+			points.pop_back();
+			--i;
+
+			continue;
+		}
+		
+		points[i].depth = -d;
+
+		// planar-project point onto reference face
+		points[i].v -= refNormal * d;
+
+		// bring into world space
+		points[i].v = Vector3f(incToWorld * Vector4f(points[i].v, 1.f));
+	}
+}
+
+// TODO: get rid of these
+#define BELOW(a)	((a) < 0.f)
+#define ABOVE(a)	((a) >= 0.f)
+#define ON(a)		((a) > -0.005f && (a) < 0.005f)
+
+inline static void planeClip(const ArrayList<VertexData>& inVertices,
+		ArrayList<VertexData>& outVertices, const Physics::EdgePlane& plane) {
+	VertexData a = inVertices.back();
+
+	for (const VertexData& b : inVertices) {
+		float da = Math::dot(plane.normal, a.v - plane.position);
+		float db = Math::dot(plane.normal, b.v - plane.position);
+
+		if ((BELOW(da) && BELOW(db)) || ON(db)) {
+			outVertices.push_back(b);
+		}
+		else if (BELOW(da) && ABOVE(db)) {
+			VertexData cv;
+			cv.v = a.v + (b.v - a.v) * (da / (da - db));
+			cv.fp = b.fp;
+			cv.fp.outR = plane.edgeID;
+			cv.fp.outI = 0;
+
+			outVertices.push_back(cv);
+		}
+		else if (ABOVE(da) && BELOW(db)) {
+			VertexData cv;
+			cv.v = a.v + (b.v - a.v) * (da / (da - db));
+			cv.fp = a.fp;
+			cv.fp.inR = plane.edgeID;
+			cv.fp.inI = 0;
+
+			outVertices.push_back(cv);
+			outVertices.push_back(b);
+		}
+
+		a = b;
+	}
+}
+
+inline static void clip(const ArrayList<VertexData>& inVertices,
+		ArrayList<VertexData>& outVertices, 
+		const ArrayList<Physics::EdgePlane>& planes) {
+	planeClip(inVertices, outVertices, planes.front());
+
+	// TODO: potentially don't even need this check because we know
+	// that all convex polygons have >1 edges
+	if (planes.size() > 1) {
+		ArrayList<VertexData> buffer2;
+
+		ArrayList<VertexData>* readBuffer = &outVertices;
+		ArrayList<VertexData>* writeBuffer = &buffer2;
+
+		for (uint32 i = 1; i < planes.size(); ++i) {
+			writeBuffer->clear();
+			planeClip(*readBuffer, *writeBuffer, planes[i]);
+
+			if (readBuffer == &outVertices) {
+				readBuffer = &buffer2;
+				writeBuffer = &outVertices;
+			}
+			else {
+				readBuffer = &outVertices;
+				writeBuffer = &buffer2;
+			}
+		}
+
+		if (writeBuffer == &outVertices) {
+			outVertices.clear();
+			outVertices.insert(outVertices.begin(), buffer2.begin(),
+					buffer2.end());
+		}
+	}
 }
 

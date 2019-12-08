@@ -4,6 +4,8 @@
 
 namespace Physics {
 	class PhysicsEngine;
+	class GravitySystem;
+
 	class SphereCollider;
 	class ConvexCollider;
 	class PlaneCollider;
@@ -19,6 +21,7 @@ class GameScene2 : public Scene {
 		virtual ~GameScene2();
 	private:
 		Physics::PhysicsEngine* physicsEngine;
+		Physics::GravitySystem* gravitySystem;
 		
 		Physics::SphereCollider* sphereCollider;
 		Physics::SphereCollider* sphereCollider2;
