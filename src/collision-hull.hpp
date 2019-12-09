@@ -25,14 +25,32 @@ namespace Physics {
 
 			virtual AABB computeAABB(const Transform& tf) const = 0;
 
-			virtual ~CollisionHull() {}
+			inline void setFriction(float friction) {
+				this->friction = friction;
+			}
 
+			inline void setRestitution(float restitution) {
+				this->restitution = restitution;
+			}
+
+			inline float getFriction() const { return friction; }
+			inline float getRestitution() const { return restitution; }
+
+			inline Body* getBody() { return body; }
+			inline const Body* getBody() const { return body; }
+
+			inline enum HullType getType() const { return type; }
+
+			virtual ~CollisionHull() {}
+		protected:
 			float friction;
 			float restitution;
 
 			Body* body;
 
 			const enum HullType type;
+
+			friend class Body;
 		private:
 			int32 broadphaseIndex;
 

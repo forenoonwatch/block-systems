@@ -17,8 +17,8 @@ namespace Physics {
 
 			inline void setNormal(const Vector3f& n) { normal = n; }
 
-			inline Body* getBodyA() { return hullA->body; }
-			inline Body* getBodyB() { return hullB->body; }
+			inline Body* getBodyA() { return hullA->getBody(); }
+			inline Body* getBodyB() { return hullB->getBody(); }
 
 			inline const Vector3f& getNormal() const { return normal; }
 		private:

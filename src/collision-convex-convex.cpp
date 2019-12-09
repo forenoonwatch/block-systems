@@ -71,8 +71,8 @@ static void clip(const ArrayList<VertexData>& inVertices,
 
 void Physics::collisionConvexConvex(Manifold& manifold, CollisionHull& a,
 		CollisionHull& b) {
-	Body* bodyA = a.body;
-	Body* bodyB = b.body;
+	Body* bodyA = a.getBody();
+	Body* bodyB = b.getBody();
 
 	ConvexCollider* hullA = (ConvexCollider*)&a;
 	ConvexCollider* hullB = (ConvexCollider*)&b;

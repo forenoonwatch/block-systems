@@ -23,8 +23,8 @@ static bool findDeepPenetration(const SphereCollider& sphere,
 
 void Physics::collisionSphereConvex(Manifold& manifold, CollisionHull& a,
 		CollisionHull& b) {
-	Body* bodyA = a.body;
-	Body* bodyB = b.body;
+	Body* bodyA = a.getBody();
+	Body* bodyB = b.getBody();
 
 	SphereCollider* sphere = (SphereCollider*)&a;
 	ConvexCollider* convex = (ConvexCollider*)&b;
@@ -40,12 +40,12 @@ void Physics::collisionSphereConvex(Manifold& manifold, CollisionHull& a,
 	float dist = Math::length(normal);
 
 	if (dist > EPSILON) {
-		if (dist < sphere->radius) {
+		if (dist < sphere->getRadius()) {
 			FeaturePair fp;
 			fp.key = 0;
 
 			manifold.setNormal(Math::normalize(normal));
-			manifold.addContact(resB, sphere->radius - dist, fp);
+			manifold.addContact(resB, sphere->getRadius() - dist, fp);
 		}
 	}
 	else {
@@ -67,7 +67,7 @@ void Physics::collisionSphereConvex(Manifold& manifold, CollisionHull& a,
 			manifold.setNormal(normal);
 			manifold.addContact(bodyA->getTransform().getPosition()
 					+ normal * minPenetration,
-					sphere->radius - minPenetration, fp);
+					sphere->getRadius() - minPenetration, fp);
 		}
 	}
 }
@@ -89,7 +89,7 @@ inline static bool findDeepPenetration(const SphereCollider& sphere,
 		const Face& f = convex.getFaces()[i];
 		float d = Math::dot(spherePos - f.centroid, f.normal);
 
-		if (d > sphere.radius) {
+		if (d > sphere.getRadius()) {
 			return false;
 		}
 

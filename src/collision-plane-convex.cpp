@@ -8,8 +8,8 @@
 
 void Physics::collisionConvexPlane(Manifold& manifold, CollisionHull& a,
 		CollisionHull& b) {
-	Body* bodyA = a.body;
-	Body* bodyB = b.body;
+	Body* bodyA = a.getBody();
+	Body* bodyB = b.getBody();
 
 	ConvexCollider* conv = (ConvexCollider*)&a;
 
@@ -37,6 +37,5 @@ void Physics::collisionPlaneConvex(Manifold& manifold, CollisionHull& a,
 		CollisionHull& b) {
 	collisionConvexPlane(manifold, b, a);
 	manifold.setNormal(-manifold.getNormal());
-	// TODO: flip feature pairs
 }
 

@@ -10,8 +10,8 @@
 
 void Physics::collisionSphereSphere(Manifold& manifold, CollisionHull& a,
 		CollisionHull& b) {
-	Body* bodyA = a.body;
-	Body* bodyB = b.body;
+	Body* bodyA = a.getBody();
+	Body* bodyB = b.getBody();
 	
 	SphereCollider* sphereA = (SphereCollider*)bodyA->getCollisionHull();
 	SphereCollider* sphereB = (SphereCollider*)bodyB->getCollisionHull();
@@ -20,7 +20,7 @@ void Physics::collisionSphereSphere(Manifold& manifold, CollisionHull& a,
 			- bodyA->getTransform().getPosition();
 
 	float d = Math::dot(ds, ds);
-	float rSum = sphereA->radius + sphereB->radius;
+	float rSum = sphereA->getRadius() + sphereB->getRadius();
 
 	if (d < rSum * rSum) {
 		FeaturePair fp;
@@ -35,8 +35,8 @@ void Physics::collisionSphereSphere(Manifold& manifold, CollisionHull& a,
 
 void Physics::collisionSpherePlane(Manifold& manifold, CollisionHull& a,
 		CollisionHull& b) {
-	Body* bodyA = a.body;
-	Body* bodyB = b.body;
+	Body* bodyA = a.getBody();
+	Body* bodyB = b.getBody();
 
 	SphereCollider* sphere = (SphereCollider*)&a;
 
@@ -46,13 +46,13 @@ void Physics::collisionSpherePlane(Manifold& manifold, CollisionHull& a,
 	float d = Math::dot(normal, bodyA->getTransform().getPosition()
 			- bodyB->getTransform().getPosition());
 
-	if (d < sphere->radius) {
+	if (d < sphere->getRadius()) {
 		FeaturePair fp;
 		fp.key = 0;
 
 		manifold.setNormal(-normal);
 		manifold.addContact(bodyA->getTransform().getPosition()
-				- normal * d, sphere->radius - d, fp);
+				- normal * d, sphere->getRadius() - d, fp);
 	}
 }
 

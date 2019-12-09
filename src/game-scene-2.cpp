@@ -133,10 +133,9 @@ void GameScene2::load(Game& game) {
 	
 	//body2->invInertiaLocal[2] = Vector3f(0.f, 0.f, 0.f); // lock Z axis 
 
-	sphereCollider = new Physics::SphereCollider();
-	sphereCollider->radius = 1.f;
-	sphereCollider->restitution = 0.f;
-	sphereCollider->friction = 0.3f;
+	sphereCollider = new Physics::SphereCollider(1.f);
+	sphereCollider->setRestitution(0.f);
+	sphereCollider->setFriction(0.3f);
 	body2->setCollisionHull(sphereCollider);
 	
 	//convexCollider = new Physics::ConvexCollider(game.getAssetManager()
@@ -178,8 +177,8 @@ void GameScene2::load(Game& game) {
 
 	convexCollider2 = new Physics::ConvexCollider(game.getAssetManager()
 			.getModel("platform"));
-	convexCollider2->restitution = 0.1f;
-	convexCollider2->friction = 0.3f;
+	convexCollider2->setRestitution(0.1f);
+	convexCollider2->setFriction(0.3f);
 	body->setCollisionHull(convexCollider2);
 
 	//printCC(convexCollider2);

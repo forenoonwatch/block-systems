@@ -35,10 +35,6 @@ namespace Physics {
 		ArrayList<FaceVertex> vertices;
 	};
 
-	// TODO: replace Vector3f vertices with struct FaceVertex
-	// generate edgeID for each vertex in loop by incrementing counter
-	//
-
 	struct Axis {
 		Vector3f axis;
 		ArrayList<uint32> indices;
