@@ -11,6 +11,7 @@
 #include "distance-gjk.hpp"
 
 #include <cfloat>
+#include <utility>
 
 #define EPSILON 1e-6f
 
@@ -28,24 +29,18 @@ void Physics::collisionSphereConvex(Manifold& manifold, CollisionHull& a,
 	SphereCollider* sphere = (SphereCollider*)&a;
 	ConvexCollider* convex = (ConvexCollider*)&b;
 
-	Vector3f normal;
-
-	/*Vector3f zeroVector;
+	Vector3f spherePos = bodyA->getTransform().getPosition();
 	Vector3f resA, resB;
 
-	distanceGJK(&zeroVector, 1, &convex->getVertices()[0],
-			convex->getVertices().size(), bodyA->getTransform(),
+	distanceGJK(&spherePos, 1, &convex->getVertices()[0],
+			convex->getVertices().size(), Transform(),
 			bodyB->getTransform(), resA, resB);
 
 	Vector3f normal = resB - resA;
-	float dist = Math::dot(normal, normal);
-
-	DEBUG_LOG_TEMP("%.2f", dist);
+	float dist = Math::length(normal);
 
 	if (dist > EPSILON) {
-		if (dist < sphere->radius * sphere->radius) {
-			dist = Math::sqrt(dist);
-
+		if (dist < sphere->radius) {
 			FeaturePair fp;
 			fp.key = 0;
 
@@ -53,7 +48,7 @@ void Physics::collisionSphereConvex(Manifold& manifold, CollisionHull& a,
 			manifold.addContact(resB, sphere->radius - dist, fp);
 		}
 	}
-	else {*/
+	else {
 		float minPenetration;
 		uint32 minFaceID;
 
@@ -74,11 +69,12 @@ void Physics::collisionSphereConvex(Manifold& manifold, CollisionHull& a,
 					+ normal * minPenetration,
 					sphere->radius - minPenetration, fp);
 		}
-	//}
+	}
 }
 
 void Physics::collisionConvexSphere(Manifold& manifold, CollisionHull& a,
 		CollisionHull& b) {
+	DEBUG_LOG_TEMP2("UNO REVERSE CARD");
 	collisionSphereConvex(manifold, b, a);
 	manifold.setNormal(-manifold.getNormal());
 }
