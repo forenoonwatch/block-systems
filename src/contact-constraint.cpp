@@ -16,27 +16,27 @@ Physics::ContactConstraint::ContactConstraint(CollisionHull& a,
 			CollisionHull& b)
 		: hullA(&a)
 		, hullB(&b)
-		, bodyA(a.body)
-		, bodyB(b.body)
+		, bodyA(a.getBody())
+		, bodyB(b.getBody())
 		, friction(mixFriction())
 		, restitution(mixRestitution())
 		, flags(0) {
 	manifold.setPair(a, b);
 
 	edgeA.constraint = this;
-	edgeA.other = b.body;
+	edgeA.other = b.getBody();
 
 	edgeB.constraint = this;
-	edgeB.other = a.body;
+	edgeB.other = a.getBody();
 
-	a.body->contactList.push_back(&edgeA);
-	b.body->contactList.push_back(&edgeB);
+	a.getBody()->contactList.push_back(&edgeA);
+	b.getBody()->contactList.push_back(&edgeB);
 }
 
 void Physics::ContactConstraint::testCollision() {
 	manifold.numContacts = 0;
-	CollisionCallback cb = COLLISION_DISPATCH[bodyA->collisionHull->type]
-			[bodyB->collisionHull->type];
+	CollisionCallback cb = COLLISION_DISPATCH[bodyA->collisionHull->getType()]
+			[bodyB->collisionHull->getType()];
 
 	if (cb != nullptr) {
 		cb(manifold, *(bodyA->collisionHull), *(bodyB->collisionHull));
@@ -128,7 +128,8 @@ void Physics::ContactConstraint::solve() {
 				- Math::cross(bodyA->angularVelocity, cs.rA);
 
 		for (uint32 j = 0; j < 2; ++j) {
-			float lambda = -Math::dot(dv, manifold.tangents[j]) * cs.tangentMass[j];
+			float lambda = -Math::dot(dv, manifold.tangents[j])
+					* cs.tangentMass[j];
 
 			float oldTI = cs.tangentImpulse[j];
 			cs.tangentImpulse[j] = Math::clamp(oldTI + lambda,
@@ -170,13 +171,13 @@ void Physics::ContactConstraint::solve() {
 }
 
 inline float Physics::ContactConstraint::mixFriction() {
-	return Math::sqrt(bodyA->collisionHull->friction
-			* bodyB->collisionHull->friction);
+	return Math::sqrt(bodyA->collisionHull->getFriction()
+			* bodyB->collisionHull->getFriction());
 }
 
 inline float Physics::ContactConstraint::mixRestitution() {
-	return Math::max(bodyA->collisionHull->restitution,
-			bodyB->collisionHull->restitution);
+	return Math::max(bodyA->collisionHull->getRestitution(),
+			bodyB->collisionHull->getRestitution());
 }
 
 inline static void computeBasis(const Vector3f& normal, Vector3f& tangent0,
