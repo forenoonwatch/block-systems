@@ -123,8 +123,8 @@ void GameScene2::load(Game& game) {
 	Physics::BodyHints bodyHints;
 	bodyHints.mass = 1.f;
 	bodyHints.type = Physics::BodyType::DYNAMIC;
-	//bodyHints.invInertiaLocal = Math::inverse(Matrix3f(0.4f));
-	bodyHints.invInertiaLocal = Math::inverse(Matrix3f(1.f / 6.f));
+	bodyHints.invInertiaLocal = Math::inverse(Matrix3f(0.4f));
+	//bodyHints.invInertiaLocal = Math::inverse(Matrix3f(1.f / 6.f));
 	// sphere I^-1 = diag(0.4f * M * R^2)^-1
 	// cube I^1 = diag(mass / 6.f) * size
 
@@ -133,24 +133,24 @@ void GameScene2::load(Game& game) {
 	
 	//body2->invInertiaLocal[2] = Vector3f(0.f, 0.f, 0.f); // lock Z axis 
 
-	//sphereCollider = new Physics::SphereCollider();
-	//sphereCollider->radius = 1.f;
-	//sphereCollider->restitution = 0.f;
-	//sphereCollider->friction = 0.3f;
-	//body2->setCollisionHull(sphereCollider);
+	sphereCollider = new Physics::SphereCollider();
+	sphereCollider->radius = 1.f;
+	sphereCollider->restitution = 0.f;
+	sphereCollider->friction = 0.3f;
+	body2->setCollisionHull(sphereCollider);
 	
-	convexCollider = new Physics::ConvexCollider(game.getAssetManager()
-			.getModel("cube"));
-	convexCollider->restitution = 0.15f;
-	convexCollider->friction = 0.3f;
-	body2->setCollisionHull(convexCollider);
+	//convexCollider = new Physics::ConvexCollider(game.getAssetManager()
+	//		.getModel("cube"));
+	//convexCollider->restitution = 0.15f;
+	//convexCollider->friction = 0.3f;
+	//body2->setCollisionHull(convexCollider);
 
 	Quaternion q = Math::mat4ToQuat(Math::rotate(Matrix4f(1.f),
 			Math::toRadians(89.f), Vector3f(1.f, 0.f, 0.f)));
 
 	ECS::Entity eSphere = game.getECS().create();
 	game.getECS().assign<RenderableMesh>(eSphere,
-			&game.getAssetManager().getVertexArray("cube"),
+			&game.getAssetManager().getVertexArray("sphere"),
 			&game.getAssetManager().getMaterial("bricks"),
 			true);
 	game.getECS().assign<TransformComponent>(eSphere,
@@ -182,7 +182,7 @@ void GameScene2::load(Game& game) {
 	convexCollider2->friction = 0.3f;
 	body->setCollisionHull(convexCollider2);
 
-	printCC(convexCollider2);
+	//printCC(convexCollider2);
 
 	Quaternion rot = Math::mat4ToQuat(Math::rotate(Matrix4f(1.f),
 			Math::toRadians(0.f), Vector3f(0.f, 1.f, 0.f)));
