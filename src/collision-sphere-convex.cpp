@@ -29,18 +29,18 @@ void Physics::collisionSphereConvex(Manifold& manifold, CollisionHull& a,
 	SphereCollider* sphere = (SphereCollider*)&a;
 	ConvexCollider* convex = (ConvexCollider*)&b;
 
-	Vector3f spherePos = bodyA->getTransform().getPosition();
 	Vector3f resA, resB;
-
-	distanceGJK(&spherePos, 1, &convex->getVertices()[0],
-			convex->getVertices().size(), Transform(),
+	distanceGJK(Math::value_ptr(Vector3f()), 1, &convex->getVertices()[0],
+			convex->getVertices().size(), bodyA->getTransform(),
 			bodyB->getTransform(), resA, resB);
 
 	Vector3f normal = resB - resA;
-	float dist = Math::length(normal);
+	float dist = Math::dot(normal, normal);
 
 	if (dist > EPSILON) {
-		if (dist < sphere->getRadius()) {
+		if (dist < sphere->getRadius() * sphere->getRadius()) {
+			dist = Math::sqrt(dist);
+
 			FeaturePair fp;
 			fp.key = 0;
 
@@ -74,7 +74,6 @@ void Physics::collisionSphereConvex(Manifold& manifold, CollisionHull& a,
 
 void Physics::collisionConvexSphere(Manifold& manifold, CollisionHull& a,
 		CollisionHull& b) {
-	DEBUG_LOG_TEMP2("UNO REVERSE CARD");
 	collisionSphereConvex(manifold, b, a);
 	manifold.setNormal(-manifold.getNormal());
 }

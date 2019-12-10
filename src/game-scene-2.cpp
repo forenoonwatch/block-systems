@@ -14,9 +14,10 @@
 #include "physics.hpp"
 #include "body.hpp"
 
-#include "convex-collider.hpp"
 #include "sphere-collider.hpp"
 #include "plane-collider.hpp"
+#include "capsule-collider.hpp"
+#include "convex-collider.hpp"
 
 #include <engine/core/application.hpp>
 #include <engine/math/math.hpp>
@@ -50,7 +51,8 @@ GameScene2::GameScene2()
 		, sphereCollider2(nullptr)
 		, convexCollider(nullptr)
 		, convexCollider2(nullptr)
-		, planeCollider(nullptr) {
+		, planeCollider(nullptr)
+		, capsuleCollider(nullptr) {
 
 	//addUpdateSystem(new FirstPersonCameraSystem());
 	addUpdateSystem(new OrbitCameraSystem());
@@ -86,6 +88,8 @@ void GameScene2::load(Game& game) {
 			"./res/sphere.obj", hints);
 	game.getAssetManager().loadStaticMesh("cube", "cube",
 			"./res/cube.obj", hints);
+	game.getAssetManager().loadStaticMesh("capsule", "capsule",
+			"./res/capsule.obj", hints);
 
 	game.getAssetManager().loadStaticMesh("platform", "platform",
 			"./res/platform.obj", hints);
@@ -133,10 +137,16 @@ void GameScene2::load(Game& game) {
 	
 	//body2->invInertiaLocal[2] = Vector3f(0.f, 0.f, 0.f); // lock Z axis 
 
-	sphereCollider = new Physics::SphereCollider(1.f);
-	sphereCollider->setRestitution(0.f);
-	sphereCollider->setFriction(0.3f);
-	body2->setCollisionHull(sphereCollider);
+	//sphereCollider = new Physics::SphereCollider(1.f);
+	//sphereCollider->setRestitution(0.f);
+	//sphereCollider->setFriction(0.3f);
+	//body2->setCollisionHull(sphereCollider);
+	
+	capsuleCollider = new Physics::CapsuleCollider(Vector3f(0.f, -0.5f, 0.f),
+			Vector3f(0.f, 0.5f, 0.f), 1.f);
+	capsuleCollider->setRestitution(0.f);
+	capsuleCollider->setFriction(0.3f);
+	body2->setCollisionHull(capsuleCollider);
 	
 	//convexCollider = new Physics::ConvexCollider(game.getAssetManager()
 	//		.getModel("cube"));
@@ -145,15 +155,15 @@ void GameScene2::load(Game& game) {
 	//body2->setCollisionHull(convexCollider);
 
 	Quaternion q = Math::mat4ToQuat(Math::rotate(Matrix4f(1.f),
-			Math::toRadians(89.f), Vector3f(1.f, 0.f, 0.f)));
+			Math::toRadians(90.f), Vector3f(0.f, 0.f, 1.f)));
 
 	ECS::Entity eSphere = game.getECS().create();
 	game.getECS().assign<RenderableMesh>(eSphere,
-			&game.getAssetManager().getVertexArray("sphere"),
+			&game.getAssetManager().getVertexArray("capsule"),
 			&game.getAssetManager().getMaterial("bricks"),
 			true);
 	game.getECS().assign<TransformComponent>(eSphere,
-			Transform(Vector3f(0.2f, 20.f, 0.4f), q, Vector3f(1.f)));
+			Transform(Vector3f(0.f, 20.f, 0.f), q, Vector3f(1.f)));
 	game.getECS().assign<Physics::BodyHandle>(eSphere,
 			Physics::BodyHandle(body2));
 
@@ -165,15 +175,14 @@ void GameScene2::load(Game& game) {
 	Physics::Body* body = physicsEngine->addBody(bodyHints);
 
 	//planeCollider = new Physics::PlaneCollider();
-	//planeCollider->restitution = 0.f;
-	//planeCollider->friction = 0.3f;
+	//planeCollider->setRestitution(0.1f);
+	//planeCollider->setFriction(0.3f);
 	//body->setCollisionHull(planeCollider);
 	
-	//sphereCollider2 = new Physics::SphereCollider();
-	//body->collisionHull = sphereCollider2;
-	//sphereCollider2->body = body;
-	//sphereCollider2->radius = 1.f;
-	//sphereCollider2->restitution = 0.f;
+	//sphereCollider2 = new Physics::SphereCollider(1.f);
+	//sphereCollider2->setRestitution(0.1f);
+	//sphereCollider2->setFriction(0.3f);
+	//body->setCollisionHull(sphereCollider2);
 
 	convexCollider2 = new Physics::ConvexCollider(game.getAssetManager()
 			.getModel("platform"));
@@ -183,8 +192,14 @@ void GameScene2::load(Game& game) {
 
 	//printCC(convexCollider2);
 
+	//capsuleCollider2 = new Physics::CapsuleCollider(Vector3f(0.f, -0.5f, 0.f),
+	//		Vector3f(0.f, 0.5f, 0.f), 1.f);
+	//capsuleCollider2->setRestitution(0.1f);
+	//capsuleCollider2->setFriction(0.3f);
+	//body->setCollisionHull(capsuleCollider2);
+
 	Quaternion rot = Math::mat4ToQuat(Math::rotate(Matrix4f(1.f),
-			Math::toRadians(0.f), Vector3f(0.f, 1.f, 0.f)));
+			Math::toRadians(0.f), Vector3f(1.f, 0.f, 0.f)));
 
 	ECS::Entity ePlane = game.getECS().create();
 	game.getECS().assign<RenderableMesh>(ePlane,
@@ -222,6 +237,14 @@ void GameScene2::unload(Game& game) {
 
 	if (planeCollider != nullptr) {
 		delete planeCollider;
+	}
+
+	if (capsuleCollider != nullptr) {
+		delete capsuleCollider;
+	}
+
+	if (capsuleCollider2 != nullptr) {
+		delete capsuleCollider2;
 	}
 }
 

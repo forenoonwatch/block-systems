@@ -7,8 +7,9 @@ namespace Physics {
 	class GravitySystem;
 
 	class SphereCollider;
-	class ConvexCollider;
 	class PlaneCollider;
+	class CapsuleCollider;
+	class ConvexCollider;
 };
 
 class GameScene2 : public Scene {
@@ -30,5 +31,8 @@ class GameScene2 : public Scene {
 		Physics::ConvexCollider* convexCollider2;
 
 		Physics::PlaneCollider* planeCollider;
+
+		Physics::CapsuleCollider* capsuleCollider;
+		Physics::CapsuleCollider* capsuleCollider2;
 };
 

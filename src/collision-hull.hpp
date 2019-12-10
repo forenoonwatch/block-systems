@@ -13,6 +13,7 @@ namespace Physics {
 			enum HullType {
 				TYPE_SPHERE = 0,
 				TYPE_PLANE,
+				TYPE_CAPSULE,
 				TYPE_CONVEX_HULL,
 				NUM_TYPES
 			};
