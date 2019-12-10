@@ -9,9 +9,6 @@
 #define BAUMGARTE			0.2f
 #define PENETRATION_SLOP	0.05f
 
-static void computeBasis(const Vector3f& normal, Vector3f& tangent0,
-		Vector3f& tangent1);
-
 Physics::ContactConstraint::ContactConstraint(CollisionHull& a,
 			CollisionHull& b)
 		: hullA(&a)
@@ -50,7 +47,7 @@ void Physics::ContactConstraint::testCollision() {
 			flags |= FLAG_COLLIDING;
 		}
 
-		computeBasis(manifold.normal, manifold.tangents[0],
+		Math::computeBasis(manifold.normal, manifold.tangents[0],
 				manifold.tangents[1]);
 	}
 	else {
@@ -178,22 +175,5 @@ inline float Physics::ContactConstraint::mixFriction() {
 inline float Physics::ContactConstraint::mixRestitution() {
 	return Math::max(bodyA->collisionHull->getRestitution(),
 			bodyB->collisionHull->getRestitution());
-}
-
-inline static void computeBasis(const Vector3f& normal, Vector3f& tangent0,
-		Vector3f& tangent1) {
-	if (normal.x >= 0.57735027f || normal.x <= -0.57735027f) {
-		tangent0.x = normal.y;
-		tangent0.y = -normal.x;
-		tangent0.z = 0.f;
-	}
-	else {
-		tangent0.x = 0.f;
-		tangent0.y = normal.z;
-		tangent0.z = -normal.y;
-	}
-
-	tangent0 = Math::normalize(tangent0);
-	tangent1 = Math::cross(normal, tangent0);
 }
 
