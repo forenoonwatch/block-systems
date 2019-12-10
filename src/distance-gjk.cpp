@@ -83,9 +83,9 @@ void distanceGJK(const Vector3f* verticesA, uint32 numVerticesA,
 		}
 
 		uint32 iA = getSupportIndex(verticesA, numVerticesA,
-				tfA.transform(-d, 0.f));
+				tfA.inverseTransform(-d, 0.f));
 		uint32 iB = getSupportIndex(verticesB, numVerticesB,
-				tfB.transform(d, 0.f));
+				tfB.inverseTransform(d, 0.f));
 
 		if (simplex.isDuplicate(iA, iB)) {
 			break;
