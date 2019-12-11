@@ -44,7 +44,7 @@ static bool isCoplanar(const FaceData& f0, const FaceData& f1);
 static bool isCollinear(const Edge& e0, const Edge& e1);
 
 Physics::ConvexCollider::ConvexCollider(const IndexedModel& model)
-		: CollisionHull(CollisionHull::TYPE_CONVEX_HULL) {
+		: Collider(Collider::TYPE_CONVEX_HULL) {
 	const uint32* indices = model.getIndices();
 
 	for (uint32 i = 0; i < model.getElementArraySize(0); i += 3) {

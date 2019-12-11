@@ -1,44 +1,44 @@
 #pragma once
 
-#include "collision-hull.hpp"
+#include "collider.hpp"
 
 namespace Physics {
 	class Manifold;
 	
-	typedef void (*CollisionCallback)(Manifold&, CollisionHull&,
-			CollisionHull&);
+	typedef void (*CollisionCallback)(Manifold&, Collider&,
+			Collider&);
 
 	// Self Collisions
-	void collisionSphereSphere(Manifold&, CollisionHull&, CollisionHull&);
-	void collisionCapsuleCapsule(Manifold&, CollisionHull&, CollisionHull&);
-	void collisionConvexConvex(Manifold&, CollisionHull&, CollisionHull&);
+	void collisionSphereSphere(Manifold&, Collider&, Collider&);
+	void collisionCapsuleCapsule(Manifold&, Collider&, Collider&);
+	void collisionConvexConvex(Manifold&, Collider&, Collider&);
 	
 	// Sphere-Plane
-	void collisionSpherePlane(Manifold&, CollisionHull&, CollisionHull&);
-	void collisionPlaneSphere(Manifold&, CollisionHull&, CollisionHull&);
+	void collisionSpherePlane(Manifold&, Collider&, Collider&);
+	void collisionPlaneSphere(Manifold&, Collider&, Collider&);
 
 	// Sphere-Capsule
-	void collisionSphereCapsule(Manifold&, CollisionHull&, CollisionHull&);
-	void collisionCapsuleSphere(Manifold&, CollisionHull&, CollisionHull&);
+	void collisionSphereCapsule(Manifold&, Collider&, Collider&);
+	void collisionCapsuleSphere(Manifold&, Collider&, Collider&);
 
 	// Sphere-Convex
-	void collisionSphereConvex(Manifold&, CollisionHull&, CollisionHull&);
-	void collisionConvexSphere(Manifold&, CollisionHull&, CollisionHull&);
+	void collisionSphereConvex(Manifold&, Collider&, Collider&);
+	void collisionConvexSphere(Manifold&, Collider&, Collider&);
 
 	// Plane-Capsule
-	void collisionPlaneCapsule(Manifold&, CollisionHull&, CollisionHull&);
-	void collisionCapsulePlane(Manifold&, CollisionHull&, CollisionHull&);
+	void collisionPlaneCapsule(Manifold&, Collider&, Collider&);
+	void collisionCapsulePlane(Manifold&, Collider&, Collider&);
 
 	// Plane-Convex
-	void collisionPlaneConvex(Manifold&, CollisionHull&, CollisionHull&);
-	void collisionConvexPlane(Manifold&, CollisionHull&, CollisionHull&);
+	void collisionPlaneConvex(Manifold&, Collider&, Collider&);
+	void collisionConvexPlane(Manifold&, Collider&, Collider&);
 
 	// Capsule-Convex
-	void collisionCapsuleConvex(Manifold&, CollisionHull&, CollisionHull&);
-	void collisionConvexCapsule(Manifold&, CollisionHull&, CollisionHull&);
+	void collisionCapsuleConvex(Manifold&, Collider&, Collider&);
+	void collisionConvexCapsule(Manifold&, Collider&, Collider&);
 
 	// TODO: replace this with a dispatch function
-	constexpr static CollisionCallback COLLISION_DISPATCH[CollisionHull::NUM_TYPES][CollisionHull::NUM_TYPES] = {
+	constexpr static CollisionCallback COLLISION_DISPATCH[Collider::NUM_TYPES][Collider::NUM_TYPES] = {
 		{ collisionSphereSphere, collisionSpherePlane, collisionSphereCapsule, collisionSphereConvex },
 		{ collisionPlaneSphere, nullptr, collisionPlaneCapsule, collisionPlaneConvex },
 		{ collisionCapsuleSphere, collisionCapsulePlane, collisionCapsuleCapsule, collisionCapsuleConvex },

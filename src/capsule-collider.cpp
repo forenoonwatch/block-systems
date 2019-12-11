@@ -2,7 +2,7 @@
 
 Physics::CapsuleCollider::CapsuleCollider(const Vector3f& p0,
 			const Vector3f& p1, float radius)
-		: CollisionHull(CollisionHull::TYPE_CAPSULE)
+		: Collider(Collider::TYPE_CAPSULE)
 		, points({p0, p1})
 		, radius(radius) {
 	Vector3f f = Math::normalize(p1 - p0);

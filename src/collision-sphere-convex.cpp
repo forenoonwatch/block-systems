@@ -21,8 +21,8 @@ static bool findDeepPenetration(const SphereCollider& sphere,
 		const ConvexCollider& convex, const Vector3f& spherePos,
 		float& minPenetration, uint32& minFaceID);
 
-void Physics::collisionSphereConvex(Manifold& manifold, CollisionHull& a,
-		CollisionHull& b) {
+void Physics::collisionSphereConvex(Manifold& manifold, Collider& a,
+		Collider& b) {
 	Body* bodyA = a.getBody();
 	Body* bodyB = b.getBody();
 
@@ -72,8 +72,8 @@ void Physics::collisionSphereConvex(Manifold& manifold, CollisionHull& a,
 	}
 }
 
-void Physics::collisionConvexSphere(Manifold& manifold, CollisionHull& a,
-		CollisionHull& b) {
+void Physics::collisionConvexSphere(Manifold& manifold, Collider& a,
+		Collider& b) {
 	collisionSphereConvex(manifold, b, a);
 	manifold.setNormal(-manifold.getNormal());
 }

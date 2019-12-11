@@ -140,19 +140,19 @@ void GameScene2::load(Game& game) {
 	//sphereCollider = new Physics::SphereCollider(1.f);
 	//sphereCollider->setRestitution(0.f);
 	//sphereCollider->setFriction(0.3f);
-	//body2->setCollisionHull(sphereCollider);
+	//body2->setCollider(sphereCollider);
 	
 	capsuleCollider = new Physics::CapsuleCollider(Vector3f(0.f, -0.5f, 0.f),
 			Vector3f(0.f, 0.5f, 0.f), 1.f);
 	capsuleCollider->setRestitution(0.f);
 	capsuleCollider->setFriction(0.3f);
-	body2->setCollisionHull(capsuleCollider);
+	body2->setCollider(capsuleCollider);
 	
 	//convexCollider = new Physics::ConvexCollider(game.getAssetManager()
 	//		.getModel("cube"));
 	//convexCollider->restitution = 0.15f;
 	//convexCollider->friction = 0.3f;
-	//body2->setCollisionHull(convexCollider);
+	//body2->setCollider(convexCollider);
 
 	Quaternion q = Math::mat4ToQuat(Math::rotate(Matrix4f(1.f),
 			Math::toRadians(90.f), Vector3f(0.f, 0.f, 1.f)));
@@ -177,18 +177,18 @@ void GameScene2::load(Game& game) {
 	//planeCollider = new Physics::PlaneCollider();
 	//planeCollider->setRestitution(0.1f);
 	//planeCollider->setFriction(0.3f);
-	//body->setCollisionHull(planeCollider);
+	//body->setCollider(planeCollider);
 	
 	//sphereCollider2 = new Physics::SphereCollider(1.f);
 	//sphereCollider2->setRestitution(0.1f);
 	//sphereCollider2->setFriction(0.3f);
-	//body->setCollisionHull(sphereCollider2);
+	//body->setCollider(sphereCollider2);
 
 	convexCollider2 = new Physics::ConvexCollider(game.getAssetManager()
 			.getModel("platform"));
 	convexCollider2->setRestitution(0.1f);
 	convexCollider2->setFriction(0.3f);
-	body->setCollisionHull(convexCollider2);
+	body->setCollider(convexCollider2);
 
 	//printCC(convexCollider2);
 
@@ -196,7 +196,7 @@ void GameScene2::load(Game& game) {
 	//		Vector3f(0.f, 0.5f, 0.f), 1.f);
 	//capsuleCollider2->setRestitution(0.1f);
 	//capsuleCollider2->setFriction(0.3f);
-	//body->setCollisionHull(capsuleCollider2);
+	//body->setCollider(capsuleCollider2);
 
 	Quaternion rot = Math::mat4ToQuat(Math::rotate(Matrix4f(1.f),
 			Math::toRadians(0.f), Vector3f(1.f, 0.f, 0.f)));

@@ -1,7 +1,7 @@
 #pragma once
 
 #include "contact.hpp"
-#include "collision-hull.hpp"
+#include "collider.hpp"
 
 namespace Physics {
 	class Body;
@@ -10,7 +10,7 @@ namespace Physics {
 		public:
 			inline Manifold();
 
-			inline void setPair(CollisionHull& a, CollisionHull& b);
+			inline void setPair(Collider& a, Collider& b);
 
 			void addContact(const Vector3f& point, float penetration,
 					const FeaturePair& fp);
@@ -22,8 +22,8 @@ namespace Physics {
 
 			inline const Vector3f& getNormal() const { return normal; }
 		private:
-			CollisionHull* hullA;
-			CollisionHull* hullB;
+			Collider* hullA;
+			Collider* hullB;
 
 			Vector3f normal;
 			Vector3f tangents[2];
@@ -41,7 +41,7 @@ namespace Physics {
 inline Physics::Manifold::Manifold()
 		: numContacts(0) {}
 
-inline void Physics::Manifold::setPair(CollisionHull& a, CollisionHull& b) {
+inline void Physics::Manifold::setPair(Collider& a, Collider& b) {
 	hullA = &a;
 	hullB = &b;
 

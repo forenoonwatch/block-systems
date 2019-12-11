@@ -12,7 +12,7 @@ namespace Physics {
 				FLAG_ISLAND			= 4
 			};
 
-			ContactConstraint(CollisionHull& a, CollisionHull& b);
+			ContactConstraint(Collider& a, Collider& b);
 
 			void preSolve(float deltaTime);
 			void solve();
@@ -24,8 +24,8 @@ namespace Physics {
 			inline bool isInIsland() const { return flags & FLAG_ISLAND; }
 			inline bool isColliding() const { return flags & FLAG_COLLIDING; }
 		private:
-			CollisionHull* hullA;
-			CollisionHull* hullB;
+			Collider* colliderA;
+			Collider* colliderB;
 
 			Body* bodyA;
 			Body* bodyB;

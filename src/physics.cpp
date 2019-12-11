@@ -4,7 +4,7 @@
 
 #include "contact-constraint.hpp"
 #include "island.hpp"
-#include "collision-hull.hpp"
+#include "collider.hpp"
 
 #include <engine/game/game.hpp>
 
@@ -12,18 +12,15 @@ void Physics::GravitySystem::operator()(Game& game, float deltaTime) {
 	game.getECS().view<Physics::BodyHandle>().each([&](
 			Physics::BodyHandle& handle) {
 		if (handle.body->isDynamic()) {
+			// TODO: gravity scale
 			handle.body->applyForce(Physics::GRAVITY);
-		}
-		else {
-			// TODO: FIXME: TEMP: remove this
-			handle.body->setVelocity(Vector3f(1.f, 0.f, 0.f));
 		}
 	});
 }
 
 Physics::PhysicsEngine::PhysicsEngine()
 		: contactManager(*this)
-		, newHull(false) {}
+		, newCollider(false) {}
 
 Physics::Body* Physics::PhysicsEngine::addBody(const BodyHints& hints) {
 	Body* body = new Body(*this, hints);
@@ -33,8 +30,8 @@ Physics::Body* Physics::PhysicsEngine::addBody(const BodyHints& hints) {
 }
 
 void Physics::PhysicsEngine::operator()(Game& game, float deltaTime) {
-	if (newHull) {
-		newHull = false;
+	if (newCollider) {
+		newCollider = false;
 		contactManager.getBroadphase().updatePairs();
 	}
 
@@ -119,10 +116,10 @@ void Physics::PhysicsEngine::operator()(Game& game, float deltaTime) {
 	});
 }
 
-void Physics::PhysicsEngine::addHull(Body& body, CollisionHull& hull) {
-	newHull = true;
-	contactManager.getBroadphase().insert(hull,
-			hull.computeAABB(body.transform));
+void Physics::PhysicsEngine::addCollider(Body& body, Collider& collider) {
+	newCollider = true;
+	contactManager.getBroadphase().insert(collider,
+			collider.computeAABB(body.transform));
 }
 
 Physics::PhysicsEngine::~PhysicsEngine() {

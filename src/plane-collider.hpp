@@ -1,12 +1,12 @@
 #pragma once
 
-#include "collision-hull.hpp"
+#include "collider.hpp"
 
 namespace Physics {
-	class PlaneCollider : public CollisionHull {
+	class PlaneCollider : public Collider {
 		public:
 			inline PlaneCollider()
-					: CollisionHull(CollisionHull::TYPE_PLANE) {}
+					: Collider(Collider::TYPE_PLANE) {}
 
 			virtual AABB computeAABB(const Transform& tf) const override;
 		private:

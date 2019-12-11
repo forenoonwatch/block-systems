@@ -6,15 +6,15 @@
 
 namespace Physics {
 	class ContactManager;
-	class CollisionHull;
+	class Collider;
 
 	class Broadphase {
 		public:
 			Broadphase(ContactManager& contactManager);
 
-			void insert(CollisionHull& hull, const AABB& aabb);
+			void insert(Collider& hull, const AABB& aabb);
 			void update(int32 id, const AABB& aabb);
-			void remove(CollisionHull& hull);
+			void remove(Collider& hull);
 
 			void updatePairs();
 

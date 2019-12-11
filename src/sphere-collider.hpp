@@ -1,12 +1,12 @@
 #pragma once
 
-#include "collision-hull.hpp"
+#include "collider.hpp"
 
 namespace Physics {
-	class SphereCollider : public CollisionHull {
+	class SphereCollider : public Collider {
 		public:
 			inline SphereCollider(float radius)
-					: CollisionHull(CollisionHull::TYPE_SPHERE)
+					: Collider(Collider::TYPE_SPHERE)
 					, radius(radius) {}
 
 			virtual AABB computeAABB(const Transform& tf) const override;

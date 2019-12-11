@@ -69,8 +69,8 @@ static void clip(const ArrayList<VertexData>& inVertices,
 		ArrayList<VertexData>& outVertices, 
 		const ArrayList<Physics::EdgePlane>& planes);
 
-void Physics::collisionConvexConvex(Manifold& manifold, CollisionHull& a,
-		CollisionHull& b) {
+void Physics::collisionConvexConvex(Manifold& manifold, Collider& a,
+		Collider& b) {
 	Body* bodyA = a.getBody();
 	Body* bodyB = b.getBody();
 

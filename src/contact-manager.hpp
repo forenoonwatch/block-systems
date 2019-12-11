@@ -7,7 +7,7 @@
 
 namespace Physics {
 	class PhysicsEngine;
-	class CollisionHull;
+	class Collider;
 
 	class ContactManager {
 		public:
@@ -16,7 +16,7 @@ namespace Physics {
 			void findNewContacts();
 			void testCollisions();
 
-			void addContact(CollisionHull& a, CollisionHull& b);
+			void addContact(Collider& a, Collider& b);
 			void removeContact(ContactConstraint& constraint);
 
 			inline Broadphase& getBroadphase() { return broadphase; }

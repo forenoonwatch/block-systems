@@ -12,13 +12,13 @@
 
 #define EPSILON 1e-6f
 
-void Physics::collisionSphereCapsule(Manifold& manifold, CollisionHull& a,
-		CollisionHull& b) {
+void Physics::collisionSphereCapsule(Manifold& manifold, Collider& a,
+		Collider& b) {
 	Body* bodyA = a.getBody();
 	Body* bodyB = b.getBody();
 	
-	SphereCollider* sphere = (SphereCollider*)bodyA->getCollisionHull();
-	CapsuleCollider* capsule = (CapsuleCollider*)bodyB->getCollisionHull();
+	SphereCollider* sphere = (SphereCollider*)bodyA->getCollider();
+	CapsuleCollider* capsule = (CapsuleCollider*)bodyB->getCollider();
 
 	Vector3f resA, resB;
 	distanceGJK(Math::value_ptr(Vector3f()), 1, capsule->getPoints(), 2,
@@ -40,8 +40,8 @@ void Physics::collisionSphereCapsule(Manifold& manifold, CollisionHull& a,
 	}
 }
 
-void Physics::collisionCapsuleSphere(Manifold& manifold, CollisionHull& a,
-		CollisionHull& b) {
+void Physics::collisionCapsuleSphere(Manifold& manifold, Collider& a,
+		Collider& b) {
 	collisionSphereCapsule(manifold, b, a);
 	manifold.setNormal(-manifold.getNormal());
 }

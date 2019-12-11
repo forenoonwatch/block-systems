@@ -1,14 +1,14 @@
 #include "broadphase.hpp"
 
 #include "contact-manager.hpp"
-#include "collision-hull.hpp"
+#include "collider.hpp"
 
 #include <algorithm>
 
 Physics::Broadphase::Broadphase(ContactManager& contactManager)
 		: contactManager(&contactManager) {}
 
-void Physics::Broadphase::insert(CollisionHull& hull, const AABB& aabb) {
+void Physics::Broadphase::insert(Collider& hull, const AABB& aabb) {
 	int32 id = tree.insert(aabb, &hull);
 	hull.broadphaseIndex = id;
 	moveBuffer.push_back(id);
@@ -20,7 +20,7 @@ void Physics::Broadphase::update(int32 id, const AABB& aabb) {
 	}
 }
 
-void Physics::Broadphase::remove(CollisionHull& hull) {
+void Physics::Broadphase::remove(Collider& hull) {
 	tree.remove(hull.broadphaseIndex);
 }
 
@@ -48,8 +48,8 @@ void Physics::Broadphase::updatePairs() {
 
 	for (uint32 i = 0; i < pairBuffer.size(); ++i) {
 		ContactPair& cp = pairBuffer[i];
-		CollisionHull* hullA = (CollisionHull*)tree.getUserData(cp.a);
-		CollisionHull* hullB = (CollisionHull*)tree.getUserData(cp.b);
+		Collider* hullA = (Collider*)tree.getUserData(cp.a);
+		Collider* hullB = (Collider*)tree.getUserData(cp.b);
 
 		contactManager->addContact(*hullA, *hullB);
 

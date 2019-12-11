@@ -1,6 +1,6 @@
 #pragma once
 
-#include "collision-hull.hpp"
+#include "collider.hpp"
 
 #include <engine/core/array-list.hpp>
 #include <engine/math/vector.hpp>
@@ -40,7 +40,7 @@ namespace Physics {
 		ArrayList<uint32> indices;
 	};
 
-	class ConvexCollider : public CollisionHull {
+	class ConvexCollider : public Collider {
 		public:
 			ConvexCollider(const IndexedModel& model);
 

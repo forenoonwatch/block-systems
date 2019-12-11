@@ -11,13 +11,13 @@
 
 #define EPSILON 1e-6f
 
-void Physics::collisionCapsuleCapsule(Manifold& manifold, CollisionHull& a,
-		CollisionHull& b) {
+void Physics::collisionCapsuleCapsule(Manifold& manifold, Collider& a,
+		Collider& b) {
 	Body* bodyA = a.getBody();
 	Body* bodyB = b.getBody();
 	
-	CapsuleCollider* capsuleA = (CapsuleCollider*)bodyA->getCollisionHull();
-	CapsuleCollider* capsuleB = (CapsuleCollider*)bodyB->getCollisionHull();
+	CapsuleCollider* capsuleA = (CapsuleCollider*)bodyA->getCollider();
+	CapsuleCollider* capsuleB = (CapsuleCollider*)bodyB->getCollider();
 
 	float rSum = capsuleA->getRadius() + capsuleB->getRadius();
 

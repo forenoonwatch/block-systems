@@ -9,7 +9,7 @@
 namespace Physics {
 	class ContactEdge;
 	class PhysicsEngine;
-	class CollisionHull;
+	class Collider;
 
 	enum class BodyType {
 		DYNAMIC,
@@ -38,7 +38,7 @@ namespace Physics {
 
 	class Body {
 		public:
-			void setCollisionHull(CollisionHull* hull);
+			void setCollider(Collider* hull);
 
 			inline void applyForce(const Vector3f& force);
 			inline void applyForce(const Vector3f& force,
@@ -108,7 +108,7 @@ namespace Physics {
 
 			inline const Matrix3f& getInvInertiaWorld() const;
 
-			inline CollisionHull* getCollisionHull();
+			inline Collider* getCollider();
 		private:
 			enum Flags {
 				FLAG_AWAKE			= 1,  // if the object is awake
@@ -145,7 +145,7 @@ namespace Physics {
 			Matrix3f invInertiaLocal;
 			Matrix3f invInertiaWorld;
 
-			CollisionHull* collisionHull;
+			Collider* collider;
 
 			ArrayList<ContactEdge*> contactList;
 

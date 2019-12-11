@@ -212,7 +212,7 @@ inline const Matrix3f& Physics::Body::getInvInertiaWorld() const {
 	return invInertiaWorld;
 }
 
-inline Physics::CollisionHull* Physics::Body::getCollisionHull() {
-	return collisionHull;
+inline Physics::Collider* Physics::Body::getCollider() {
+	return collider;
 }
 

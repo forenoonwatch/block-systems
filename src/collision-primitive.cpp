@@ -8,13 +8,13 @@
 
 #include <engine/math/math.hpp>
 
-void Physics::collisionSphereSphere(Manifold& manifold, CollisionHull& a,
-		CollisionHull& b) {
+void Physics::collisionSphereSphere(Manifold& manifold, Collider& a,
+		Collider& b) {
 	Body* bodyA = a.getBody();
 	Body* bodyB = b.getBody();
 	
-	SphereCollider* sphereA = (SphereCollider*)bodyA->getCollisionHull();
-	SphereCollider* sphereB = (SphereCollider*)bodyB->getCollisionHull();
+	SphereCollider* sphereA = (SphereCollider*)bodyA->getCollider();
+	SphereCollider* sphereB = (SphereCollider*)bodyB->getCollider();
 
 	Vector3f ds = bodyB->getTransform().getPosition()
 			- bodyA->getTransform().getPosition();
@@ -33,8 +33,8 @@ void Physics::collisionSphereSphere(Manifold& manifold, CollisionHull& a,
 	}
 }
 
-void Physics::collisionSpherePlane(Manifold& manifold, CollisionHull& a,
-		CollisionHull& b) {
+void Physics::collisionSpherePlane(Manifold& manifold, Collider& a,
+		Collider& b) {
 	Body* bodyA = a.getBody();
 	Body* bodyB = b.getBody();
 
@@ -56,8 +56,8 @@ void Physics::collisionSpherePlane(Manifold& manifold, CollisionHull& a,
 	}
 }
 
-void Physics::collisionPlaneSphere(Manifold& manifold, CollisionHull& a,
-		CollisionHull& b) {
+void Physics::collisionPlaneSphere(Manifold& manifold, Collider& a,
+		Collider& b) {
 	collisionSpherePlane(manifold, b, a);
 	manifold.setNormal(-manifold.getNormal());
 	// TODO: flip feature pairs

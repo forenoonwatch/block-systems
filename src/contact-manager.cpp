@@ -2,7 +2,7 @@
 
 #include "physics.hpp"
 #include "body.hpp"
-#include "collision-hull.hpp"
+#include "collider.hpp"
 
 Physics::ContactManager::ContactManager(PhysicsEngine& physicsEngine)
 		: physicsEngine(&physicsEngine)
@@ -10,10 +10,11 @@ Physics::ContactManager::ContactManager(PhysicsEngine& physicsEngine)
 
 void Physics::ContactManager::findNewContacts() {
 	broadphase.updatePairs();
-	
+
+	// TODO: make sure to check this for multi-collider bodies	
 	for (Body* body : physicsEngine->getBodies()) {
-		broadphase.update(body->collisionHull->broadphaseIndex,
-				body->collisionHull->computeAABB(body->transform));
+		broadphase.update(body->collider->broadphaseIndex,
+				body->collider->computeAABB(body->transform));
 	}
 }
 
@@ -21,11 +22,11 @@ void Physics::ContactManager::testCollisions() {
 	for (uint32 i = 0; i < contactList.size(); ++i) {
 		ContactConstraint& constraint = contactList[i];
 
-		CollisionHull* hullA = constraint.hullA;
-		CollisionHull* hullB = constraint.hullB;
+		Collider* collA = constraint.colliderA;
+		Collider* collB = constraint.colliderB;
 		
-		Body* bodyA = hullA->body;
-		Body* bodyB = hullB->body;
+		Body* bodyA = collA->body;
+		Body* bodyB = collB->body;
 
 		constraint.flags &= ~ContactConstraint::FLAG_ISLAND;
 
@@ -39,8 +40,8 @@ void Physics::ContactManager::testCollisions() {
 			continue;
 		}
 
-		if (!broadphase.testOverlap(hullA->broadphaseIndex,
-				hullB->broadphaseIndex)) {
+		if (!broadphase.testOverlap(collA->broadphaseIndex,
+				collB->broadphaseIndex)) {
 			removeContact(i);
 			--i;
 			continue;
@@ -81,7 +82,7 @@ void Physics::ContactManager::testCollisions() {
 	}
 }
 
-void Physics::ContactManager::addContact(CollisionHull& a, CollisionHull& b) {
+void Physics::ContactManager::addContact(Collider& a, Collider& b) {
 	Body* bodyA = a.body;
 	Body* bodyB = b.body;
 
@@ -90,8 +91,8 @@ void Physics::ContactManager::addContact(CollisionHull& a, CollisionHull& b) {
 	}
 
 	for (ContactEdge* edge : bodyA->contactList) {
-		if (edge->other == bodyB && (&a == edge->constraint->hullA)
-				&& (&b == edge->constraint->hullB)) {
+		if (edge->other == bodyB && (&a == edge->constraint->colliderA)
+				&& (&b == edge->constraint->colliderB)) {
 			return;
 		}
 	}

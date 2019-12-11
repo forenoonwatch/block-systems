@@ -1,6 +1,6 @@
 #include "body.hpp"
 
-#include "collision-hull.hpp"
+#include "collider.hpp"
 #include "physics.hpp"
 
 Physics::BodyHints::BodyHints()
@@ -60,10 +60,10 @@ Physics::Body::Body(PhysicsEngine& physicsEngine, const BodyHints& hints)
 	}
 }
 
-void Physics::Body::setCollisionHull(CollisionHull* hull) {
-	collisionHull = hull;
-	hull->body = this;
+void Physics::Body::setCollider(Collider* collider) {
+	this->collider = collider;
+	collider->body = this;
 
-	physicsEngine->addHull(*this, *hull);
+	physicsEngine->addCollider(*this, *collider);
 }
 

@@ -8,7 +8,7 @@
 namespace Physics {
 	class Body;
 
-	class CollisionHull {
+	class Collider {
 		public:
 			enum HullType {
 				TYPE_SPHERE = 0,
@@ -18,7 +18,7 @@ namespace Physics {
 				NUM_TYPES
 			};
 
-			inline CollisionHull(enum HullType type)
+			inline Collider(enum HullType type)
 					: type(type)
 					, friction(0.f)
 					, restitution(0.f)
@@ -42,7 +42,7 @@ namespace Physics {
 
 			inline enum HullType getType() const { return type; }
 
-			virtual ~CollisionHull() {}
+			virtual ~Collider() {}
 		protected:
 			float friction;
 			float restitution;

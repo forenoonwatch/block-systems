@@ -1,9 +1,9 @@
 #pragma once
 
-#include "collision-hull.hpp"
+#include "collider.hpp"
 
 namespace Physics {
-	class CapsuleCollider : public CollisionHull {
+	class CapsuleCollider : public Collider {
 		public:
 			CapsuleCollider(const Vector3f& p0, const Vector3f& p1,
 					float radius);

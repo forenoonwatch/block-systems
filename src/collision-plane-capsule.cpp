@@ -8,12 +8,12 @@
 
 #include <engine/math/math.hpp>
 
-void Physics::collisionPlaneCapsule(Manifold& manifold, CollisionHull& a,
-		CollisionHull& b) {
+void Physics::collisionPlaneCapsule(Manifold& manifold, Collider& a,
+		Collider& b) {
 	Body* bodyA = a.getBody();
 	Body* bodyB = b.getBody();
 	
-	CapsuleCollider* capsule = (CapsuleCollider*)bodyB->getCollisionHull();
+	CapsuleCollider* capsule = (CapsuleCollider*)bodyB->getCollider();
 
 	Matrix4f tf = bodyA->getTransform().toMatrix();
 	Vector3f normal(tf[1]);
@@ -35,8 +35,8 @@ void Physics::collisionPlaneCapsule(Manifold& manifold, CollisionHull& a,
 	}
 }
 
-void Physics::collisionCapsulePlane(Manifold& manifold, CollisionHull& a,
-		CollisionHull& b) {
+void Physics::collisionCapsulePlane(Manifold& manifold, Collider& a,
+		Collider& b) {
 	collisionPlaneCapsule(manifold, b, a);
 	manifold.setNormal(-manifold.getNormal());
 }

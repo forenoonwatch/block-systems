@@ -1,7 +1,6 @@
 #include "contact-constraint.hpp"
 
 #include "body.hpp"
-#include "collision-hull.hpp"
 #include "collision.hpp"
 
 #include <engine/math/math.hpp>
@@ -9,10 +8,10 @@
 #define BAUMGARTE			0.2f
 #define PENETRATION_SLOP	0.05f
 
-Physics::ContactConstraint::ContactConstraint(CollisionHull& a,
-			CollisionHull& b)
-		: hullA(&a)
-		, hullB(&b)
+Physics::ContactConstraint::ContactConstraint(Collider& a,
+			Collider& b)
+		: colliderA(&a)
+		, colliderB(&b)
 		, bodyA(a.getBody())
 		, bodyB(b.getBody())
 		, friction(mixFriction())
@@ -32,11 +31,11 @@ Physics::ContactConstraint::ContactConstraint(CollisionHull& a,
 
 void Physics::ContactConstraint::testCollision() {
 	manifold.numContacts = 0;
-	CollisionCallback cb = COLLISION_DISPATCH[bodyA->collisionHull->getType()]
-			[bodyB->collisionHull->getType()];
+	CollisionCallback cb = COLLISION_DISPATCH[bodyA->collider->getType()]
+			[bodyB->collider->getType()];
 
 	if (cb != nullptr) {
-		cb(manifold, *(bodyA->collisionHull), *(bodyB->collisionHull));
+		cb(manifold, *(bodyA->collider), *(bodyB->collider));
 	}
 
 	if (manifold.numContacts > 0) {
@@ -168,12 +167,12 @@ void Physics::ContactConstraint::solve() {
 }
 
 inline float Physics::ContactConstraint::mixFriction() {
-	return Math::sqrt(bodyA->collisionHull->getFriction()
-			* bodyB->collisionHull->getFriction());
+	return Math::sqrt(bodyA->collider->getFriction()
+			* bodyB->collider->getFriction());
 }
 
 inline float Physics::ContactConstraint::mixRestitution() {
-	return Math::max(bodyA->collisionHull->getRestitution(),
-			bodyB->collisionHull->getRestitution());
+	return Math::max(bodyA->collider->getRestitution(),
+			bodyB->collider->getRestitution());
 }
 

@@ -6,8 +6,8 @@
 #include "plane-collider.hpp"
 #include "convex-collider.hpp"
 
-void Physics::collisionConvexPlane(Manifold& manifold, CollisionHull& a,
-		CollisionHull& b) {
+void Physics::collisionConvexPlane(Manifold& manifold, Collider& a,
+		Collider& b) {
 	Body* bodyA = a.getBody();
 	Body* bodyB = b.getBody();
 
@@ -33,8 +33,8 @@ void Physics::collisionConvexPlane(Manifold& manifold, CollisionHull& a,
 	}
 }
 
-void Physics::collisionPlaneConvex(Manifold& manifold, CollisionHull& a,
-		CollisionHull& b) {
+void Physics::collisionPlaneConvex(Manifold& manifold, Collider& a,
+		Collider& b) {
 	collisionConvexPlane(manifold, b, a);
 	manifold.setNormal(-manifold.getNormal());
 }
