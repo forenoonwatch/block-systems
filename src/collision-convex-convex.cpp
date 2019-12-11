@@ -77,8 +77,8 @@ void Physics::collisionConvexConvex(Manifold& manifold, Collider& a,
 	ConvexCollider* hullA = (ConvexCollider*)&a;
 	ConvexCollider* hullB = (ConvexCollider*)&b;
 	
-	Matrix4f mA = bodyA->getTransform().toMatrix();
-	Matrix4f mB = bodyB->getTransform().toMatrix();
+	Matrix4f mA = a.getWorldTransform().toMatrix();
+	Matrix4f mB = b.getWorldTransform().toMatrix();
 
 	Matrix4f mAI = Math::inverse(mA);
 	Matrix4f mBI = Math::inverse(mB);
@@ -86,10 +86,10 @@ void Physics::collisionConvexConvex(Manifold& manifold, Collider& a,
 	Matrix4f tfBtoA = mAI * mB; // A^-1B -> B into A space
 	Matrix4f tfAtoB = mBI * mA; // B^-1A -> A into B space
 
-	Vector3f abA(mAI * Vector4f(bodyB->getTransform().getPosition()
-				- bodyA->getTransform().getPosition(), 0.f));
-	Vector3f abB(mBI * Vector4f(bodyB->getTransform().getPosition()
-				- bodyA->getTransform().getPosition(), 0.f));
+	Vector3f abA(mAI * Vector4f(b.getWorldTransform().getPosition()
+				- a.getWorldTransform().getPosition(), 0.f));
+	Vector3f abB(mBI * Vector4f(b.getWorldTransform().getPosition()
+				- a.getWorldTransform().getPosition(), 0.f));
 
 	float minFacePen = FLT_MAX;
 	float minEdgePen = FLT_MAX;
@@ -233,8 +233,8 @@ void Physics::collisionConvexConvex(Manifold& manifold, Collider& a,
 	else {
 		Vector3f contactPoint, normal;
 
-		calcEdgeContact(*hullA, *hullB, bodyA->getTransform(),
-				bodyB->getTransform(), abA, abB, minAxisID, normal,
+		calcEdgeContact(*hullA, *hullB, a.getWorldTransform(),
+				b.getWorldTransform(), abA, abB, minAxisID, normal,
 				contactPoint);
 		
 		manifold.setNormal(normal);

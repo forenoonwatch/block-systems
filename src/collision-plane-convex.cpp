@@ -13,16 +13,16 @@ void Physics::collisionConvexPlane(Manifold& manifold, Collider& a,
 
 	ConvexCollider* conv = (ConvexCollider*)&a;
 
-	Matrix4f tf = bodyB->getTransform().toMatrix();
+	Matrix4f tf = b.getWorldTransform().toMatrix();
 	Vector3f normal(tf[1]);
 
 	manifold.setNormal(-normal);
 
 	for (uint32 i = 0; i < conv->getVertices().size(); ++i) {
-		Vector3f v = bodyA->getTransform().transform(conv->getVertices()[i],
+		Vector3f v = a.getWorldTransform().transform(conv->getVertices()[i],
 				1.f);
 
-		float d = Math::dot(normal, v - bodyB->getTransform().getPosition());
+		float d = Math::dot(normal, v - b.getWorldTransform().getPosition());
 
 		if (d < 0.f) {
 			FeaturePair fp;

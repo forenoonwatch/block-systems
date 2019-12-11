@@ -9,7 +9,9 @@
 namespace Physics {
 	class ContactEdge;
 	class PhysicsEngine;
+
 	class Collider;
+	class ColliderHints;
 
 	enum class BodyType {
 		DYNAMIC,
@@ -31,14 +33,11 @@ namespace Physics {
 
 		Vector3f force;
 		Vector3f torque;
-
-		float mass;
-		Matrix3f invInertiaLocal;
 	};
 
 	class Body {
 		public:
-			void setCollider(Collider* hull);
+			void addCollider(const ColliderHints& hints);
 
 			inline void applyForce(const Vector3f& force);
 			inline void applyForce(const Vector3f& force,
@@ -57,7 +56,7 @@ namespace Physics {
 			inline void setInIsland();
 			inline void setNotInIsland();
 
-			inline void setLocalCenter(const Vector3f& localCenter);
+			inline void setTransform(const Transform& transform);
 
 			inline void setVelocity(const Vector3f& velocity);
 			inline void setAngularVelocity(const Vector3f& angularVelocity);
@@ -108,7 +107,9 @@ namespace Physics {
 
 			inline const Matrix3f& getInvInertiaWorld() const;
 
-			inline Collider* getCollider();
+			inline const ArrayList<Collider*>& getColliders() const;
+
+			~Body();
 		private:
 			enum Flags {
 				FLAG_AWAKE			= 1,  // if the object is awake
@@ -125,6 +126,8 @@ namespace Physics {
 			Body(PhysicsEngine& physicsEngine, const BodyHints& hints);
 
 			inline void removeEdge(ContactEdge* edge);
+
+			void calcMassData();
 
 			PhysicsEngine* physicsEngine;
 
@@ -145,7 +148,7 @@ namespace Physics {
 			Matrix3f invInertiaLocal;
 			Matrix3f invInertiaWorld;
 
-			Collider* collider;
+			ArrayList<Collider*> colliders;
 
 			ArrayList<ContactEdge*> contactList;
 

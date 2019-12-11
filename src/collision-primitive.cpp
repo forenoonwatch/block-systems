@@ -13,11 +13,11 @@ void Physics::collisionSphereSphere(Manifold& manifold, Collider& a,
 	Body* bodyA = a.getBody();
 	Body* bodyB = b.getBody();
 	
-	SphereCollider* sphereA = (SphereCollider*)bodyA->getCollider();
-	SphereCollider* sphereB = (SphereCollider*)bodyB->getCollider();
+	SphereCollider* sphereA = (SphereCollider*)&a;
+	SphereCollider* sphereB = (SphereCollider*)&b;
 
-	Vector3f ds = bodyB->getTransform().getPosition()
-			- bodyA->getTransform().getPosition();
+	Vector3f ds = b.getWorldTransform().getPosition()
+			- a.getWorldTransform().getPosition();
 
 	float d = Math::dot(ds, ds);
 	float rSum = sphereA->getRadius() + sphereB->getRadius();
@@ -27,8 +27,8 @@ void Physics::collisionSphereSphere(Manifold& manifold, Collider& a,
 		fp.key = 0;
 
 		manifold.setNormal(Math::normalize(ds));
-		manifold.addContact((bodyA->getTransform().getPosition()
-				+ bodyB->getTransform().getPosition()) * 0.5f,
+		manifold.addContact((a.getWorldTransform().getPosition()
+				+ b.getWorldTransform().getPosition()) * 0.5f,
 				rSum - Math::sqrt(d), fp);
 	}
 }
@@ -40,18 +40,18 @@ void Physics::collisionSpherePlane(Manifold& manifold, Collider& a,
 
 	SphereCollider* sphere = (SphereCollider*)&a;
 
-	Matrix4f tf = bodyB->getTransform().toMatrix();
+	Matrix4f tf = b.getWorldTransform().toMatrix();
 	Vector3f normal(tf[1]);
 
-	float d = Math::dot(normal, bodyA->getTransform().getPosition()
-			- bodyB->getTransform().getPosition());
+	float d = Math::dot(normal, a.getWorldTransform().getPosition()
+			- b.getWorldTransform().getPosition());
 
 	if (d < sphere->getRadius()) {
 		FeaturePair fp;
 		fp.key = 0;
 
 		manifold.setNormal(-normal);
-		manifold.addContact(bodyA->getTransform().getPosition()
+		manifold.addContact(a.getWorldTransform().getPosition()
 				- normal * d, sphere->getRadius() - d, fp);
 	}
 }

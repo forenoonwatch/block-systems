@@ -16,14 +16,14 @@ void Physics::collisionCapsuleCapsule(Manifold& manifold, Collider& a,
 	Body* bodyA = a.getBody();
 	Body* bodyB = b.getBody();
 	
-	CapsuleCollider* capsuleA = (CapsuleCollider*)bodyA->getCollider();
-	CapsuleCollider* capsuleB = (CapsuleCollider*)bodyB->getCollider();
+	CapsuleCollider* capsuleA = (CapsuleCollider*)&a;
+	CapsuleCollider* capsuleB = (CapsuleCollider*)&b;
 
 	float rSum = capsuleA->getRadius() + capsuleB->getRadius();
 
 	Vector3f resA, resB;
 	distanceGJK(capsuleA->getPoints(), 2, capsuleB->getPoints(), 2,
-			bodyA->getTransform(), bodyB->getTransform(), resA, resB);
+			a.getWorldTransform(), b.getWorldTransform(), resA, resB);
 
 	Vector3f normal = resB - resA;
 	float dist = Math::dot(normal, normal);

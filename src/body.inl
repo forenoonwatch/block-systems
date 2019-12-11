@@ -87,8 +87,11 @@ inline void Physics::Body::setNotInIsland() {
 	flags &= ~Physics::Body::FLAG_ISLAND;
 }
 
-inline void Physics::Body::setLocalCenter(const Vector3f& localCenter) {
-	this->localCenter = localCenter;
+inline void Physics::Body::setTransform(const Transform& transform) {
+	this->worldCenter = transform.getPosition();
+	this->transform.setRotation(transform.getRotation());
+
+	// TODO: synchronize broadphase
 }
 
 inline void Physics::Body::setVelocity(const Vector3f& velocity) {
@@ -212,7 +215,8 @@ inline const Matrix3f& Physics::Body::getInvInertiaWorld() const {
 	return invInertiaWorld;
 }
 
-inline Physics::Collider* Physics::Body::getCollider() {
-	return collider;
+inline const ArrayList<Physics::Collider*>& Physics::Body::getColliders()
+		const {
+	return colliders;
 }
 

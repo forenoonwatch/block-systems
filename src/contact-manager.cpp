@@ -13,8 +13,13 @@ void Physics::ContactManager::findNewContacts() {
 
 	// TODO: make sure to check this for multi-collider bodies	
 	for (Body* body : physicsEngine->getBodies()) {
-		broadphase.update(body->collider->broadphaseIndex,
-				body->collider->computeAABB(body->transform));
+		body->transform.setPosition(body->worldCenter
+				- body->transform.transform(body->localCenter, 0.f));
+
+		for (Collider* collider : body->colliders) {
+			broadphase.update(collider->broadphaseIndex,
+					collider->computeAABB());
+		}
 	}
 }
 
@@ -113,8 +118,8 @@ void Physics::ContactManager::removeContact(ContactConstraint& constraint) {
 }
 
 void Physics::ContactManager::removeContact(uint32 i) {
-	contactList[i].bodyA->removeEdge(&contactList[i].edgeA);
-	contactList[i].bodyB->removeEdge(&contactList[i].edgeB);
+	contactList[i].bodyA->removeEdge(contactList[i].edgeA.get());
+	contactList[i].bodyB->removeEdge(contactList[i].edgeB.get());
 
 	contactList[i].bodyA->setToAwake();
 	contactList[i].bodyB->setToAwake();

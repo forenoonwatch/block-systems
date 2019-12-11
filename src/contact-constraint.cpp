@@ -8,34 +8,35 @@
 #define BAUMGARTE			0.2f
 #define PENETRATION_SLOP	0.05f
 
-Physics::ContactConstraint::ContactConstraint(Collider& a,
-			Collider& b)
+Physics::ContactConstraint::ContactConstraint(Collider& a, Collider& b)
 		: colliderA(&a)
 		, colliderB(&b)
 		, bodyA(a.getBody())
 		, bodyB(b.getBody())
+		, edgeA(Memory::make_shared<ContactEdge>())
+		, edgeB(Memory::make_shared<ContactEdge>())
 		, friction(mixFriction())
 		, restitution(mixRestitution())
 		, flags(0) {
 	manifold.setPair(a, b);
 
-	edgeA.constraint = this;
-	edgeA.other = b.getBody();
+	edgeA->constraint = this;
+	edgeA->other = b.getBody();
 
-	edgeB.constraint = this;
-	edgeB.other = a.getBody();
+	edgeB->constraint = this;
+	edgeB->other = a.getBody();
 
-	a.getBody()->contactList.push_back(&edgeA);
-	b.getBody()->contactList.push_back(&edgeB);
+	a.getBody()->contactList.push_back(edgeA.get());
+	b.getBody()->contactList.push_back(edgeB.get());
 }
 
 void Physics::ContactConstraint::testCollision() {
 	manifold.numContacts = 0;
-	CollisionCallback cb = COLLISION_DISPATCH[bodyA->collider->getType()]
-			[bodyB->collider->getType()];
+	CollisionCallback cb = COLLISION_DISPATCH[colliderA->getType()]
+			[colliderB->getType()];
 
 	if (cb != nullptr) {
-		cb(manifold, *(bodyA->collider), *(bodyB->collider));
+		cb(manifold, *(colliderA), *(colliderB));
 	}
 
 	if (manifold.numContacts > 0) {
@@ -167,12 +168,10 @@ void Physics::ContactConstraint::solve() {
 }
 
 inline float Physics::ContactConstraint::mixFriction() {
-	return Math::sqrt(bodyA->collider->getFriction()
-			* bodyB->collider->getFriction());
+	return Math::sqrt(colliderA->getFriction() * colliderB->getFriction());
 }
 
 inline float Physics::ContactConstraint::mixRestitution() {
-	return Math::max(bodyA->collider->getRestitution(),
-			bodyB->collider->getRestitution());
+	return Math::max(colliderA->getRestitution(), colliderB->getRestitution());
 }
 

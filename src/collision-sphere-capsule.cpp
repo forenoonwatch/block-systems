@@ -17,12 +17,12 @@ void Physics::collisionSphereCapsule(Manifold& manifold, Collider& a,
 	Body* bodyA = a.getBody();
 	Body* bodyB = b.getBody();
 	
-	SphereCollider* sphere = (SphereCollider*)bodyA->getCollider();
-	CapsuleCollider* capsule = (CapsuleCollider*)bodyB->getCollider();
+	SphereCollider* sphere = (SphereCollider*)&a;
+	CapsuleCollider* capsule = (CapsuleCollider*)&b;
 
 	Vector3f resA, resB;
 	distanceGJK(Math::value_ptr(Vector3f()), 1, capsule->getPoints(), 2,
-			bodyA->getTransform(), bodyB->getTransform(), resA, resB);
+			a.getWorldTransform(), b.getWorldTransform(), resA, resB);
 
 	Vector3f normal = resB - resA;
 	float dist = Math::dot(normal, normal);

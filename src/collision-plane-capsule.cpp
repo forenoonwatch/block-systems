@@ -13,18 +13,18 @@ void Physics::collisionPlaneCapsule(Manifold& manifold, Collider& a,
 	Body* bodyA = a.getBody();
 	Body* bodyB = b.getBody();
 	
-	CapsuleCollider* capsule = (CapsuleCollider*)bodyB->getCollider();
+	CapsuleCollider* capsule = (CapsuleCollider*)&b;
 
-	Matrix4f tf = bodyA->getTransform().toMatrix();
+	Matrix4f tf = a.getWorldTransform().toMatrix();
 	Vector3f normal(tf[1]);
 
 	manifold.setNormal(normal);
 
 	for (uint32 i = 0; i < 2; ++i) {
-		Vector3f p = bodyB->getTransform().transform(capsule->getPoints()[i],
+		Vector3f p = b.getWorldTransform().transform(capsule->getPoints()[i],
 				1.f);
 
-		float d = Math::dot(normal, p - bodyA->getTransform().getPosition());
+		float d = Math::dot(normal, p - a.getWorldTransform().getPosition());
 
 		if (d < capsule->getRadius()) {
 			FeaturePair fp;

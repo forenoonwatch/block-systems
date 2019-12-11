@@ -28,6 +28,8 @@ void Physics::Island::solve(float deltaTime) {
 			body->velocity += body->force * body->invMass * deltaTime;
 			body->angularVelocity += body->invInertiaWorld * body->torque
 					* deltaTime;
+			
+			// TODO: damping
 		}
 	}
 
@@ -44,8 +46,11 @@ void Physics::Island::solve(float deltaTime) {
 
 	// integrate positions
 	for (Body* body : bodies) {
-		body->transform.setPosition(body->transform.getPosition()
-				+ body->velocity * deltaTime);
+		if (body->isStatic()) {
+			continue;
+		}
+
+		body->worldCenter += body->velocity * deltaTime;
 		body->transform.setRotation(integrateAngularVelocity(
 				body->transform.getRotation(), body->angularVelocity,
 				deltaTime));

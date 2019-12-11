@@ -31,8 +31,8 @@ void Physics::collisionSphereConvex(Manifold& manifold, Collider& a,
 
 	Vector3f resA, resB;
 	distanceGJK(Math::value_ptr(Vector3f()), 1, &convex->getVertices()[0],
-			convex->getVertices().size(), bodyA->getTransform(),
-			bodyB->getTransform(), resA, resB);
+			convex->getVertices().size(), a.getWorldTransform(),
+			b.getWorldTransform(), resA, resB);
 
 	Vector3f normal = resB - resA;
 	float dist = Math::dot(normal, normal);
@@ -52,20 +52,20 @@ void Physics::collisionSphereConvex(Manifold& manifold, Collider& a,
 		float minPenetration;
 		uint32 minFaceID;
 
-		Vector3f acInB = bodyB->getTransform().inverseTransform(
-				bodyA->getTransform().getPosition(), 1.f);
+		Vector3f acInB = b.getWorldTransform().inverseTransform(
+				a.getWorldTransform().getPosition(), 1.f);
 
 		if (findDeepPenetration(*sphere, *convex, acInB, minPenetration,
 				minFaceID)) {
 			const Face& face = convex->getFaces()[minFaceID];
 
-			normal = -bodyB->getTransform().transform(face.normal, 0.f);
+			normal = -b.getWorldTransform().transform(face.normal, 0.f);
 
 			FeaturePair fp;
 			fp.key = minFaceID;
 
 			manifold.setNormal(normal);
-			manifold.addContact(bodyA->getTransform().getPosition()
+			manifold.addContact(a.getWorldTransform().getPosition()
 					+ normal * minPenetration,
 					sphere->getRadius() - minPenetration, fp);
 		}

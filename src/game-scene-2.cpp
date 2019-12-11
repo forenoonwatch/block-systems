@@ -40,19 +40,18 @@ namespace {
 			Physics::GravitySystem* gs;
 	};
 
+	class RenderPhysicsMeshes : public ECS::System {
+		public:
+			virtual void operator()(Game&, float) override;
+	};
+
 	void printCC(const Physics::ConvexCollider*);
 };
 
 GameScene2::GameScene2()
 		: Scene()
 		, physicsEngine(new Physics::PhysicsEngine())
-		, gravitySystem(new Physics::GravitySystem())
-		, sphereCollider(nullptr)
-		, sphereCollider2(nullptr)
-		, convexCollider(nullptr)
-		, convexCollider2(nullptr)
-		, planeCollider(nullptr)
-		, capsuleCollider(nullptr) {
+		, gravitySystem(new Physics::GravitySystem()) {
 
 	//addUpdateSystem(new FirstPersonCameraSystem());
 	addUpdateSystem(new OrbitCameraSystem());
@@ -63,7 +62,8 @@ GameScene2::GameScene2()
 	addUpdateSystem(gravitySystem);
 	addUpdateSystem(physicsEngine);
 
-	addRenderSystem(new RenderMesh());
+	//addRenderSystem(new RenderMesh());
+	addRenderSystem(new RenderPhysicsMeshes());
 	addRenderSystem(new GameRenderContext::Clear());
 	addRenderSystem(new GameRenderContext::FlushStaticMeshes());
 	addRenderSystem(new GameRenderContext::ApplyLighting());
@@ -125,12 +125,13 @@ void GameScene2::load(Game& game) {
 			&((GameRenderContext*)game.getRenderContext())->getCamera());*/
 
 	Physics::BodyHints bodyHints;
-	bodyHints.mass = 1.f;
 	bodyHints.type = Physics::BodyType::DYNAMIC;
-	bodyHints.invInertiaLocal = Math::inverse(Matrix3f(0.4f));
-	//bodyHints.invInertiaLocal = Math::inverse(Matrix3f(1.f / 6.f));
 	// sphere I^-1 = diag(0.4f * M * R^2)^-1
 	// cube I^1 = diag(mass / 6.f) * size
+
+	Physics::ColliderHints collHints;
+	collHints.setRestitution(0.5f);
+	collHints.setFriction(0.3f);
 
 	// body 2
 	Physics::Body* body2 = physicsEngine->addBody(bodyHints);
@@ -142,20 +143,28 @@ void GameScene2::load(Game& game) {
 	//sphereCollider->setFriction(0.3f);
 	//body2->setCollider(sphereCollider);
 	
-	capsuleCollider = new Physics::CapsuleCollider(Vector3f(0.f, -0.5f, 0.f),
-			Vector3f(0.f, 0.5f, 0.f), 1.f);
-	capsuleCollider->setRestitution(0.f);
-	capsuleCollider->setFriction(0.3f);
-	body2->setCollider(capsuleCollider);
+	Quaternion q1Local = Math::mat4ToQuat(Math::rotate(Matrix4f(1.f),
+			Math::toRadians(90.f), Vector3f(0.f, 0.f, 1.f)));
+
+	collHints.setDensity(0.15f);
+	///collHints.initCapsule(Vector3f(0.f, -0.5f, 0.f),
+	//		Vector3f(0.f, 0.5f, 0.f), 1.f);
+	collHints.initSphere(1.f);
+	collHints.setTransform(Transform(Vector3f(), q1Local, Vector3f(1.f)));
+	body2->addCollider(collHints);
+
+	collHints.setTransform(Transform(Vector3f(5.f, 0.f, 0.f)));
+	body2->addCollider(collHints);
 	
+	Quaternion q = Math::mat4ToQuat(Math::rotate(Matrix4f(1.f),
+			Math::toRadians(90.f), Vector3f(0.f, 0.f, 1.f)));
+	body2->setTransform(Transform(Vector3f(0.f, 20.f, 0.f), q, Vector3f(1.f)));
+
 	//convexCollider = new Physics::ConvexCollider(game.getAssetManager()
 	//		.getModel("cube"));
 	//convexCollider->restitution = 0.15f;
 	//convexCollider->friction = 0.3f;
 	//body2->setCollider(convexCollider);
-
-	Quaternion q = Math::mat4ToQuat(Math::rotate(Matrix4f(1.f),
-			Math::toRadians(90.f), Vector3f(0.f, 0.f, 1.f)));
 
 	ECS::Entity eSphere = game.getECS().create();
 	game.getECS().assign<RenderableMesh>(eSphere,
@@ -168,27 +177,19 @@ void GameScene2::load(Game& game) {
 			Physics::BodyHandle(body2));
 
 	// body 1 
-	bodyHints.mass = 0.f;
 	bodyHints.type = Physics::BodyType::STATIC;
-	bodyHints.invInertiaLocal = Matrix3f(0.f);
 
 	Physics::Body* body = physicsEngine->addBody(bodyHints);
 
-	//planeCollider = new Physics::PlaneCollider();
-	//planeCollider->setRestitution(0.1f);
-	//planeCollider->setFriction(0.3f);
-	//body->setCollider(planeCollider);
-	
 	//sphereCollider2 = new Physics::SphereCollider(1.f);
 	//sphereCollider2->setRestitution(0.1f);
 	//sphereCollider2->setFriction(0.3f);
 	//body->setCollider(sphereCollider2);
 
-	convexCollider2 = new Physics::ConvexCollider(game.getAssetManager()
-			.getModel("platform"));
-	convexCollider2->setRestitution(0.1f);
-	convexCollider2->setFriction(0.3f);
-	body->setCollider(convexCollider2);
+	collHints.setTransform(Transform());
+	///collHints.initConvexHull(game.getAssetManager().getModel("platform"));
+	collHints.initPlane();
+	body->addCollider(collHints);
 
 	//printCC(convexCollider2);
 
@@ -219,33 +220,7 @@ void GameScene2::load(Game& game) {
 }
 
 void GameScene2::unload(Game& game) {
-	if (convexCollider != nullptr) {
-		delete convexCollider;
-	}
-
-	if (convexCollider2 != nullptr) {
-		delete convexCollider2;
-	}
 	
-	if (sphereCollider != nullptr) {
-		delete sphereCollider;
-	}
-	
-	if (sphereCollider2 != nullptr) {
-		delete sphereCollider2;
-	}
-
-	if (planeCollider != nullptr) {
-		delete planeCollider;
-	}
-
-	if (capsuleCollider != nullptr) {
-		delete capsuleCollider;
-	}
-
-	if (capsuleCollider2 != nullptr) {
-		delete capsuleCollider2;
-	}
 }
 
 GameScene2::~GameScene2() {
@@ -289,6 +264,39 @@ void ::PlayerControlSystem::operator()(Game& game, float deltaTime) {
 
 		handle.body->getVelocity() += v;
 		handle.body->setToAwake();
+	});
+}
+
+void ::RenderPhysicsMeshes::operator()(Game& game, float deltaTime) {
+	GameRenderContext* grc = (GameRenderContext*)game.getRenderContext();
+	Material& material = game.getAssetManager().getMaterial("bricks");
+
+	game.getECS().view<TransformComponent, Physics::BodyHandle>().each([&](
+			auto& tf, auto& handle) {
+		for (const auto* coll : handle.body->getColliders()) {
+			switch (coll->getType()) {
+				case Physics::ColliderType::TYPE_SPHERE:
+					grc->renderMesh(game.getAssetManager()
+							.getVertexArray("sphere"), material,
+							coll->getWorldTransform().toMatrix());
+					break;
+				case Physics::ColliderType::TYPE_PLANE:
+					grc->renderMesh(game.getAssetManager()
+							.getVertexArray("plane"), material,
+							coll->getWorldTransform().toMatrix());
+					break;
+				case Physics::ColliderType::TYPE_CAPSULE:
+					grc->renderMesh(game.getAssetManager()
+							.getVertexArray("capsule"), material,
+							coll->getWorldTransform().toMatrix());
+					break;
+				case Physics::ColliderType::TYPE_CONVEX_HULL:
+					grc->renderMesh(game.getAssetManager()
+							.getVertexArray("platform"), material,
+							coll->getWorldTransform().toMatrix());
+					break;
+			}
+		}
 	});
 }
 

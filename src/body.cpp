@@ -11,9 +11,7 @@ Physics::BodyHints::BodyHints()
 		, velocity()
 		, angularVelocity()
 		, force()
-		, torque()
-		, mass(1.f)
-		, invInertiaLocal(0.f) {}
+		, torque() {}
 
 Physics::Body::Body(PhysicsEngine& physicsEngine, const BodyHints& hints)
 		: physicsEngine(&physicsEngine)
@@ -24,10 +22,10 @@ Physics::Body::Body(PhysicsEngine& physicsEngine, const BodyHints& hints)
 		, angularVelocity(hints.angularVelocity)
 		, force(hints.force)
 		, torque(hints.torque)
-		, mass(hints.mass)
-		, invMass(hints.mass == 0.f ? 0.f : 1.f / hints.mass)
-		, invInertiaLocal(hints.invInertiaLocal)
-		, invInertiaWorld(hints.invInertiaLocal)
+		, mass(0.f)
+		, invMass(0.f)
+		, invInertiaLocal(0.f)
+		, invInertiaWorld(0.f)
 		, sleepTime(0.f)
 		, flags(0) {
 	switch (hints.type) {
@@ -60,10 +58,67 @@ Physics::Body::Body(PhysicsEngine& physicsEngine, const BodyHints& hints)
 	}
 }
 
-void Physics::Body::setCollider(Collider* collider) {
-	this->collider = collider;
-	collider->body = this;
+void Physics::Body::addCollider(const ColliderHints& hints) {
+	Collider* c = Collider::make(hints);
+	c->body = this;
 
-	physicsEngine->addCollider(*this, *collider);
+	colliders.push_back(c);
+
+	calcMassData();
+
+	physicsEngine->addCollider(*this, *c);
+}
+
+void Physics::Body::calcMassData() {
+	if (isStatic() || isKinematic()) {
+		mass = 0.f;
+		invMass = 0.f;
+		invInertiaLocal = Matrix3f(0.f);
+		localCenter = Vector3f();
+
+		return;
+	}
+
+	mass = 0.f;
+	Matrix3f inertia(0.f);
+	Vector3f centerOfMass(0.f, 0.f, 0.f);
+
+	float colliderMass;
+	Matrix3f colliderInertia;
+	Vector3f colliderCOM;
+	
+	for (Collider* coll : colliders) {
+		if (coll->getDensity() == 0.f) {
+			continue;
+		}
+
+		coll->calcMassData(colliderMass, colliderInertia, colliderCOM);
+
+		mass += colliderMass;
+		inertia += colliderInertia;
+		centerOfMass += colliderCOM * colliderMass;
+	}
+
+	if (mass > 0.f) {
+		invMass = 1.f / mass;
+		localCenter = centerOfMass * invMass;
+
+		inertia -= (Matrix3f(Math::dot(localCenter, localCenter))
+				- Math::outerProduct(localCenter, localCenter)) * mass;
+		invInertiaLocal = Math::inverse(inertia);
+
+		// TODO: axis locks
+	}
+	else {
+		invMass = 1.f;
+		invInertiaLocal = Matrix3f(0.f);
+		localCenter = Vector3f(0.f);
+	}
+}
+
+Physics::Body::~Body() {
+	for (uint32 i = 0; i < colliders.size(); ++i) {
+		delete colliders[i];
+	}
 }
 

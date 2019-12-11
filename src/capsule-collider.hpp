@@ -5,10 +5,12 @@
 namespace Physics {
 	class CapsuleCollider : public Collider {
 		public:
-			CapsuleCollider(const Vector3f& p0, const Vector3f& p1,
-					float radius);
+			CapsuleCollider(const ColliderHints& hints);
 
-			virtual AABB computeAABB(const Transform& tf) const override;
+			virtual AABB computeAABB() const override;
+
+			virtual void calcMassData(float& mass, Matrix3f& inertia,
+					Vector3f& centerOfMass) const override;
 
 			inline const Vector3f getP0() const { return points[0]; }
 			inline const Vector3f getP1() const { return points[1]; }

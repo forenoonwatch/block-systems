@@ -43,8 +43,10 @@ static bool isCoplanar(const FaceData& f0, const FaceData& f1);
 
 static bool isCollinear(const Edge& e0, const Edge& e1);
 
-Physics::ConvexCollider::ConvexCollider(const IndexedModel& model)
-		: Collider(Collider::TYPE_CONVEX_HULL) {
+Physics::ConvexCollider::ConvexCollider(const ColliderHints& hints)
+		: Collider(hints) {
+	const IndexedModel& model = *hints.getModel();
+
 	const uint32* indices = model.getIndices();
 
 	for (uint32 i = 0; i < model.getElementArraySize(0); i += 3) {
@@ -100,8 +102,65 @@ Physics::ConvexCollider::ConvexCollider(const IndexedModel& model)
 	removeDuplicateVertices();
 }
 
-AABB Physics::ConvexCollider::computeAABB(const Transform& tf) const {
-	return AABB(&vertices[0], vertices.size()).transform(tf.toMatrix());
+AABB Physics::ConvexCollider::computeAABB() const {
+	return AABB(&vertices[0], vertices.size()).transform(
+			worldTransform.toMatrix());
+}
+
+void Physics::ConvexCollider::calcMassData(float& mass, Matrix3f& inertia,
+		Vector3f& centerOfMass) const {
+	float volume = 0.f;
+	centerOfMass = Vector3f(0.f, 0.f, 0.f);
+
+	Vector3f diag(0.f, 0.f, 0.f);
+	Vector3f offDiag(0.f, 0.f, 0.f);
+
+	for (const Face& f : faces) {
+		Vector3f v0 = localTransform.transform(f.vertices[0].v, 1.f);
+
+		for (uint32 i = 1; i < f.vertices.size() - 1; ++i) {
+			Vector3f v1 = localTransform.transform(f.vertices[i].v, 1.f);
+			Vector3f v2 = localTransform.transform(f.vertices[i + 1].v, 1.f);
+
+			float tetraVol = Math::dot(Math::cross(v0, v1), v2);
+
+			volume += tetraVol;
+			centerOfMass += (v0 + v1 + v2) * tetraVol;
+
+			for (uint32 j = 0; j < 3; ++j) {
+				uint32 j1 = (j + 1) % 3;
+				uint32 j2 = (j + 2) % 3;
+
+				diag[j] += (v0[j] * v1[j] + v1[j] * v2[j] + v2[j] * v0[j]
+						+ v0[j] * v0[j] + v1[j] * v1[j] + v2[j] * v2[j])
+						* tetraVol;
+
+				offDiag[j] += (v0[j1] * v1[j2] + v1[j1] * v2[j2]
+						+ v2[j1] * v0[j2] + v0[j1] * v2[j2] + v1[j1] * v0[j2]
+						+ v2[j1] * v1[j2] + v0[j1] * v0[j2] * 2.f
+						+ v1[j1] * v1[j2] * 2.f + v2[j1] * v2[j2] * 2.f)
+						* tetraVol;
+			}
+		}
+	}
+
+	centerOfMass /= volume * 4.f;
+	volume /= 6.f;
+
+	diag /= volume * 60.f;
+	offDiag /= volume * 120.f;
+	
+	mass = density * volume;
+
+	if (mass > 0.f) {
+		inertia = Matrix3f(Vector3f(diag.y + diag.z, -offDiag.z, -offDiag.y),
+				Vector3f(-offDiag.z, diag.x + diag.z, -offDiag.x),
+				Vector3f(-offDiag.y, -offDiag.x, diag.x + diag.y));
+		inertia *= mass;
+	}
+	else {
+		inertia = Matrix3f(0.f);
+	}
 }
 
 inline void Physics::ConvexCollider::initializeFaceAxes() {

@@ -5,11 +5,14 @@
 namespace Physics {
 	class SphereCollider : public Collider {
 		public:
-			inline SphereCollider(float radius)
-					: Collider(Collider::TYPE_SPHERE)
-					, radius(radius) {}
+			inline SphereCollider(const ColliderHints& hints)
+					: Collider(hints)
+					, radius(hints.getRadius()) {}
 
-			virtual AABB computeAABB(const Transform& tf) const override;
+			virtual AABB computeAABB() const override;
+			
+			virtual void calcMassData(float& mass, Matrix3f& inertia,
+					Vector3f& centerOfMass) const override;
 
 			inline void setRadius(float radius) {
 				this->radius = radius;

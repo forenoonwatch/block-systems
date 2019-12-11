@@ -38,7 +38,7 @@ namespace Physics {
 	void collisionConvexCapsule(Manifold&, Collider&, Collider&);
 
 	// TODO: replace this with a dispatch function
-	constexpr static CollisionCallback COLLISION_DISPATCH[Collider::NUM_TYPES][Collider::NUM_TYPES] = {
+	constexpr static CollisionCallback COLLISION_DISPATCH[ColliderType::NUM_TYPES][ColliderType::NUM_TYPES] = {
 		{ collisionSphereSphere, collisionSpherePlane, collisionSphereCapsule, collisionSphereConvex },
 		{ collisionPlaneSphere, nullptr, collisionPlaneCapsule, collisionPlaneConvex },
 		{ collisionCapsuleSphere, collisionCapsulePlane, collisionCapsuleCapsule, collisionCapsuleConvex },

@@ -37,15 +37,13 @@ void Physics::PhysicsEngine::operator()(Game& game, float deltaTime) {
 
 	contactManager.testCollisions();
 	
-	game.getECS().view<TransformComponent, Physics::BodyHandle>().each([&](
-			TransformComponent& tf, Physics::BodyHandle& handle) {
-		handle.body->transform = tf.transform;
-		handle.body->worldCenter = tf.transform.transform(
-				handle.body->localCenter, 1.f);
-
-		// TODO: find a way to update the broadphase for the bodies if
-		// transform was manally set
-	});
+	for (Body* body : bodies) {
+		for (Collider* c : body->colliders) {
+			c->setWorldTransform(
+					body->transform.transform(c->getLocalTransform()));
+			//c->setWorldTransform(handle.body->transform);
+		}
+	}
 
 	for (Body* body : bodies) {
 		body->setNotInIsland();
@@ -118,8 +116,7 @@ void Physics::PhysicsEngine::operator()(Game& game, float deltaTime) {
 
 void Physics::PhysicsEngine::addCollider(Body& body, Collider& collider) {
 	newCollider = true;
-	contactManager.getBroadphase().insert(collider,
-			collider.computeAABB(body.transform));
+	contactManager.getBroadphase().insert(collider, collider.computeAABB());
 }
 
 Physics::PhysicsEngine::~PhysicsEngine() {

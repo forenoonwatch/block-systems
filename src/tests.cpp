@@ -93,9 +93,12 @@ static void runSATTest() {
 	if (!AssetLoader::loadAssets("./res/cube.obj", hints, models)) {
 		DEBUG_LOG_TEMP2("Failed to load cube");
 	}
-	
-	Physics::ConvexCollider hullA(models[0]);
-	Physics::ConvexCollider hullB(models[0]);
+
+	Physics::ColliderHints ch;
+	ch.initConvexHull(models[0]);
+
+	Physics::ConvexCollider hullA(ch);
+	Physics::ConvexCollider hullB(ch);
 
 	// edge contact
 	/*Quaternion q = Math::mat4ToQuat(Math::rotate(Matrix4f(1.f),

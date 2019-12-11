@@ -42,9 +42,12 @@ namespace Physics {
 
 	class ConvexCollider : public Collider {
 		public:
-			ConvexCollider(const IndexedModel& model);
+			ConvexCollider(const ColliderHints& hints);
 
-			virtual AABB computeAABB(const Transform& tf) const override;
+			virtual AABB computeAABB() const override;
+
+			virtual void calcMassData(float& mass, Matrix3f& inertia,
+					Vector3f& centerOfMass) const override;
 
 			inline const ArrayList<Vector3f>& getVertices() const;
 			inline const ArrayList<Face>& getFaces() const;

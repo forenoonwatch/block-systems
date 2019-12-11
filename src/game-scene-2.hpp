@@ -5,11 +5,6 @@
 namespace Physics {
 	class PhysicsEngine;
 	class GravitySystem;
-
-	class SphereCollider;
-	class PlaneCollider;
-	class CapsuleCollider;
-	class ConvexCollider;
 };
 
 class GameScene2 : public Scene {
@@ -23,16 +18,5 @@ class GameScene2 : public Scene {
 	private:
 		Physics::PhysicsEngine* physicsEngine;
 		Physics::GravitySystem* gravitySystem;
-		
-		Physics::SphereCollider* sphereCollider;
-		Physics::SphereCollider* sphereCollider2;
-
-		Physics::ConvexCollider* convexCollider;
-		Physics::ConvexCollider* convexCollider2;
-
-		Physics::PlaneCollider* planeCollider;
-
-		Physics::CapsuleCollider* capsuleCollider;
-		Physics::CapsuleCollider* capsuleCollider2;
 };
 

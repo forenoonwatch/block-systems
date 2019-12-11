@@ -3,6 +3,8 @@
 #include "contact.hpp"
 #include "manifold.hpp"
 
+#include <engine/core/memory.hpp>
+
 namespace Physics {
 	class ContactConstraint {
 		public:
@@ -30,8 +32,8 @@ namespace Physics {
 			Body* bodyA;
 			Body* bodyB;
 
-			ContactEdge edgeA;
-			ContactEdge edgeB;
+			Memory::SharedPointer<ContactEdge> edgeA;
+			Memory::SharedPointer<ContactEdge> edgeB;
 
 			float friction;
 			float restitution;

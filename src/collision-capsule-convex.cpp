@@ -17,13 +17,13 @@ void Physics::collisionCapsuleConvex(Manifold& manifold, Collider& a,
 	Body* bodyA = a.getBody();
 	Body* bodyB = b.getBody();
 	
-	CapsuleCollider* capsule = (CapsuleCollider*)bodyA->getCollider();
-	ConvexCollider* convex = (ConvexCollider*)bodyB->getCollider();
+	CapsuleCollider* capsule = (CapsuleCollider*)&a;
+	ConvexCollider* convex = (ConvexCollider*)&b;
 
 	Vector3f resA, resB;
 	distanceGJK(capsule->getPoints(), 2, &convex->getVertices()[0],
-			convex->getVertices().size(), bodyA->getTransform(),
-			bodyB->getTransform(), resA, resB);
+			convex->getVertices().size(), a.getWorldTransform(),
+			b.getWorldTransform(), resA, resB);
 
 	Vector3f normal = resB - resA;
 	float dist = Math::dot(normal, normal);
