@@ -1,7 +1,7 @@
 #include "orbit-camera.hpp"
 
-#include "util-components.hpp"
-#include "game-render-context.hpp"
+#include <engine/game/util-components.hpp>
+#include <engine/game/game-render-context.hpp>
 
 #include <engine/core/application.hpp>
 #include <engine/game/game.hpp>

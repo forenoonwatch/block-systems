@@ -8,7 +8,7 @@
 //#include "game-scene.hpp"
 #include "game-scene-2.hpp"
 
-#include "game-render-context.hpp"
+#include <engine/game/game-render-context.hpp>
 
 int main() {
 	//std::ifstream inFile("entt.cereal", std::ios::binary);

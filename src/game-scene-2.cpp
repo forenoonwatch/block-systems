@@ -1,23 +1,22 @@
 #include "game-scene-2.hpp"
 
-#include "camera.hpp"
 //#include "first-person-camera.hpp"
 #include "orbit-camera.hpp"
 
-#include "renderable-mesh.hpp"
+#include <engine/game/camera.hpp>
+#include <engine/game/renderable-mesh.hpp>
+#include <engine/game/util-components.hpp>
+#include <engine/game/util-systems.hpp>
 
-#include "util-components.hpp"
-#include "util-systems.hpp"
+#include <engine/game/game-render-context.hpp>
 
-#include "game-render-context.hpp"
+#include <engine/physics/physics-engine.hpp>
+#include <engine/physics/dynamics/body.hpp>
 
-#include "physics.hpp"
-#include "body.hpp"
-
-#include "sphere-collider.hpp"
-#include "plane-collider.hpp"
-#include "capsule-collider.hpp"
-#include "convex-collider.hpp"
+#include <engine/physics/collision/sphere-collider.hpp>
+#include <engine/physics/collision/plane-collider.hpp>
+#include <engine/physics/collision/capsule-collider.hpp>
+#include <engine/physics/collision/convex-collider.hpp>
 
 #include <engine/core/application.hpp>
 #include <engine/math/math.hpp>

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "camera.hpp"
+#include <engine/game/camera.hpp>
 
 class Game;
 
