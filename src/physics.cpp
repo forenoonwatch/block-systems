@@ -8,16 +8,6 @@
 
 #include <engine/game/game.hpp>
 
-void Physics::GravitySystem::operator()(Game& game, float deltaTime) {
-	game.getECS().view<Physics::BodyHandle>().each([&](
-			Physics::BodyHandle& handle) {
-		if (handle.body->isDynamic()) {
-			// TODO: gravity scale
-			handle.body->applyForce(Physics::GRAVITY);
-		}
-	});
-}
-
 Physics::PhysicsEngine::PhysicsEngine()
 		: contactManager(*this)
 		, newCollider(false) {}

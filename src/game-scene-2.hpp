@@ -4,7 +4,6 @@
 
 namespace Physics {
 	class PhysicsEngine;
-	class GravitySystem;
 };
 
 class GameScene2 : public Scene {
@@ -17,6 +16,5 @@ class GameScene2 : public Scene {
 		virtual ~GameScene2();
 	private:
 		Physics::PhysicsEngine* physicsEngine;
-		Physics::GravitySystem* gravitySystem;
 };
 

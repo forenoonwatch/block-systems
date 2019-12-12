@@ -24,6 +24,8 @@ namespace Physics {
 
 		BodyType type;
 
+		Transform transform;
+
 		bool active;
 		bool awake;
 		bool allowSleep;
@@ -33,6 +35,8 @@ namespace Physics {
 
 		Vector3f force;
 		Vector3f torque;
+
+		float gravityScale;
 	};
 
 	class Body {
@@ -66,7 +70,7 @@ namespace Physics {
 
 			inline void setMass(float mass);
 
-			inline void setInvInertiaLocal(const Matrix3f& invInertiaLocal);
+			inline void setGravityScale(float gravityScale);
 
 			inline bool isAwake() const;
 			inline bool isActive() const;
@@ -106,6 +110,8 @@ namespace Physics {
 			inline const Matrix3f& getInvInertiaLocal() const;
 
 			inline const Matrix3f& getInvInertiaWorld() const;
+
+			inline float getGravityScale() const;
 
 			inline const ArrayList<Collider*>& getColliders() const;
 
@@ -147,6 +153,8 @@ namespace Physics {
 
 			Matrix3f invInertiaLocal;
 			Matrix3f invInertiaWorld;
+
+			float gravityScale;
 
 			ArrayList<Collider*> colliders;
 

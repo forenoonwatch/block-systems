@@ -8,16 +8,17 @@ Physics::BodyHints::BodyHints()
 		, active(true)
 		, awake(true)
 		, allowSleep(true)
-		, velocity()
-		, angularVelocity()
-		, force()
-		, torque() {}
+		, velocity(0.f)
+		, angularVelocity(0.f)
+		, force(0.f)
+		, torque(0.f)
+		, gravityScale(1.f) {}
 
 Physics::Body::Body(PhysicsEngine& physicsEngine, const BodyHints& hints)
 		: physicsEngine(&physicsEngine)
-		, transform()
-		, localCenter()
-		, worldCenter()
+		, transform(hints.transform)
+		, localCenter(0.f)
+		, worldCenter(hints.transform.getPosition())
 		, velocity(hints.velocity)
 		, angularVelocity(hints.angularVelocity)
 		, force(hints.force)
@@ -26,16 +27,20 @@ Physics::Body::Body(PhysicsEngine& physicsEngine, const BodyHints& hints)
 		, invMass(0.f)
 		, invInertiaLocal(0.f)
 		, invInertiaWorld(0.f)
+		, gravityScale(hints.gravityScale)
 		, sleepTime(0.f)
 		, flags(0) {
+	
 	switch (hints.type) {
 		case BodyType::DYNAMIC:
 			flags |= FLAG_DYNAMIC;
 			break;
 		case BodyType::STATIC:
 			flags |= FLAG_STATIC;
+
 			velocity = Vector3f();
 			angularVelocity = Vector3f();
+
 			force = Vector3f();
 			torque = Vector3f();
 

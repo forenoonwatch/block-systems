@@ -29,15 +29,12 @@ namespace {
 
 	class PlayerControlSystem : public ECS::System {
 		public:
-			PlayerControlSystem(Physics::PhysicsEngine* pe,
-						Physics::GravitySystem* gs)
-					: pe(pe)
-					, gs(gs) {}
+			PlayerControlSystem(Physics::PhysicsEngine* pe)
+					: pe(pe) {}
 
 			virtual void operator()(Game&, float) override;
 		private:
 			Physics::PhysicsEngine* pe;
-			Physics::GravitySystem* gs;
 	};
 
 	class RenderPhysicsMeshes : public ECS::System {
@@ -50,16 +47,14 @@ namespace {
 
 GameScene2::GameScene2()
 		: Scene()
-		, physicsEngine(new Physics::PhysicsEngine())
-		, gravitySystem(new Physics::GravitySystem()) {
+		, physicsEngine(new Physics::PhysicsEngine()) {
 
 	//addUpdateSystem(new FirstPersonCameraSystem());
 	addUpdateSystem(new OrbitCameraSystem());
 	addUpdateSystem(new UpdateCameraSystem());
 	addUpdateSystem(new ToggleFullscreenSystem());
-	addUpdateSystem(new ::PlayerControlSystem(physicsEngine, gravitySystem));
+	addUpdateSystem(new ::PlayerControlSystem(physicsEngine));
 	
-	addUpdateSystem(gravitySystem);
 	addUpdateSystem(physicsEngine);
 
 	//addRenderSystem(new RenderMesh());
@@ -126,8 +121,7 @@ void GameScene2::load(Game& game) {
 
 	Physics::BodyHints bodyHints;
 	bodyHints.type = Physics::BodyType::DYNAMIC;
-	// sphere I^-1 = diag(0.4f * M * R^2)^-1
-	// cube I^1 = diag(mass / 6.f) * size
+	bodyHints.gravityScale = 2.f;
 
 	Physics::ColliderHints collHints;
 	collHints.setRestitution(0.5f);
@@ -135,21 +129,15 @@ void GameScene2::load(Game& game) {
 
 	// body 2
 	Physics::Body* body2 = physicsEngine->addBody(bodyHints);
-	
-	//body2->invInertiaLocal[2] = Vector3f(0.f, 0.f, 0.f); // lock Z axis 
 
-	//sphereCollider = new Physics::SphereCollider(1.f);
-	//sphereCollider->setRestitution(0.f);
-	//sphereCollider->setFriction(0.3f);
-	//body2->setCollider(sphereCollider);
-	
 	Quaternion q1Local = Math::mat4ToQuat(Math::rotate(Matrix4f(1.f),
 			Math::toRadians(90.f), Vector3f(0.f, 0.f, 1.f)));
 
 	collHints.setDensity(0.15f);
 	///collHints.initCapsule(Vector3f(0.f, -0.5f, 0.f),
 	//		Vector3f(0.f, 0.5f, 0.f), 1.f);
-	collHints.initSphere(1.f);
+	//collHints.initSphere(1.f);
+	collHints.initConvexHull(game.getAssetManager().getModel("cube"));
 	collHints.setTransform(Transform(Vector3f(), q1Local, Vector3f(1.f)));
 	body2->addCollider(collHints);
 
@@ -158,13 +146,7 @@ void GameScene2::load(Game& game) {
 	
 	Quaternion q = Math::mat4ToQuat(Math::rotate(Matrix4f(1.f),
 			Math::toRadians(90.f), Vector3f(0.f, 0.f, 1.f)));
-	body2->setTransform(Transform(Vector3f(0.f, 20.f, 0.f), q, Vector3f(1.f)));
-
-	//convexCollider = new Physics::ConvexCollider(game.getAssetManager()
-	//		.getModel("cube"));
-	//convexCollider->restitution = 0.15f;
-	//convexCollider->friction = 0.3f;
-	//body2->setCollider(convexCollider);
+	body2->setTransform(Transform(Vector3f(0.f, 15.f, 0.f), q, Vector3f(1.f)));
 
 	ECS::Entity eSphere = game.getECS().create();
 	game.getECS().assign<RenderableMesh>(eSphere,
@@ -172,7 +154,7 @@ void GameScene2::load(Game& game) {
 			&game.getAssetManager().getMaterial("bricks"),
 			true);
 	game.getECS().assign<TransformComponent>(eSphere,
-			Transform(Vector3f(0.f, 20.f, 0.f), q, Vector3f(1.f)));
+			Transform(Vector3f(0.f, 10.f, 0.f), q, Vector3f(1.f)));
 	game.getECS().assign<Physics::BodyHandle>(eSphere,
 			Physics::BodyHandle(body2));
 
@@ -181,23 +163,10 @@ void GameScene2::load(Game& game) {
 
 	Physics::Body* body = physicsEngine->addBody(bodyHints);
 
-	//sphereCollider2 = new Physics::SphereCollider(1.f);
-	//sphereCollider2->setRestitution(0.1f);
-	//sphereCollider2->setFriction(0.3f);
-	//body->setCollider(sphereCollider2);
-
 	collHints.setTransform(Transform());
 	///collHints.initConvexHull(game.getAssetManager().getModel("platform"));
 	collHints.initPlane();
 	body->addCollider(collHints);
-
-	//printCC(convexCollider2);
-
-	//capsuleCollider2 = new Physics::CapsuleCollider(Vector3f(0.f, -0.5f, 0.f),
-	//		Vector3f(0.f, 0.5f, 0.f), 1.f);
-	//capsuleCollider2->setRestitution(0.1f);
-	//capsuleCollider2->setFriction(0.3f);
-	//body->setCollider(capsuleCollider2);
 
 	Quaternion rot = Math::mat4ToQuat(Math::rotate(Matrix4f(1.f),
 			Math::toRadians(0.f), Vector3f(1.f, 0.f, 0.f)));
@@ -258,7 +227,6 @@ void ::PlayerControlSystem::operator()(Game& game, float deltaTime) {
 		}
 
 		if (Application::getKeyPressed(Input::KEY_N)) {
-			(*gs)(game, deltaTime);
 			(*pe)(game, deltaTime);
 		}
 
@@ -292,7 +260,7 @@ void ::RenderPhysicsMeshes::operator()(Game& game, float deltaTime) {
 					break;
 				case Physics::ColliderType::TYPE_CONVEX_HULL:
 					grc->renderMesh(game.getAssetManager()
-							.getVertexArray("platform"), material,
+							.getVertexArray("cube"), material,
 							coll->getWorldTransform().toMatrix());
 					break;
 			}

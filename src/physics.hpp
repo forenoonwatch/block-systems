@@ -16,11 +16,6 @@ namespace Physics {
 
 	class Collider;
 
-	class GravitySystem : public ECS::System {
-		public:
-			virtual void operator()(Game& game, float deltaTime) override;
-	};
-
 	class PhysicsEngine : public ECS::System {
 		public:
 			PhysicsEngine();

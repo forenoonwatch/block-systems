@@ -1,5 +1,7 @@
 #include "island.hpp"
 
+#include "physics.hpp"
+
 #include "body.hpp"
 #include "contact-constraint.hpp"
 
@@ -20,6 +22,8 @@ void Physics::Island::solve(float deltaTime) {
 	// integrate velocities
 	for (Body* body : bodies) {
 		if (body->isDynamic()) {
+			body->applyForce(Physics::GRAVITY * body->getGravityScale());
+
 			const Matrix3f rot
 					= Math::quatToMat3(body->transform.getRotation());
 			body->invInertiaWorld = rot * body->invInertiaLocal

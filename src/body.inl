@@ -115,8 +115,8 @@ inline void Physics::Body::setMass(float mass) {
 	invMass = mass == 0.f ? 0.f : 1.f / mass;
 }
 
-inline void Physics::Body::setInvInertiaLocal(const Matrix3f& invInertiaLocal) {
-	this->invInertiaLocal = invInertiaLocal;
+inline void Physics::Body::setGravityScale(float gravityScale) {
+	this->gravityScale = gravityScale;
 }
 
 inline bool Physics::Body::isAwake() const {
@@ -213,6 +213,10 @@ inline const Matrix3f& Physics::Body::getInvInertiaLocal() const {
 
 inline const Matrix3f& Physics::Body::getInvInertiaWorld() const {
 	return invInertiaWorld;
+}
+
+inline float Physics::Body::getGravityScale() const {
+	return gravityScale;
 }
 
 inline const ArrayList<Physics::Collider*>& Physics::Body::getColliders()
