@@ -8,11 +8,17 @@ Physics::BodyHints::BodyHints()
 		, active(true)
 		, awake(true)
 		, allowSleep(true)
+		, lockAxisX(false)
+		, lockAxisY(false)
+		, lockAxisZ(false)
 		, velocity(0.f)
 		, angularVelocity(0.f)
 		, force(0.f)
 		, torque(0.f)
-		, gravityScale(1.f) {}
+		, gravityScale(1.f)
+		, linearDamping(0.f)
+		, angularDamping(0.f)
+		, collisionGroups(1) {}
 
 Physics::Body::Body(PhysicsEngine& physicsEngine, const BodyHints& hints)
 		: physicsEngine(&physicsEngine)
@@ -28,7 +34,10 @@ Physics::Body::Body(PhysicsEngine& physicsEngine, const BodyHints& hints)
 		, invInertiaLocal(0.f)
 		, invInertiaWorld(0.f)
 		, gravityScale(hints.gravityScale)
+		, linearDamping(hints.linearDamping)
+		, angularDamping(hints.angularDamping)
 		, sleepTime(0.f)
+		, collisionGroups(hints.collisionGroups)
 		, flags(0) {
 	
 	switch (hints.type) {
@@ -60,6 +69,18 @@ Physics::Body::Body(PhysicsEngine& physicsEngine, const BodyHints& hints)
 
 	if (hints.allowSleep) {
 		flags |= FLAG_ALLOW_SLEEP;
+	}
+
+	if (hints.lockAxisX) {
+		flags |= FLAG_LOCK_AXIS_X;
+	}
+
+	if (hints.lockAxisY) {
+		flags |= FLAG_LOCK_AXIS_Y;
+	}
+
+	if (hints.lockAxisZ) {
+		flags |= FLAG_LOCK_AXIS_Z;
 	}
 }
 
@@ -112,12 +133,31 @@ void Physics::Body::calcMassData() {
 				- Math::outerProduct(localCenter, localCenter)) * mass;
 		invInertiaLocal = Math::inverse(inertia);
 
-		// TODO: axis locks
+		if (flags & FLAG_LOCK_AXIS_X) {
+			invInertiaLocal[0] = Vector3f(0.f);
+		}
+
+		if (flags & FLAG_LOCK_AXIS_Y) {
+			invInertiaLocal[1] = Vector3f(0.f); 
+		}
+
+		if (flags & FLAG_LOCK_AXIS_Z) {
+			invInertiaLocal[2] = Vector3f(0.f);
+		}
 	}
 	else {
 		invMass = 1.f;
 		invInertiaLocal = Matrix3f(0.f);
 		localCenter = Vector3f(0.f);
+	}
+}
+
+void Physics::Body::updateBroadphase() {
+	transform.setPosition(worldCenter - transform.transform(localCenter, 0.f));
+
+	for (Collider* collider : colliders) {
+		physicsEngine->getContactManager().getBroadphase().update(
+				collider->broadphaseIndex, collider->computeAABB());
 	}
 }
 

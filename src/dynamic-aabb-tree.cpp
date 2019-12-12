@@ -5,7 +5,7 @@
 #include <engine/math/math.hpp>
 
 // TODO: comment all operations
-// TODO: subdivide balance, add, and remove into requisite red/black tree ops
+// TODO: subdivide balance, add, and remove into requisite AVL tree ops
 
 #define FATTENING_SCALAR	0.5f
 

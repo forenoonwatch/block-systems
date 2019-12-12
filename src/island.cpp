@@ -32,8 +32,9 @@ void Physics::Island::solve(float deltaTime) {
 			body->velocity += body->force * body->invMass * deltaTime;
 			body->angularVelocity += body->invInertiaWorld * body->torque
 					* deltaTime;
-			
-			// TODO: damping
+
+			body->velocity /= 1.f + deltaTime * body->linearDamping;
+			body->angularVelocity /= 1.f + deltaTime * body->angularDamping;
 		}
 	}
 
@@ -60,11 +61,10 @@ void Physics::Island::solve(float deltaTime) {
 				deltaTime));
 	}
 
-	// TODO: sleep
 	float minSleepTime = FLT_MAX;
 
 	for (Body* body : bodies) {
-		if (body->isStatic()) {
+		if (body->isStatic() || !body->canSleep()) {
 			continue;
 		}
 

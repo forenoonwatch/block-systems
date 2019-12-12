@@ -11,15 +11,8 @@ Physics::ContactManager::ContactManager(PhysicsEngine& physicsEngine)
 void Physics::ContactManager::findNewContacts() {
 	broadphase.updatePairs();
 
-	// TODO: make sure to check this for multi-collider bodies	
 	for (Body* body : physicsEngine->getBodies()) {
-		body->transform.setPosition(body->worldCenter
-				- body->transform.transform(body->localCenter, 0.f));
-
-		for (Collider* collider : body->colliders) {
-			broadphase.update(collider->broadphaseIndex,
-					collider->computeAABB());
-		}
+		body->updateBroadphase();
 	}
 }
 

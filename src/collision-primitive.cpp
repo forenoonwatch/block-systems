@@ -60,6 +60,5 @@ void Physics::collisionPlaneSphere(Manifold& manifold, Collider& a,
 		Collider& b) {
 	collisionSpherePlane(manifold, b, a);
 	manifold.setNormal(-manifold.getNormal());
-	// TODO: flip feature pairs
 }
 

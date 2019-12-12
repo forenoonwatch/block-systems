@@ -26,6 +26,8 @@ namespace Physics {
 
 			void addCollider(Body& body, Collider& collider);
 
+			inline ContactManager& getContactManager();
+
 			inline ArrayList<Body*>& getBodies();
 
 			~PhysicsEngine();

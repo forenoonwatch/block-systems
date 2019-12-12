@@ -122,6 +122,13 @@ void GameScene2::load(Game& game) {
 	Physics::BodyHints bodyHints;
 	bodyHints.type = Physics::BodyType::DYNAMIC;
 	bodyHints.gravityScale = 2.f;
+	bodyHints.angularDamping = 0.2f;
+	bodyHints.collisionGroups = 2;
+
+	Quaternion q = Math::mat4ToQuat(Math::rotate(Matrix4f(1.f),
+			Math::toRadians(90.f), Vector3f(0.f, 0.f, 1.f)));
+	bodyHints.transform = Transform(Vector3f(0.f, 15.f, 0.f), q,
+			Vector3f(1.f));
 
 	Physics::ColliderHints collHints;
 	collHints.setRestitution(0.5f);
@@ -143,10 +150,6 @@ void GameScene2::load(Game& game) {
 
 	collHints.setTransform(Transform(Vector3f(5.f, 0.f, 0.f)));
 	body2->addCollider(collHints);
-	
-	Quaternion q = Math::mat4ToQuat(Math::rotate(Matrix4f(1.f),
-			Math::toRadians(90.f), Vector3f(0.f, 0.f, 1.f)));
-	body2->setTransform(Transform(Vector3f(0.f, 15.f, 0.f), q, Vector3f(1.f)));
 
 	ECS::Entity eSphere = game.getECS().create();
 	game.getECS().assign<RenderableMesh>(eSphere,
@@ -160,6 +163,8 @@ void GameScene2::load(Game& game) {
 
 	// body 1 
 	bodyHints.type = Physics::BodyType::STATIC;
+	bodyHints.collisionGroups = 3;
+	bodyHints.transform = Transform();
 
 	Physics::Body* body = physicsEngine->addBody(bodyHints);
 

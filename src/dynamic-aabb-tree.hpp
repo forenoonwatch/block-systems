@@ -3,8 +3,6 @@
 #include <engine/core/array-list.hpp>
 #include <engine/math/aabb.hpp>
 
-// TODO: replace with ArrayList<Node>
-
 class DynamicAABBTree {
 	public:
 		DynamicAABBTree();

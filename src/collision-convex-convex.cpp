@@ -213,7 +213,6 @@ void Physics::collisionConvexConvex(Manifold& manifold, Collider& a,
 
 			incidentFace = findIncidentFace(*hullA, rN);
 
-			// TODO: double check if negating is necessary
 			manifold.setNormal(Vector3f(mB
 					* Vector4f(-referenceFace->normal, 0.f)));
 			calcContactPoints(*referenceFace, *incidentFace, tfBtoA, mA,
@@ -447,8 +446,6 @@ inline static void planeClip(const ArrayList<VertexData>& inVertices,
 	if (inVertices.empty()) {
 		return;
 	}
-
-	// TODO: figure out why there would be less than 2 vertices
 
 	VertexData a = inVertices.back();
 

@@ -32,8 +32,8 @@ inline void Physics::Body::applyImpulse(const Vector3f& impulse,
 	setToAwake();
 }
 
-inline Vector3f Physics::Body::getVelocityAt(
-		const Vector3f& worldPoint) const {
+inline Vector3f Physics::Body::getVelocityAt(const Vector3f& worldPoint)
+		const {
 	return velocity + Math::cross(angularVelocity, worldPoint - worldCenter);
 }
 
@@ -46,7 +46,9 @@ inline bool Physics::Body::canCollideWith(const Body& other) const {
 		return false;
 	}
 
-	// TODO: layers: aka collision groups
+	if (!(collisionGroups & other.collisionGroups)) {
+		return false;
+	}
 
 	return true;
 }
@@ -91,7 +93,7 @@ inline void Physics::Body::setTransform(const Transform& transform) {
 	this->worldCenter = transform.getPosition();
 	this->transform.setRotation(transform.getRotation());
 
-	// TODO: synchronize broadphase
+	updateBroadphase();
 }
 
 inline void Physics::Body::setVelocity(const Vector3f& velocity) {
@@ -117,6 +119,10 @@ inline void Physics::Body::setMass(float mass) {
 
 inline void Physics::Body::setGravityScale(float gravityScale) {
 	this->gravityScale = gravityScale;
+}
+
+inline void Physics::Body::setCollisionGroup(uint32 groupID, bool canCollide) {
+	collisionGroups |= ((uint32)canCollide << groupID);
 }
 
 inline bool Physics::Body::isAwake() const {
@@ -217,6 +223,14 @@ inline const Matrix3f& Physics::Body::getInvInertiaWorld() const {
 
 inline float Physics::Body::getGravityScale() const {
 	return gravityScale;
+}
+
+inline bool Physics::Body::isInCollisionGroup(uint32 groupID) const {
+	return collisionGroups & (1 << groupID);
+}
+
+inline uint32 Physics::Body::getCollisionGroups() const {
+	return collisionGroups;
 }
 
 inline const ArrayList<Physics::Collider*>& Physics::Body::getColliders()

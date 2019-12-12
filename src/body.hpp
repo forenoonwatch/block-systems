@@ -30,6 +30,10 @@ namespace Physics {
 		bool awake;
 		bool allowSleep;
 
+		bool lockAxisX;
+		bool lockAxisY;
+		bool lockAxisZ;
+
 		Vector3f velocity;
 		Vector3f angularVelocity;
 
@@ -37,6 +41,11 @@ namespace Physics {
 		Vector3f torque;
 
 		float gravityScale;
+
+		float linearDamping;
+		float angularDamping;
+
+		uint32 collisionGroups;
 	};
 
 	class Body {
@@ -71,6 +80,8 @@ namespace Physics {
 			inline void setMass(float mass);
 
 			inline void setGravityScale(float gravityScale);
+
+			inline void setCollisionGroup(uint32 groupID, bool canCollide);
 
 			inline bool isAwake() const;
 			inline bool isActive() const;
@@ -113,6 +124,9 @@ namespace Physics {
 
 			inline float getGravityScale() const;
 
+			inline bool isInCollisionGroup(uint32 groupID) const;
+			inline uint32 getCollisionGroups() const;
+
 			inline const ArrayList<Collider*>& getColliders() const;
 
 			~Body();
@@ -121,10 +135,16 @@ namespace Physics {
 				FLAG_AWAKE			= 1,  // if the object is awake
 				FLAG_ACTIVE			= 2,  // if the object can have calcs done
 				FLAG_ALLOW_SLEEP	= 4,  // if sleep allowed
+				
 				FLAG_ISLAND			= 8,  // marker for island building
+
 				FLAG_DYNAMIC		= 16, // collision, integration
 				FLAG_STATIC			= 32, // collision, no integration
-				FLAG_KINEMATIC		= 64  // no collision, integration
+				FLAG_KINEMATIC		= 64, // no collision, integration
+
+				FLAG_LOCK_AXIS_X	= 128, // lock rotation on local X axis
+				FLAG_LOCK_AXIS_Y	= 256, // lock rotation on local Y axis
+				FLAG_LOCK_AXIS_Z	= 512  // lock rotation on local Z axis
 			};
 
 			NULL_COPY_AND_ASSIGN(Body);
@@ -134,6 +154,7 @@ namespace Physics {
 			inline void removeEdge(ContactEdge* edge);
 
 			void calcMassData();
+			void updateBroadphase();
 
 			PhysicsEngine* physicsEngine;
 
@@ -156,12 +177,16 @@ namespace Physics {
 
 			float gravityScale;
 
+			float linearDamping;
+			float angularDamping;
+
 			ArrayList<Collider*> colliders;
 
 			ArrayList<ContactEdge*> contactList;
 
 			float sleepTime;
 			
+			uint32 collisionGroups;
 			uint32 flags;
 
 			friend class PhysicsEngine;
