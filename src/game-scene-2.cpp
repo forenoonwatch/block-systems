@@ -304,7 +304,7 @@ namespace {
 			}
 		}
 
-		DEBUG_LOG_TEMP("EDGES: %d", convexCollider->getEdges().size());
+		DEBUG_LOG_TEMP("EDGES: %ld", convexCollider->getEdges().size());
 
 		for (uint32 i = 0; i < convexCollider->getEdges().size(); ++i) {
 			const auto& e = convexCollider->getEdges()[i];
