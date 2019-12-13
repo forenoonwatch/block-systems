@@ -15,11 +15,20 @@ MKDIR_P := mkdir -p
 SRCS := $(call rwildcard, $(SRC_DIRS)/, *.cpp *.c)
 OBJS := $(SRCS:%=$(BUILD_DIR)/%.o)
 
+
+UNAME := $(shell uname -s)
+
 LDFLAGS := -Wall
-LDLIBS := -L"$(ENGINE_DIR)/bin" -lNXEngine -lglu32 -lopengl32 -L"$(LIB_DIR)/lib" -lglew32 -lglfw3 -lassimp.dll -lkernel32 -luser32 -lgdi32 -lwinspool -lshell32 -lole32 -loleaut32 -luuid -lcomdlg32 -ladvapi32
+
+ifeq ($(UNAME), Linux)
+	LDLIBS := -L"$(ENGINE_DIR)/bin" -lNXEngine -pthread `pkg-config glfw3 --static --libs` -lGLU -lGL -lGLEW -lglfw3 -lassimp
+	CXXFLAGS := -I$(CURDIR)/src -I$(ENGINE_DIR)/include -msse2
+else
+	LDLIBS := -L"$(ENGINE_DIR)/bin" -lNXEngine -lglu32 -lopengl32 -L"$(LIB_DIR)/lib" -lglew32 -lglfw3 -lassimp.dll -lkernel32 -luser32 -lgdi32 -lwinspool -lshell32 -lole32 -loleaut32 -luuid -lcomdlg32 -ladvapi32
+	CXXFLAGS := -I$(CURDIR)/src -I$(ENGINE_DIR)/include -I$(LIB_DIR)/include -msse2
+endif
 
 CPPFLAGS := -std=c++17 -g -ggdb
-CXXFLAGS := -I$(CURDIR)/src -I$(ENGINE_DIR)/include -I$(LIB_DIR)/include -msse2
 
 all: game
 
@@ -32,7 +41,7 @@ engine:
 
 run:
 	@echo "Running $(TARGET_EXEC)..."
-	@"./$(BUILD_DIR)/$(TARGET_EXEC).exe"
+	@"./$(BUILD_DIR)/$(TARGET_EXEC)"
 
 clean:
 	@echo "Cleaning binaries..."
