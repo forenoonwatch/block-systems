@@ -23,26 +23,24 @@ int main() {
 	//	printf("%.2f, %.2f, %.2f, %.2f\n", m[0][0], m[1][1], m[2][2], m[3][3]);
 	//});
 
-	Application::init();
-	Window window("My Window", 1200, 800);
-	//window.moveToCenter();
+	Application app;
+	Window* window = app.createWindow("My Window", 1200, 800);
+	window->moveToCenter();
 
 	Memory::SharedPointer<Scene> scene =
 			//Memory::SharedPointer<Scene>(new GameScene());
 			Memory::SharedPointer<Scene>(new GameScene2());
 
-	GameRenderContext renderContext(window.getWidth(), window.getHeight(),
+	GameRenderContext renderContext(window->getWidth(), window->getHeight(),
 			Math::toRadians(70.f), 0.1f, 1000.f);
-	Game game(window, &renderContext, false);
+	Game game(app, *window, &renderContext, false);
 
-	Application::setResizeCallback([&](Window& win, uint32 width,
+	/*Application::setResizeCallback([&](Window& win, uint32 width,
 			uint32 height) {
 		renderContext.resize(width, height);
-	});
+	});*/
 
 	game.loadScene(scene);
-
-	Application::destroy();
 
 	return 0;
 }
