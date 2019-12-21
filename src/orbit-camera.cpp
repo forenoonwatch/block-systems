@@ -1,6 +1,7 @@
 #include "orbit-camera.hpp"
 
 #include <engine/game/util-components.hpp>
+#include <engine/game/player-input.hpp>
 #include <engine/game/game-render-context.hpp>
 
 #include <engine/core/application.hpp>
@@ -11,22 +12,16 @@
 #define SCROLL_POWER 20.f
 
 void OrbitCameraSystem::operator()(Game& game, float deltaTime) {
-	static double lastX = 0.0;
-	static double lastY = 0.0;
-
 	static double lastScrollY = 0.0;
 
-	const double mouseX = Application::getMouseX();
-	const double mouseY = Application::getMouseY();
-
-	const double scrollY = Application::getScrollY();
+	const double scrollY = game.getApplication().getScrollY();
 	
 	game.getECS().view<TransformComponent, CameraComponent,
-			CameraDistanceComponent>().each([&](TransformComponent& tf,
-			CameraComponent& cc, CameraDistanceComponent& cdc) {
-		if (Application::isMouseDown(Input::MOUSE_BUTTON_RIGHT)) {
-			cc.rotationX += (float)( (lastY - mouseY) * 0.01 );
-			cc.rotationY += (float)( (lastX - mouseX) * 0.01 );
+			CameraDistanceComponent, PlayerInputComponent>().each([&](auto& tf,
+			auto& cc, auto& cdc, auto& pic) {
+		if (pic.rightMouse) {
+			cc.rotationX += pic.mouseDeltaY * -0.01f; 
+			cc.rotationY += pic.mouseDeltaX * -0.01f;
 
 			if (cc.rotationX < -1.27f) {
 				cc.rotationX = -1.27f;
@@ -53,9 +48,6 @@ void OrbitCameraSystem::operator()(Game& game, float deltaTime) {
 
 		((GameRenderContext*)game.getRenderContext())->updateCameraBuffer();
 	});
-
-	lastX = mouseX;
-	lastY = mouseY;
 
 	lastScrollY = scrollY;
 }

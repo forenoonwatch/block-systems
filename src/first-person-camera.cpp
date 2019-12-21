@@ -3,6 +3,7 @@
 #include <engine/game/camera.hpp>
 
 #include <engine/game/util-components.hpp>
+#include <engine/game/player-input.hpp>
 #include <engine/game/game-render-context.hpp>
 
 #include <engine/core/application.hpp>
@@ -11,45 +12,41 @@
 #define CAMERA_SPEED 5.f
 
 void FirstPersonCameraSystem::operator()(Game& game, float deltaTime) {
-	static double lastX = 0.0;
-	static double lastY = 0.0;
-
-	const double mouseX = Application::getMouseX();
-	const double mouseY = Application::getMouseY();
-
-	game.getECS().view<TransformComponent, CameraComponent>().each([&](
-			TransformComponent& transform, CameraComponent& camera) {
+	game.getECS().view<TransformComponent, CameraComponent,
+			PlayerInputComponent>().each([&](auto& transform, auto& camera,
+			auto& pic) {
 		float x = 0.f;
 		float y = 0.f;
 		float z = 0.f;
 
-		if (Application::isKeyDown(Input::KEY_W)) {
+		if (pic.forward) {
 			z -= 1.f;
 		}
 
-		if (Application::isKeyDown(Input::KEY_S)) {
+		if (pic.back) {
 			z += 1.f;
 		}
 
-		if (Application::isKeyDown(Input::KEY_A)) {
+		if (pic.left) {
 			x -= 1.f;
 		}
 
-		if (Application::isKeyDown(Input::KEY_D)) {
+		if (pic.right) {
 			x += 1.f;
 		}
 
-		if (Application::isKeyDown(Input::KEY_Q)) {
+		// TODO: pic.up, pic.down
+		if (game.getApplication().isKeyDown(Input::KEY_Q)) {
 			y -= 1.f;
 		}
 
-		if (Application::isKeyDown(Input::KEY_E)) {
+		if (game.getApplication().isKeyDown(Input::KEY_E)) {
 			y += 1.f;
 		}
 
-		if (Application::isMouseDown(Input::MOUSE_BUTTON_RIGHT)) {
-			camera.rotationX += (float)( (lastY - mouseY) * 0.01 );
-			camera.rotationY += (float)( (lastX - mouseX) * 0.01 );
+		if (pic.rightMouse) {
+			camera.rotationX += pic.mouseDeltaY * -0.01f; 
+			camera.rotationY += pic.mouseDeltaX * -0.01f; 
 
 			if (camera.rotationX < -1.27f) {
 				camera.rotationX = -1.27f;
@@ -77,8 +74,5 @@ void FirstPersonCameraSystem::operator()(Game& game, float deltaTime) {
 
 		((GameRenderContext*)game.getRenderContext())->updateCameraBuffer();
 	});
-
-	lastX = mouseX;
-	lastY = mouseY;
 }
 

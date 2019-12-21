@@ -8,6 +8,9 @@
 #include <engine/game/util-components.hpp>
 #include <engine/game/util-systems.hpp>
 
+#include <engine/game/player-input.hpp>
+#include <engine/game/physics-motion-controller.hpp>
+
 #include <engine/game/game-render-context.hpp>
 
 #include <engine/physics/physics-engine.hpp>
@@ -26,16 +29,6 @@ namespace {
 		float moveSpeed;
 	};
 
-	class PlayerControlSystem : public ECS::System {
-		public:
-			PlayerControlSystem(Physics::PhysicsEngine* pe)
-					: pe(pe) {}
-
-			virtual void operator()(Game&, float) override;
-		private:
-			Physics::PhysicsEngine* pe;
-	};
-
 	class RenderPhysicsMeshes : public ECS::System {
 		public:
 			virtual void operator()(Game&, float) override;
@@ -49,10 +42,11 @@ GameScene2::GameScene2()
 		, physicsEngine(new Physics::PhysicsEngine()) {
 
 	//addUpdateSystem(new FirstPersonCameraSystem());
+	addUpdateSystem(new PlayerInputSystem());
 	addUpdateSystem(new OrbitCameraSystem());
 	addUpdateSystem(new UpdateCameraSystem());
 	addUpdateSystem(new ToggleFullscreenSystem());
-	addUpdateSystem(new ::PlayerControlSystem(physicsEngine));
+	addUpdateSystem(new PhysicsMotionController());
 	
 	addUpdateSystem(physicsEngine);
 
@@ -189,7 +183,8 @@ void GameScene2::load(Game& game) {
 	game.getECS().assign<CameraComponent>(eSphere,
 			&((GameRenderContext*)game.getRenderContext())->getCamera());
 	game.getECS().assign<CameraDistanceComponent>(eSphere, 2.f, 1.2f, 10.f);
-	game.getECS().assign<Player>(eSphere, 0.1f);
+	//game.getECS().assign<Player>(eSphere, 0.1f);
+	game.getECS().assign<PlayerInputComponent>(eSphere);
 }
 
 void GameScene2::unload(Game& game) {
@@ -197,46 +192,6 @@ void GameScene2::unload(Game& game) {
 }
 
 GameScene2::~GameScene2() {
-}
-
-void ::PlayerControlSystem::operator()(Game& game, float deltaTime) {
-	game.getECS().view<TransformComponent, Player, CameraComponent,
-			Physics::BodyHandle>().each([&](auto& tf,
-			auto& plr, auto& cc, auto& handle) {
-		Vector3f v(0.f, 0.f, 0.f);
-
-		if (Application::isKeyDown(Input::KEY_W)) {
-			v.z -= 1.f;
-		}
-
-		if (Application::isKeyDown(Input::KEY_S)) {
-			v.z += 1.f;
-		}
-
-		if (Application::isKeyDown(Input::KEY_A)) {
-			v.x -= 1.f;
-		}
-
-		if (Application::isKeyDown(Input::KEY_D)) {
-			v.x += 1.f;
-		}
-
-		v = Vector3f(cc.camera->view * Vector4f(v, 0.f));
-		v.y = 0.f;
-		v = Math::dot(v, v) < 0.000001f ? v : Math::normalize(v)
-				* plr.moveSpeed;
-		
-		if (Application::isKeyDown(Input::KEY_SPACE)) {
-			v.y += 0.5f;
-		}
-
-		if (Application::getKeyPressed(Input::KEY_N)) {
-			(*pe)(game, deltaTime);
-		}
-
-		handle.body->getVelocity() += v;
-		handle.body->setToAwake();
-	});
 }
 
 void ::RenderPhysicsMeshes::operator()(Game& game, float deltaTime) {
