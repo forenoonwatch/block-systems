@@ -1,60 +1,24 @@
-TARGET_EXEC := BlockSystems
-
-BUILD_DIR := bin
-SRC_DIRS := src
-
-LIB_DIR := C:/cpplibs
 ENGINE_DIR := nx-engine
 
-CC	:= g++
-CXX := g++
+all: server client
 
-rwildcard=$(foreach d,$(wildcard $1*),$(call rwildcard,$d/,$2) $(filter $(subst *,%,$2),$d))
-MKDIR_P := mkdir -p
+client: engine client_only
 
-SRCS := $(call rwildcard, $(SRC_DIRS)/, *.cpp *.c)
-OBJS := $(SRCS:%=$(BUILD_DIR)/%.o)
-
-
-UNAME := $(shell uname -s)
-
-LDFLAGS := -Wall
-
-ifeq ($(UNAME), Linux)
-	LDLIBS := -L"$(ENGINE_DIR)/bin" -lNXEngine -pthread `pkg-config glfw3 --static --libs` -lGLU -lGL -lGLEW -lglfw3 -lassimp
-	CXXFLAGS := -I$(CURDIR)/src -I$(ENGINE_DIR)/include -msse2
-else
-	LDLIBS := -L"$(ENGINE_DIR)/bin" -lNXEngine -lglu32 -lopengl32 -L"$(LIB_DIR)/lib" -lglew32 -lglfw3 -lassimp.dll -lkernel32 -luser32 -lgdi32 -lwinspool -lshell32 -lole32 -loleaut32 -luuid -lcomdlg32 -ladvapi32
-	CXXFLAGS := -I$(CURDIR)/src -I$(ENGINE_DIR)/include -I$(LIB_DIR)/include -msse2
-endif
-
-CPPFLAGS := -std=c++17 -g -ggdb
-
-all: game
-
-game: engine game_only
-
-game_only: $(BUILD_DIR)/$(TARGET_EXEC)
+server: engine server_only
 
 engine:
 	@$(MAKE) -C $(ENGINE_DIR) -f Makefile
 
-run:
-	@echo "Running $(TARGET_EXEC)..."
-	@"./$(BUILD_DIR)/$(TARGET_EXEC)"
+client_only:
+	@$(MAKE) -C client -f Makefile
 
-clean:
-	@echo "Cleaning binaries..."
-	@$(RM) -r $(BUILD_DIR)/$(SRC_DIRS)
-	@$(RM) -r $(ENGINE_DIR)/$(BUILD_DIR)
+server_only:
+	@$(MAKE) -C server -f Makefile
 
-$(BUILD_DIR)/$(TARGET_EXEC): $(OBJS)
-	@echo "Building $(TARGET_EXEC)..."
-	@$(CC) $(OBJS) -o $@ $(LDFLAGS) $(LDLIBS)
+run_client:
+	@$(MAKE) -C client -f Makefile run
 
-$(BUILD_DIR)/%.cpp.o: %.cpp
-	@echo "Building $@..."
-	@$(MKDIR_P) $(dir $@)
-	@$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c $< -o $@
+run_server:
+	@$(MAKE) -C server -f Makefile run
 
-.PHONY: all clean run engine game game_only
+.PHONY: all engine server client server_only client_only run_client run_server 
