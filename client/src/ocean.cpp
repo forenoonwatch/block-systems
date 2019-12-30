@@ -5,7 +5,7 @@
 #include <engine/rendering/vertex-array.hpp>
 #include <engine/rendering/uniform-buffer.hpp>
 
-#include <engine/game/game.hpp>
+#include <engine/ecs/ecs.hpp>
 
 #define OCEAN_BUFFER_SIZE 4 * sizeof(Vector4f) + 3 * sizeof(float)
 
@@ -47,9 +47,9 @@ void initOcean(RenderContext& context, Ocean& ocean, uint32 gridLength) {
 			OCEAN_BUFFER_SIZE, GL_STREAM_DRAW, 2);
 }
 
-void UpdateOceanBuffer::operator()(Game& game, float deltaTime) {
-	game.getECS().view<Ocean, OceanProjector>().each([&](Ocean& ocean,
-			OceanProjector& op) {
+void updateOceanBuffer(float deltaTime) { 
+	ECS::Registry::getInstance().view<Ocean, OceanProjector>().each([&](
+			Ocean& ocean, OceanProjector& op) {
 		ocean.oceanFFT->update(deltaTime);
 		ocean.oceanDataBuffer->update(op.corners, 4 * sizeof(Vector4f));
 	});

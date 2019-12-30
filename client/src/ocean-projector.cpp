@@ -2,15 +2,16 @@
 
 #include "ocean.hpp"
 
-#include <engine/game/game.hpp>
+#include <engine/ecs/ecs.hpp>
 
 const uint32 OceanProjector::cameraEdges[] = {0, 1,  0, 2,  2, 3,  1, 3,
 											  0, 4,  2, 6,  3, 7,  1, 5,
 											  4, 6,  4, 5,  5, 7,  6, 7};
 
-void UpdateOceanProjector::operator()(Game& game, float deltaTime) {
-	game.getECS().view<CameraComponent, OceanProjector>().each([&](
-			CameraComponent& cc, OceanProjector& op) {
+void updateOceanProjector(float deltaTime) {
+	ECS::Registry::getInstance().view<CameraComponent,
+			OceanProjector>().each([&](CameraComponent& cc,
+			OceanProjector& op) {
 		Vector3f camPos = cc.position
 				+ cc.camera->getLookVector() * 2.f * Ocean::MAX_AMPLITUDE;
 

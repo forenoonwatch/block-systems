@@ -12,8 +12,5 @@ struct OceanProjector {
 	static const uint32 cameraEdges[24];
 };
 
-class UpdateOceanProjector : public ECS::System {
-	public:
-		virtual void operator()(Game& game, float deltaTime) override;
-};
+void updateOceanProjector(float deltaTime);
 

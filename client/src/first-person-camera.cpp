@@ -4,15 +4,17 @@
 
 #include <engine/game/util-components.hpp>
 #include <engine/game/player-input.hpp>
-#include <engine/game/game-render-context.hpp>
 
 #include <engine/core/application.hpp>
-#include <engine/game/game.hpp>
+
+#include <engine/ecs/ecs.hpp>
+
+#include <engine/game/game-render-context.hpp>
 
 #define CAMERA_SPEED 5.f
 
-void FirstPersonCameraSystem::operator()(Game& game, float deltaTime) {
-	game.getECS().view<TransformComponent, CameraComponent,
+void firstPersonCameraSystem(float deltaTime) {
+	ECS::Registry::getInstance().view<TransformComponent, CameraComponent,
 			PlayerInputComponent>().each([&](auto& transform, auto& camera,
 			auto& pic) {
 		float x = 0.f;
@@ -36,11 +38,11 @@ void FirstPersonCameraSystem::operator()(Game& game, float deltaTime) {
 		}
 
 		// TODO: pic.up, pic.down
-		if (game.getApplication().isKeyDown(Input::KEY_Q)) {
+		if (Application::getInstance().isKeyDown(Input::KEY_Q)) {
 			y -= 1.f;
 		}
 
-		if (game.getApplication().isKeyDown(Input::KEY_E)) {
+		if (Application::getInstance().isKeyDown(Input::KEY_E)) {
 			y += 1.f;
 		}
 
@@ -72,7 +74,7 @@ void FirstPersonCameraSystem::operator()(Game& game, float deltaTime) {
 		
 		camera.camera->view = transform.transform.toMatrix();
 
-		((GameRenderContext*)game.getRenderContext())->updateCameraBuffer();
+		Application::getInstance().updateCameraBuffer();
 	});
 }
 

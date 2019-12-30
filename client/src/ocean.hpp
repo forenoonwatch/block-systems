@@ -6,13 +6,9 @@
 
 #include <engine/math/vector.hpp>
 
-#include <engine/ecs/ecs-system.hpp>
-
 class VertexArray;
 class UniformBuffer;
 class RenderContext;
-
-class Game;
 
 struct Ocean {
 	static constexpr const float LINEAR_DRAG = 5.f;
@@ -33,8 +29,5 @@ struct Ocean {
 
 void initOcean(RenderContext& context, Ocean& ocean, uint32 gridLength);
 
-class UpdateOceanBuffer : public ECS::System {
-	public:
-		virtual void operator()(Game& game, float deltaTime) override;
-};
+void updateOceanBuffer(float deltaTime);
 

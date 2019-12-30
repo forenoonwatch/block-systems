@@ -1,22 +1,23 @@
 #include "orbit-camera.hpp"
 
+#include <engine/ecs/ecs.hpp>
+
 #include <engine/game/util-components.hpp>
 #include <engine/game/player-input.hpp>
-#include <engine/game/game-render-context.hpp>
 
 #include <engine/core/application.hpp>
-#include <engine/game/game.hpp>
+#include <engine/game/game-render-context.hpp>
 
 #include <engine/math/math.hpp>
 
 #define SCROLL_POWER 20.f
 
-void OrbitCameraSystem::operator()(Game& game, float deltaTime) {
+void orbitCameraSystem(float deltaTime) {
 	static double lastScrollY = 0.0;
 
-	const double scrollY = game.getApplication().getScrollY();
+	const double scrollY = Application::getInstance().getScrollY();
 	
-	game.getECS().view<TransformComponent, CameraComponent,
+	ECS::Registry::getInstance().view<TransformComponent, CameraComponent,
 			CameraDistanceComponent, PlayerInputComponent>().each([&](auto& tf,
 			auto& cc, auto& cdc, auto& pic) {
 		if (pic.rightMouse) {
@@ -46,7 +47,7 @@ void OrbitCameraSystem::operator()(Game& game, float deltaTime) {
 				+ Vector3f(r * Vector4f(0.f, 0.f, cdc.distance, 0.f));
 		cc.camera->view = Math::translate(Matrix4f(1.f), cc.position) * r;
 
-		((GameRenderContext*)game.getRenderContext())->updateCameraBuffer();
+		Application::getInstance().updateCameraBuffer();
 	});
 
 	lastScrollY = scrollY;

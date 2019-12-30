@@ -11,8 +11,6 @@
 #include <engine/game/player-input.hpp>
 #include <engine/game/physics-motion-controller.hpp>
 
-#include <engine/game/game-render-context.hpp>
-
 #include <engine/physics/physics-engine.hpp>
 #include <engine/physics/dynamics/body.hpp>
 
@@ -24,42 +22,19 @@
 #include <engine/core/application.hpp>
 #include <engine/math/math.hpp>
 
+//#include <engine/game/game-render-context.hpp>
+
 namespace {
 	struct Player {
 		float moveSpeed;
 	};
 
-	class RenderPhysicsMeshes : public ECS::System {
-		public:
-			virtual void operator()(Game&, float) override;
-	};
+	void renderPhysicsMeshes();
 
 	void printCC(const Physics::ConvexCollider*);
 };
 
-GameScene2::GameScene2()
-		: Scene()
-		, physicsEngine(new Physics::PhysicsEngine()) {
-
-	//addUpdateSystem(new FirstPersonCameraSystem());
-	addUpdateSystem(new PlayerInputSystem());
-	addUpdateSystem(new OrbitCameraSystem());
-	addUpdateSystem(new UpdateCameraSystem());
-	addUpdateSystem(new ToggleFullscreenSystem());
-	addUpdateSystem(new PhysicsMotionController());
-	
-	addUpdateSystem(physicsEngine);
-
-	//addRenderSystem(new RenderMesh());
-	addRenderSystem(new RenderPhysicsMeshes());
-	addRenderSystem(new GameRenderContext::Clear());
-	addRenderSystem(new GameRenderContext::FlushStaticMeshes());
-	addRenderSystem(new GameRenderContext::ApplyLighting());
-	addRenderSystem(new RenderSkybox());
-	addRenderSystem(new GameRenderContext::Flush());
-}
-
-void GameScene2::load(Game& game) {
+void GameScene2::load() {
 	GameRenderContext* grc = (GameRenderContext*)game.getRenderContext();
 
 	struct IndexedModel::AllocationHints hints;
@@ -106,10 +81,10 @@ void GameScene2::load(Game& game) {
 			.getCubeMap("sargasso-specular"));
 	grc->setBrdfLUT(game.getAssetManager().getTexture("schlick-brdf"));
 
-	/*ECS::Entity cameraEntity = game.getECS().create();
+	/*ECS::Entity cameraEntity = Services::ecs->create();
 
-	game.getECS().assign<TransformComponent>(cameraEntity, Transform());
-	game.getECS().assign<CameraComponent>(cameraEntity,
+	Services::ecs->assign<TransformComponent>(cameraEntity, Transform());
+	Services::ecs->assign<CameraComponent>(cameraEntity,
 			&((GameRenderContext*)game.getRenderContext())->getCamera());*/
 
 	Physics::BodyHints bodyHints;
@@ -128,7 +103,7 @@ void GameScene2::load(Game& game) {
 	collHints.setFriction(0.3f);
 
 	// body 2
-	Physics::Body* body2 = physicsEngine->addBody(bodyHints);
+	Physics::Body* body2 = Services::physicsEngine->addBody(bodyHints);
 
 	Quaternion q1Local = Math::mat4ToQuat(Math::rotate(Matrix4f(1.f),
 			Math::toRadians(90.f), Vector3f(0.f, 0.f, 1.f)));
@@ -144,14 +119,14 @@ void GameScene2::load(Game& game) {
 	collHints.setTransform(Transform(Vector3f(5.f, 0.f, 0.f)));
 	body2->addCollider(collHints);
 
-	ECS::Entity eSphere = game.getECS().create();
-	game.getECS().assign<RenderableMesh>(eSphere,
+	ECS::Entity eSphere = Services::ecs->create();
+	Services::ecs->assign<RenderableMesh>(eSphere,
 			&game.getAssetManager().getVertexArray("capsule"),
 			&game.getAssetManager().getMaterial("bricks"),
 			true);
-	game.getECS().assign<TransformComponent>(eSphere,
+	Services::ecs->assign<TransformComponent>(eSphere,
 			Transform(Vector3f(0.f, 10.f, 0.f), q, Vector3f(1.f)));
-	game.getECS().assign<Physics::BodyHandle>(eSphere,
+	Services::ecs->assign<Physics::BodyHandle>(eSphere,
 			Physics::BodyHandle(body2));
 
 	// body 1 
@@ -159,7 +134,7 @@ void GameScene2::load(Game& game) {
 	bodyHints.collisionGroups = 3;
 	bodyHints.transform = Transform();
 
-	Physics::Body* body = physicsEngine->addBody(bodyHints);
+	Physics::Body* body = Services::physicsEngine->addBody(bodyHints);
 
 	collHints.setTransform(Transform());
 	///collHints.initConvexHull(game.getAssetManager().getModel("platform"));
@@ -169,65 +144,61 @@ void GameScene2::load(Game& game) {
 	Quaternion rot = Math::mat4ToQuat(Math::rotate(Matrix4f(1.f),
 			Math::toRadians(0.f), Vector3f(1.f, 0.f, 0.f)));
 
-	ECS::Entity ePlane = game.getECS().create();
-	game.getECS().assign<RenderableMesh>(ePlane,
+	ECS::Entity ePlane = Services::ecs->create();
+	Services::ecs->assign<RenderableMesh>(ePlane,
 			&game.getAssetManager().getVertexArray("platform"),
 			&game.getAssetManager().getMaterial("bricks"),
 			true);
-	game.getECS().assign<TransformComponent>(ePlane,
+	Services::ecs->assign<TransformComponent>(ePlane,
 			Transform(Vector3f(0.f, 0.f, 0.f), rot,
 			Vector3f(1.f, 1.f, 1.f)));
-	game.getECS().assign<Physics::BodyHandle>(ePlane,
+	Services::ecs->assign<Physics::BodyHandle>(ePlane,
 			Physics::BodyHandle(body));
 
-	game.getECS().assign<CameraComponent>(eSphere,
+	Services::ecs->assign<CameraComponent>(eSphere,
 			&((GameRenderContext*)game.getRenderContext())->getCamera());
-	game.getECS().assign<CameraDistanceComponent>(eSphere, 2.f, 1.2f, 10.f);
-	//game.getECS().assign<Player>(eSphere, 0.1f);
-	game.getECS().assign<PlayerInputComponent>(eSphere);
+	Services::ecs->assign<CameraDistanceComponent>(eSphere, 2.f, 1.2f, 10.f);
+	//Services::ecs->assign<Player>(eSphere, 0.1f);
+	Services::ecs->assign<PlayerInputComponent>(eSphere);
 }
 
 void GameScene2::unload(Game& game) {
 	
 }
 
-GameScene2::~GameScene2() {
-}
-
-void ::RenderPhysicsMeshes::operator()(Game& game, float deltaTime) {
-	GameRenderContext* grc = (GameRenderContext*)game.getRenderContext();
-	Material& material = game.getAssetManager().getMaterial("bricks");
-
-	game.getECS().view<TransformComponent, Physics::BodyHandle>().each([&](
-			auto& tf, auto& handle) {
-		for (const auto* coll : handle.body->getColliders()) {
-			switch (coll->getType()) {
-				case Physics::ColliderType::TYPE_SPHERE:
-					grc->renderMesh(game.getAssetManager()
-							.getVertexArray("sphere"), material,
-							coll->getWorldTransform().toMatrix());
-					break;
-				case Physics::ColliderType::TYPE_PLANE:
-					grc->renderMesh(game.getAssetManager()
-							.getVertexArray("plane"), material,
-							coll->getWorldTransform().toMatrix());
-					break;
-				case Physics::ColliderType::TYPE_CAPSULE:
-					grc->renderMesh(game.getAssetManager()
-							.getVertexArray("capsule"), material,
-							coll->getWorldTransform().toMatrix());
-					break;
-				case Physics::ColliderType::TYPE_CONVEX_HULL:
-					grc->renderMesh(game.getAssetManager()
-							.getVertexArray("cube"), material,
-							coll->getWorldTransform().toMatrix());
-					break;
-			}
-		}
-	});
-}
-
 namespace {
+	void renderPhysicsMeshes() {
+		Material& material = game.getAssetManager().getMaterial("bricks");
+
+		Services::ecs->view<TransformComponent, Physics::BodyHandle>().each([&](
+				auto& tf, auto& handle) {
+			for (const auto* coll : handle.body->getColliders()) {
+				switch (coll->getType()) {
+					case Physics::ColliderType::TYPE_SPHERE:
+						grc->renderMesh(game.getAssetManager()
+								.getVertexArray("sphere"), material,
+								coll->getWorldTransform().toMatrix());
+						break;
+					case Physics::ColliderType::TYPE_PLANE:
+						grc->renderMesh(game.getAssetManager()
+								.getVertexArray("plane"), material,
+								coll->getWorldTransform().toMatrix());
+						break;
+					case Physics::ColliderType::TYPE_CAPSULE:
+						grc->renderMesh(game.getAssetManager()
+								.getVertexArray("capsule"), material,
+								coll->getWorldTransform().toMatrix());
+						break;
+					case Physics::ColliderType::TYPE_CONVEX_HULL:
+						grc->renderMesh(game.getAssetManager()
+								.getVertexArray("cube"), material,
+								coll->getWorldTransform().toMatrix());
+						break;
+				}
+			}
+		});
+	}
+
 	void printCC(const Physics::ConvexCollider* convexCollider) {
 		DEBUG_LOG_TEMP2("VERTICES");
 
