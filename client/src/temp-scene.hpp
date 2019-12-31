@@ -2,7 +2,7 @@
 
 #include <engine/game/scene.hpp>
 
-class TempScene : public Scene<TempScene> {
+class TempScene final : public Scene<TempScene> {
 	public:
 		void load();
 

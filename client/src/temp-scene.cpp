@@ -5,6 +5,8 @@
 #include <engine/physics/physics-engine.hpp>
 #include <engine/ecs/registry.hpp>
 
+#include <engine/networking/client.hpp>
+
 #include <engine/game/texture-loader.hpp>
 #include <engine/game/cube-map-loader.hpp>
 #include <engine/game/material-loader.hpp>
@@ -23,11 +25,20 @@
 
 #include "temp-scene.hpp"
 
+#define SERVER_ADDRESS "127.0.0.1"
+#define SERVER_PORT 40000
+
 namespace {
 	void renderPhysicsMeshes();
+	void updateNetworkClient(float deltaTime);
 };
 
 void TempScene::load() {
+	constexpr const uint8 PRIVATE_KEY[yojimbo::KeyBytes] = {0};
+
+	NetworkClient::getInstance().connect(SERVER_ADDRESS, SERVER_PORT,
+			PRIVATE_KEY);
+
 	Application::getInstance().moveToCenter();
 
 	struct IndexedModel::AllocationHints hints;
@@ -156,6 +167,9 @@ void TempScene::update(float deltaTime) {
 	Application::getInstance().pollEvents();
 
 	playerInputSystem(deltaTime);
+
+	updateNetworkClient(deltaTime);
+
 	orbitCameraSystem(deltaTime);
 	updateCameraSystem(deltaTime);
 	toggleFullscreenSystem(deltaTime);
@@ -179,7 +193,7 @@ void TempScene::render() {
 }
 
 void TempScene::unload() {
-
+	NetworkClient::getInstance().disconnect();
 }
 
 namespace {
@@ -218,6 +232,15 @@ namespace {
 				}
 			}
 		});
+	}
+
+	void updateNetworkClient(float deltaTime) {
+		NetworkClient::getInstance().receiveMessages();
+
+		if (NetworkClient::getInstance().isConnected()) {
+			NetworkClient::getInstance().addInputState({5});
+			NetworkClient::getInstance().sendMessages();
+		}
 	}
 };
 
