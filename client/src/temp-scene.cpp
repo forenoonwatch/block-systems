@@ -6,6 +6,8 @@
 #include <engine/ecs/registry.hpp>
 
 #include <engine/networking/client.hpp>
+#include <engine/networking/network-object.hpp>
+#include <engine/networking/state-update-message.hpp>
 
 #include <engine/game/texture-loader.hpp>
 #include <engine/game/cube-map-loader.hpp>
@@ -31,6 +33,7 @@
 namespace {
 	void renderPhysicsMeshes();
 	void updateNetworkClient(float deltaTime);
+	void genStateUpdates(StateUpdateMessage* msg);
 };
 
 void TempScene::load() {
@@ -39,6 +42,7 @@ void TempScene::load() {
 	NetworkClient::getInstance().connect(SERVER_ADDRESS, SERVER_PORT,
 			PRIVATE_KEY);
 
+	Application::getInstance().resizeWindow(1200, 800);
 	Application::getInstance().moveToCenter();
 
 	struct IndexedModel::AllocationHints hints;
@@ -155,12 +159,23 @@ void TempScene::load() {
 			Transform(Vector3f(0.f, 10.f, 0.f)));
 	ECS::Registry::getInstance().assign<Physics::BodyHandle>(eSphere,
 			Physics::BodyHandle(body2));
+	ECS::Registry::getInstance().assign<NetworkObject>(eSphere,
+			NetworkClient::getInstance().getClientID(), 0, 10,
+			0, NetworkRole::ROLE_AUTONOMOUS, NetworkRole::ROLE_AUTHORITATIVE);
 
 	ECS::Registry::getInstance().assign<CameraComponent>(eSphere,
 			&Application::getInstance().getCamera());
 	ECS::Registry::getInstance().assign<CameraDistanceComponent>(eSphere,
 			2.f, 1.2f, 10.f);
 	ECS::Registry::getInstance().assign<PlayerInputComponent>(eSphere);
+
+	for (uint32 i = 0; i < 5; ++i) {
+		auto e = ECS::Registry::getInstance().create();
+		ECS::Registry::getInstance().assign<NetworkObject>(e,
+				NetworkClient::getInstance().getClientID(), i + 1, i + 1,
+				0, NetworkRole::ROLE_SYNCHRONIZED,
+				NetworkRole::ROLE_AUTHORITATIVE);
+	}
 }
 
 void TempScene::update(float deltaTime) {
@@ -238,8 +253,52 @@ namespace {
 		NetworkClient::getInstance().receiveMessages();
 
 		if (NetworkClient::getInstance().isConnected()) {
-			NetworkClient::getInstance().addInputState({5});
+
+			if (NetworkClient::getInstance().canSendMessage(
+					GameChannelType::UNRELIABLE)) {
+				NetworkClient::getInstance()
+						.sendMessageWithSystem<StateUpdateMessage>(
+						GameMessageType::STATE_UPDATE_MESSAGE,
+						GameChannelType::UNRELIABLE, ::genStateUpdates);
+			}
+
 			NetworkClient::getInstance().sendMessages();
+		}
+	}
+
+	void accumulatePriorities() {
+		ECS::Registry::getInstance().view<NetworkObject>().each([](auto& no) {
+			no.accumulatedPriority += no.networkPriority;
+		});
+
+		ECS::Registry::getInstance().sort<NetworkObject>([](const auto& a,
+				const auto& b) {
+			return a.accumulatedPriority < b.accumulatedPriority;
+		});
+	}
+
+	void genStateUpdates(StateUpdateMessage* msg) {
+		accumulatePriorities();
+
+		// TODO: proper input state generation and serialization
+		msg->stateUpdate.inputState = InputState{5}; 
+
+		const size_t numBodies = ECS::Registry::getInstance()
+				.size<NetworkObject>();
+		const ECS::Entity* netEntities = ECS::Registry::getInstance()
+				.data<NetworkObject>();
+
+		msg->stateUpdate.numBodies = Math::min(numBodies,
+				static_cast<size_t>(StateUpdate::MAX_BODIES));
+
+		for (uint32 i = 0; i < msg->stateUpdate.numBodies; ++i) {
+			auto& no = ECS::Registry::getInstance()
+					.get<NetworkObject>(netEntities[i]);
+			msg->stateUpdate.networkIDs[i] = no.networkID;
+
+			no.accumulatedPriority = 0;
+			// TODO: set contents of bodyStates[i]
+			// TODO: see if this is the optimal way to iterate over the objs
 		}
 	}
 };
