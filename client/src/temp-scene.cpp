@@ -33,11 +33,14 @@
 namespace {
 	void renderPhysicsMeshes();
 	void updateNetworkClient(float deltaTime);
-	void genStateUpdates(StateUpdateMessage* msg);
+	void onMessageReceived(yojimbo::Message*);
+	void onPlayerConnected(PlayerConnectMessage* msg);
 };
 
 void TempScene::load() {
 	constexpr const uint8 PRIVATE_KEY[yojimbo::KeyBytes] = {0};
+
+	NetworkClient::getInstance().setMessageCallback(::onMessageReceived);
 
 	NetworkClient::getInstance().connect(SERVER_ADDRESS, SERVER_PORT,
 			PRIVATE_KEY);
@@ -60,7 +63,7 @@ void TempScene::load() {
 	ResourceCache<VertexArray>::getInstance()
 			.load<VertexArrayLoader>("cube"_hs, "./res/cube.obj", hints);
 	ResourceCache<VertexArray>::getInstance()
-			.load<VertexArrayLoader>("capsule"_hs, "./res/platform.obj",
+			.load<VertexArrayLoader>("capsule"_hs, "./res/capsule.obj",
 			hints);
 	
 	ResourceCache<VertexArray>::getInstance()
@@ -153,29 +156,7 @@ void TempScene::load() {
 			Vector3f(1.f, 1.f, 1.f)));
 	ECS::Registry::getInstance().assign<Physics::BodyHandle>(ePlane,
 			Physics::BodyHandle(body));
-	
-	ECS::Entity eSphere = ECS::Registry::getInstance().create();
-	ECS::Registry::getInstance().assign<TransformComponent>(eSphere,
-			Transform(Vector3f(0.f, 10.f, 0.f)));
-	ECS::Registry::getInstance().assign<Physics::BodyHandle>(eSphere,
-			Physics::BodyHandle(body2));
-	ECS::Registry::getInstance().assign<NetworkObject>(eSphere,
-			NetworkClient::getInstance().getClientID(), 0, 10,
-			0, NetworkRole::ROLE_AUTONOMOUS, NetworkRole::ROLE_AUTHORITATIVE);
 
-	ECS::Registry::getInstance().assign<CameraComponent>(eSphere,
-			&Application::getInstance().getCamera());
-	ECS::Registry::getInstance().assign<CameraDistanceComponent>(eSphere,
-			2.f, 1.2f, 10.f);
-	ECS::Registry::getInstance().assign<PlayerInputComponent>(eSphere);
-
-	for (uint32 i = 0; i < 5; ++i) {
-		auto e = ECS::Registry::getInstance().create();
-		ECS::Registry::getInstance().assign<NetworkObject>(e,
-				NetworkClient::getInstance().getClientID(), i + 1, i + 1,
-				0, NetworkRole::ROLE_SYNCHRONIZED,
-				NetworkRole::ROLE_AUTHORITATIVE);
-	}
 }
 
 void TempScene::update(float deltaTime) {
@@ -253,52 +234,73 @@ namespace {
 		NetworkClient::getInstance().receiveMessages();
 
 		if (NetworkClient::getInstance().isConnected()) {
-
 			if (NetworkClient::getInstance().canSendMessage(
 					GameChannelType::UNRELIABLE)) {
 				NetworkClient::getInstance()
 						.sendMessageWithSystem<StateUpdateMessage>(
 						GameMessageType::STATE_UPDATE_MESSAGE,
-						GameChannelType::UNRELIABLE, ::genStateUpdates);
+						GameChannelType::UNRELIABLE, [&](auto* msg) {
+					writeInputStates(&msg->stateUpdate.inputState);
+					serializeBodyStates(msg->stateUpdate);
+				});
 			}
 
 			NetworkClient::getInstance().sendMessages();
 		}
 	}
 
-	void accumulatePriorities() {
-		ECS::Registry::getInstance().view<NetworkObject>().each([](auto& no) {
-			no.accumulatedPriority += no.networkPriority;
-		});
-
-		ECS::Registry::getInstance().sort<NetworkObject>([](const auto& a,
-				const auto& b) {
-			return a.accumulatedPriority < b.accumulatedPriority;
-		});
+	void onMessageReceived(yojimbo::Message* msg) {
+		switch (msg->GetType()) {
+			case (int)GameMessageType::STATE_UPDATE_MESSAGE:
+				puts("Got state update message");
+				break;
+			case (int)GameMessageType::PLAYER_CONNECT_MESSAGE:
+				onPlayerConnected(static_cast<PlayerConnectMessage*>(msg));
+				break;
+			default:
+				puts("Whatever");
+		}
 	}
 
-	void genStateUpdates(StateUpdateMessage* msg) {
-		accumulatePriorities();
+	void onPlayerConnected(PlayerConnectMessage* msg) {
+		auto plr = ECS::Registry::getInstance().create();
 
-		// TODO: proper input state generation and serialization
-		msg->stateUpdate.inputState = InputState{5}; 
+		Physics::BodyHints bodyHints;
+		bodyHints.type = Physics::BodyType::DYNAMIC;
+		bodyHints.transform = Transform(Vector3f(0.f, 10.f, 0.f));
 
-		const size_t numBodies = ECS::Registry::getInstance()
-				.size<NetworkObject>();
-		const ECS::Entity* netEntities = ECS::Registry::getInstance()
-				.data<NetworkObject>();
+		Physics::Body* body = Physics::PhysicsEngine::getInstance()
+				.addBody(bodyHints);
 
-		msg->stateUpdate.numBodies = Math::min(numBodies,
-				static_cast<size_t>(StateUpdate::MAX_BODIES));
+		Physics::ColliderHints collHints;
+		collHints.setRestitution(0.5f);
+		collHints.setFriction(0.3f);
+		collHints.setDensity(0.15f);
+		collHints.initCapsule(Vector3f(0.f, -0.5f, 0.f),
+				Vector3f(0.f, 0.5f, 0.f), 1.f);
+		body->addCollider(collHints);
 
-		for (uint32 i = 0; i < msg->stateUpdate.numBodies; ++i) {
-			auto& no = ECS::Registry::getInstance()
-					.get<NetworkObject>(netEntities[i]);
-			msg->stateUpdate.networkIDs[i] = no.networkID;
+		ECS::Registry::getInstance().assign<TransformComponent>(plr);
+		ECS::Registry::getInstance().assign<Physics::BodyHandle>(plr,
+				Physics::BodyHandle(body));
 
-			no.accumulatedPriority = 0;
-			// TODO: set contents of bodyStates[i]
-			// TODO: see if this is the optimal way to iterate over the objs
+		if (msg->clientID == NetworkClient::getInstance().getClientID()) {
+			ECS::Registry::getInstance().assign<NetworkObject>(plr,
+					msg->clientID, msg->networkID, 10, 0,
+					NetworkRole::ROLE_AUTONOMOUS,
+					NetworkRole::ROLE_AUTHORITATIVE);
+
+			ECS::Registry::getInstance().assign<CameraComponent>(plr,
+					&Application::getInstance().getCamera());
+			ECS::Registry::getInstance().assign<CameraDistanceComponent>(plr,
+					2.f, 1.2f, 10.f);
+			ECS::Registry::getInstance().assign<PlayerInputComponent>(plr);
+		}
+		else {
+			ECS::Registry::getInstance().assign<NetworkObject>(plr,
+					msg->clientID, msg->networkID, 0, 0,
+					NetworkRole::ROLE_AUTONOMOUS,
+					NetworkRole::ROLE_AUTHORITATIVE);
 		}
 	}
 };
