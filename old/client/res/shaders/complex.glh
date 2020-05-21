@@ -1,0 +1,11 @@
+
+#define complex vec2
+
+complex cmul(complex c0, complex c1) {
+	return complex(c0.x * c1.x - c0.y * c1.y,
+			c0.x * c1.y + c0.y * c1.x);
+}
+
+complex conj(complex c) {
+	return complex(c.x, -c.y);
+}

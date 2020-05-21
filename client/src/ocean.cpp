@@ -47,11 +47,10 @@ void initOcean(RenderContext& context, Ocean& ocean, uint32 gridLength) {
 			OCEAN_BUFFER_SIZE, GL_STREAM_DRAW, 2);
 }
 
-void updateOceanBuffer(float deltaTime) { 
-	ECS::Registry::getInstance().view<Ocean, OceanProjector>().each([&](
+void updateOceanBuffer(Registry& registry, float deltaTime) { 
+	registry.view<Ocean, OceanProjector>().each([&](
 			Ocean& ocean, OceanProjector& op) {
 		ocean.oceanFFT->update(deltaTime);
 		ocean.oceanDataBuffer->update(op.corners, 4 * sizeof(Vector4f));
 	});
 }
-

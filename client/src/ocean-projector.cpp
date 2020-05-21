@@ -3,23 +3,21 @@
 #include "ocean.hpp"
 
 #include <engine/ecs/ecs.hpp>
+#include <engine/components/camera-component.hpp>
 
 const uint32 OceanProjector::cameraEdges[] = {0, 1,  0, 2,  2, 3,  1, 3,
 											  0, 4,  2, 6,  3, 7,  1, 5,
 											  4, 6,  4, 5,  5, 7,  6, 7};
 
-void updateOceanProjector(float deltaTime) {
-	ECS::Registry::getInstance().view<CameraComponent,
-			OceanProjector>().each([&](CameraComponent& cc,
-			OceanProjector& op) {
-		Vector3f camPos = cc.position
-				+ cc.camera->getLookVector() * 2.f * Ocean::MAX_AMPLITUDE;
+void updateOceanProjector(Registry& registry, Camera& camera, float deltaTime) {
+	registry.view<CameraComponent, OceanProjector>().each([&](auto& cc, auto& op) {
+		Vector3f camPos = cc.position + camera.getLookVector() * 2.f * Ocean::MAX_AMPLITUDE;
 
 		if (camPos.y < Ocean::POSITION.y + Ocean::MAX_AMPLITUDE) {
 			camPos.y = Ocean::POSITION.y + Ocean::MAX_AMPLITUDE;
 		}
 
-		op.projectorCamera.view = cc.camera->view;
+		op.projectorCamera.view = camera.view;
 		op.projectorCamera.view[3] = Vector4f(camPos, 1.f);
 
 		op.projectorCamera.iView = Math::inverse(op.projectorCamera.view);
@@ -142,4 +140,3 @@ void updateOceanProjector(float deltaTime) {
 		}
 	});
 }
-

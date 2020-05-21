@@ -1,8 +1,8 @@
 #pragma once
 
-#include <engine/game/camera.hpp>
+#include <engine/rendering/camera.hpp>
 
-class Game;
+class Registry;
 
 struct OceanProjector {
 	Camera projectorCamera;
@@ -12,5 +12,5 @@ struct OceanProjector {
 	static const uint32 cameraEdges[24];
 };
 
-void updateOceanProjector(float deltaTime);
+void updateOceanProjector(Registry& registry, Camera& camera, float deltaTime);
 

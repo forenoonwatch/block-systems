@@ -1,0 +1,7 @@
+
+layout (std140, binding = 0) uniform SceneData {
+	vec3 cameraPosition;
+	vec2 displaySize;
+	mat4 viewProjection;
+	mat4 invVP;
+};

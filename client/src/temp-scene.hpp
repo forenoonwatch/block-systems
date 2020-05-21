@@ -1,6 +1,6 @@
 #pragma once
 
-#include <engine/game/scene.hpp>
+#include <engine/scene/scene.hpp>
 
 class TempScene final : public Scene<TempScene> {
 	public:
@@ -12,4 +12,3 @@ class TempScene final : public Scene<TempScene> {
 		void unload();
 	private:
 };
-

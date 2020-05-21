@@ -9,6 +9,7 @@
 class VertexArray;
 class UniformBuffer;
 class RenderContext;
+class Registry;
 
 struct Ocean {
 	static constexpr const float LINEAR_DRAG = 5.f;
@@ -29,5 +30,4 @@ struct Ocean {
 
 void initOcean(RenderContext& context, Ocean& ocean, uint32 gridLength);
 
-void updateOceanBuffer(float deltaTime);
-
+void updateOceanBuffer(Registry& registry, float deltaTime);

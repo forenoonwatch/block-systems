@@ -1,6 +1,7 @@
 ENGINE_DIR := nx-engine
 
-all: server client
+#all: server client
+all: client
 
 client: engine client_only
 
