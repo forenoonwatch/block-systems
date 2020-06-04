@@ -9,6 +9,7 @@
 #include <engine/resource/texture-loader.hpp>
 #include <engine/resource/cube-map-loader.hpp>
 #include <engine/resource/material-loader.hpp>
+#include <engine/resource/shader-loader.hpp>
 
 #include <engine/resource/model-loader.hpp>
 #include <engine/resource/vertex-array-loader.hpp>
@@ -69,6 +70,8 @@ void TempScene::load() {
 	ResourceCache<Material>::ref().load<MaterialLoader>("ship"_hs,
 			shipDiffuse, shipNormal, shipMaterial);
 
+	ResourceCache<Shader>::ref().load<ShaderLoader>("normal-shader"_hs, "./res/shaders/normal-shader.glsl");
+
 	String cubeMap = "./res/textures/sargasso-diffuse.dds";
 	ResourceCache<CubeMap>::ref()
 			.load<CubeMapLoader>("sargasso-diffuse"_hs, &cubeMap, 1);
@@ -88,13 +91,13 @@ void TempScene::load() {
 	auto rot = Quaternion(1, 0, 0, 0);//Math::rotate(Quaternion(1, 0, 0, 0), Math::toRadians(-90.f), Vector3f(1, 0, 0));
 
 	auto cube = registry.create();
-	registry.assign<TransformComponent>(cube, Transform(Vector3f(0, 0, -3), rot, Vector3f(1, 1, 1)));
-	registry.assign<StaticMesh>(cube, &ResourceCache<VertexArray>::ref().handle("plane"_hs).get(),
-			&ResourceCache<Material>::ref().handle("bricks"_hs).get(), true);
+	registry.assign<TransformComponent>(cube, Transform(Vector3f(0, 0, 0), rot, Vector3f(1, 1, 1)));
+	registry.assign<StaticMesh>(cube, &ResourceCache<VertexArray>::ref().handle("cube"_hs).get(),
+			&ResourceCache<Material>::ref().handle("ship"_hs).get(), true);
 
 	auto eCam = registry.create();
 
-	registry.assign<TransformComponent>(eCam, Transform(Vector3f(0, 0, -3)));
+	registry.assign<TransformComponent>(eCam, Transform(Vector3f(0, 0, 0)));
 	registry.assign<CameraComponent>(eCam, Vector3f(), 0, 0);
 	registry.assign<CameraDistanceComponent>(eCam, 0.1f, 0.1f, 50.f);
 	registry.assign<PlayerInputComponent>(eCam);
@@ -128,8 +131,9 @@ void TempScene::update(float deltaTime) {
 void TempScene::render() {
 	auto& registry = Registry::ref();
 	auto& renderer = RenderSystem::ref();
+	auto& context = RenderContext::ref();
 
-	renderStaticMeshes(registry, renderer);
+	/*renderStaticMeshes(registry, renderer);
 
 	renderer.clear();
 	renderer.flushStaticMeshes();
@@ -137,7 +141,21 @@ void TempScene::render() {
 	
 	renderer.renderSkybox();
 
-	renderer.flush();
+	renderer.flush();*/
+
+	renderer.getScreen().clear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+	auto shader = ResourceCache<Shader>::ref().handle("normal-shader"_hs);
+	auto cube = ResourceCache<VertexArray>::ref().handle("cube"_hs);
+	auto normalMap = ResourceCache<Texture>::ref().handle("bricks-normal"_hs);
+
+	Matrix4f m(1.f);
+
+	cube->updateBuffer(4, &m, sizeof(Matrix4f));
+
+	//shader->setSampler("normalMap", normalMap, renderer.getLinearSampler(), 0);
+
+	context.draw(renderer.getScreen(), *shader, *cube, GL_POINTS);
 
 	Application::ref().swapBuffers();
 }
