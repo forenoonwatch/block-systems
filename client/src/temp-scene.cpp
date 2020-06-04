@@ -34,41 +34,50 @@ void TempScene::load() {
 		hints.instancedElementStartIndex = 4;
 
 	ResourceCache<VertexArray>::ref()
-			.load<VertexArrayLoader>("sphere"_hs, "./res/sphere.obj", hints);
+			.load<VertexArrayLoader>("sphere"_hs, "./res/models/sphere.obj", hints);
 	ResourceCache<VertexArray>::ref()
-			.load<VertexArrayLoader>("plane"_hs, "./res/plane.obj", hints);
+			.load<VertexArrayLoader>("plane"_hs, "./res/models/plane.obj", hints);
 	ResourceCache<VertexArray>::ref()
-			.load<VertexArrayLoader>("cube"_hs, "./res/cube.obj", hints);
+			.load<VertexArrayLoader>("cube"_hs, "./res/models/cube.obj", hints);
 	ResourceCache<VertexArray>::ref()
-			.load<VertexArrayLoader>("capsule"_hs, "./res/capsule.obj", hints);
-	
+			.load<VertexArrayLoader>("capsule"_hs, "./res/models/capsule.obj", hints);
+
 	ResourceCache<VertexArray>::ref()
-			.load<VertexArrayLoader>("platform"_hs, "./res/platform.obj", hints);
+			.load<VertexArrayLoader>("ship"_hs, "./res/models/hms-leopard-tex.fbx", hints);
 
 	ResourceCache<IndexedModel>::ref()
-			.load<ModelLoader>("cube"_hs, "./res/cube.obj", hints);
+			.load<ModelLoader>("cube"_hs, "./res/models/cube.obj", hints);
 
 	auto bricksDiffuse = ResourceCache<Texture>::ref()
-			.load<TextureLoader>("bricks-diffuse"_hs, "./res/bricks.dds");
+			.load<TextureLoader>("bricks-diffuse"_hs, "./res/textures/bricks.dds");
 	auto bricksNormal = ResourceCache<Texture>::ref()
 			.load<TextureLoader>("bricks-normal"_hs,
-			"./res/bricks-normal.dds");
+			"./res/textures/bricks-normal.dds");
 	auto bricksMaterial = ResourceCache<Texture>::ref()
 			.load<TextureLoader>("bricks-material"_hs,
-			"./res/bricks-material.dds");
+			"./res/textures/bricks-material.dds");
+
+	auto shipDiffuse = ResourceCache<Texture>::ref()
+			.load<TextureLoader>("ship-diffuse"_hs, "./res/textures/Grayscale_Target.png");
+	auto shipNormal = ResourceCache<Texture>::ref()
+			.load<TextureLoader>("ship-normal"_hs, "./res/textures/Normal_Target_2.png");
+	auto shipMaterial = ResourceCache<Texture>::ref()
+			.load<TextureLoader>("ship-material"_hs, "./res/textures/Ship_Material.png");
 
 	ResourceCache<Material>::ref().load<MaterialLoader>("bricks"_hs,
 			bricksDiffuse, bricksNormal, bricksMaterial);
+	ResourceCache<Material>::ref().load<MaterialLoader>("ship"_hs,
+			shipDiffuse, shipNormal, shipMaterial);
 
-	String cubeMap = "./res/sargasso-diffuse.dds";
+	String cubeMap = "./res/textures/sargasso-diffuse.dds";
 	ResourceCache<CubeMap>::ref()
 			.load<CubeMapLoader>("sargasso-diffuse"_hs, &cubeMap, 1);
-	cubeMap = "./res/sargasso-specular.dds";
+	cubeMap = "./res/textures/sargasso-specular.dds";
 	ResourceCache<CubeMap>::ref()
 			.load<CubeMapLoader>("sargasso-specular"_hs, &cubeMap, 1);
 
 	ResourceCache<Texture>::ref()
-			.load<TextureLoader>("schlick-brdf"_hs, "./res/schlick-brdf.png");
+			.load<TextureLoader>("schlick-brdf"_hs, "./res/textures/schlick-brdf.png");
 
 	RenderSystem::ref().setDiffuseIBL(ResourceCache<CubeMap>::ref().handle("sargasso-diffuse"_hs));
 	RenderSystem::ref().setSpecularIBL(ResourceCache<CubeMap>::ref().handle("sargasso-specular"_hs));
@@ -76,16 +85,18 @@ void TempScene::load() {
 	
 	auto& registry = Registry::ref();
 
+	auto rot = Quaternion(1, 0, 0, 0);//Math::rotate(Quaternion(1, 0, 0, 0), Math::toRadians(-90.f), Vector3f(1, 0, 0));
+
 	auto cube = registry.create();
-	registry.assign<TransformComponent>(cube, Transform(Vector3f(0, 0, -3)));
-	registry.assign<StaticMesh>(cube, &ResourceCache<VertexArray>::ref().handle("cube"_hs).get(),
+	registry.assign<TransformComponent>(cube, Transform(Vector3f(0, 0, -3), rot, Vector3f(1, 1, 1)));
+	registry.assign<StaticMesh>(cube, &ResourceCache<VertexArray>::ref().handle("plane"_hs).get(),
 			&ResourceCache<Material>::ref().handle("bricks"_hs).get(), true);
 
 	auto eCam = registry.create();
 
 	registry.assign<TransformComponent>(eCam, Transform(Vector3f(0, 0, -3)));
 	registry.assign<CameraComponent>(eCam, Vector3f(), 0, 0);
-	registry.assign<CameraDistanceComponent>(eCam, 0.1f, 0.1f, 10.f);
+	registry.assign<CameraDistanceComponent>(eCam, 0.1f, 0.1f, 50.f);
 	registry.assign<PlayerInputComponent>(eCam);
 }
 
@@ -96,13 +107,19 @@ void TempScene::update(float deltaTime) {
 
 	app.pollEvents();
 
+	if (app.getKeyPressed(Input::KEY_M)) {
+		//app.setFullscreen(!app.isFullscreen());
+		auto& monitor = app.getPrimaryMonitor();
+		app.resizeWindow(monitor.getWidth(), monitor.getHeight());
+	}
+
 	updatePlayerInput(registry, app, deltaTime);
 
 	orbitCameraSystem(registry, app, renderer, deltaTime);
 	updateCameraComponents(registry, app, renderer);
 
 	registry.view<TransformComponent, StaticMesh>().each([deltaTime](auto& tfc, auto& sm) {
-		tfc.transform.setRotation(Math::rotate(tfc.transform.getRotation(), deltaTime, Vector3f(0, 1, 0)));
+		//tfc.transform.setRotation(Math::rotate(tfc.transform.getRotation(), deltaTime, Vector3f(0, 1, 0)));
 	});
 
 	renderer.updateCamera();
