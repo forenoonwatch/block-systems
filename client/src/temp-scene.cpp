@@ -54,9 +54,18 @@ void TempScene::load() {
 	auto bricksNormal = ResourceCache<Texture>::ref()
 			.load<TextureLoader>("bricks-normal"_hs,
 			"./res/textures/bricks-normal.dds");
+	//auto bricksMaterial = ResourceCache<Texture>::ref()
+	//		.load<TextureLoader>("bricks-material"_hs,
+	//		"./res/textures/bricks-material.dds");
 	auto bricksMaterial = ResourceCache<Texture>::ref()
 			.load<TextureLoader>("bricks-material"_hs,
-			"./res/textures/bricks-material.dds");
+			"./res/textures/flat-material.png");
+
+	auto bricks2Diff = ResourceCache<Texture>::ref().load<TextureLoader>("bricks2-diffuse"_hs, "./res/textures/bricks2.jpg");
+	auto bricks2Norm = ResourceCache<Texture>::ref().load<TextureLoader>("bricks2-normal"_hs, "./res/textures/bricks2_normal.jpg");
+	auto bricks2Disp = ResourceCache<Texture>::ref().load<TextureLoader>("bricks2-disp"_hs, "./res/textures/bricks2_disp.jpg");
+
+	auto flatNormal = ResourceCache<Texture>::ref().load<TextureLoader>("flat-normal"_hs, "./res/textures/flat-normal.png");
 
 	auto shipDiffuse = ResourceCache<Texture>::ref()
 			.load<TextureLoader>("ship-diffuse"_hs, "./res/textures/Grayscale_Target.png");
@@ -64,11 +73,14 @@ void TempScene::load() {
 			.load<TextureLoader>("ship-normal"_hs, "./res/textures/Normal_Target_2.png");
 	auto shipMaterial = ResourceCache<Texture>::ref()
 			.load<TextureLoader>("ship-material"_hs, "./res/textures/Ship_Material.png");
+	auto shipDisplacement = ResourceCache<Texture>::ref()
+			.load<TextureLoader>("ship-disp"_hs, "./res/textures/flat-disp.png");
 
 	ResourceCache<Material>::ref().load<MaterialLoader>("bricks"_hs,
-			bricksDiffuse, bricksNormal, bricksMaterial);
+			bricksDiffuse, bricksNormal, bricksMaterial, bricks2Disp);
 	ResourceCache<Material>::ref().load<MaterialLoader>("ship"_hs,
-			shipDiffuse, shipNormal, shipMaterial);
+			shipDiffuse, shipNormal, shipMaterial, shipDisplacement);
+	ResourceCache<Material>::ref().load<MaterialLoader>("bricks2"_hs, bricks2Diff, bricks2Norm, bricksMaterial, bricks2Disp);
 
 	ResourceCache<Shader>::ref().load<ShaderLoader>("normal-shader"_hs, "./res/shaders/normal-shader.glsl");
 
@@ -88,12 +100,13 @@ void TempScene::load() {
 	
 	auto& registry = Registry::ref();
 
-	auto rot = Quaternion(1, 0, 0, 0);//Math::rotate(Quaternion(1, 0, 0, 0), Math::toRadians(-90.f), Vector3f(1, 0, 0));
+	auto rot = Math::rotate(Quaternion(1, 0, 0, 0), Math::toRadians(-90.f), Vector3f(1, 0, 0));
+	//auto rot = Quaternion(1, 0, 0, 0);
 
 	auto cube = registry.create();
 	registry.assign<TransformComponent>(cube, Transform(Vector3f(0, 0, 0), rot, Vector3f(1, 1, 1)));
-	registry.assign<StaticMesh>(cube, &ResourceCache<VertexArray>::ref().handle("cube"_hs).get(),
-			&ResourceCache<Material>::ref().handle("ship"_hs).get(), true);
+	registry.assign<StaticMesh>(cube, &ResourceCache<VertexArray>::ref().handle("ship"_hs).get(),
+			&ResourceCache<Material>::ref().handle("bricks2"_hs).get(), true);
 
 	auto eCam = registry.create();
 
@@ -133,7 +146,7 @@ void TempScene::render() {
 	auto& renderer = RenderSystem::ref();
 	auto& context = RenderContext::ref();
 
-	/*renderStaticMeshes(registry, renderer);
+	renderStaticMeshes(registry, renderer);
 
 	renderer.clear();
 	renderer.flushStaticMeshes();
@@ -141,21 +154,7 @@ void TempScene::render() {
 	
 	renderer.renderSkybox();
 
-	renderer.flush();*/
-
-	renderer.getScreen().clear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-	auto shader = ResourceCache<Shader>::ref().handle("normal-shader"_hs);
-	auto cube = ResourceCache<VertexArray>::ref().handle("cube"_hs);
-	auto normalMap = ResourceCache<Texture>::ref().handle("bricks-normal"_hs);
-
-	Matrix4f m(1.f);
-
-	cube->updateBuffer(4, &m, sizeof(Matrix4f));
-
-	//shader->setSampler("normalMap", normalMap, renderer.getLinearSampler(), 0);
-
-	context.draw(renderer.getScreen(), *shader, *cube, GL_POINTS);
+	renderer.flush();
 
 	Application::ref().swapBuffers();
 }
