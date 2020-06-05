@@ -12,7 +12,7 @@
 #include <engine/resource/shader-loader.hpp>
 
 #include <engine/resource/model-loader.hpp>
-#include <engine/resource/vertex-array-loader.hpp>
+#include <engine/resource/static-mesh-loader.hpp>
 
 #include <engine/resource/resource-cache.hpp>
 
@@ -26,28 +26,14 @@
 void TempScene::load() {
 	Application::ref().moveToCenter();
 
-	struct IndexedModel::AllocationHints hints;
-		hints.elementSizes.push_back(3);
-		hints.elementSizes.push_back(2);
-		hints.elementSizes.push_back(3);
-		hints.elementSizes.push_back(3);
-		hints.elementSizes.push_back(16);
-		hints.instancedElementStartIndex = 4;
+	ResourceCache<VertexArray>::ref().load<StaticMeshLoader>("sphere"_hs, "./res/models/sphere.obj");
+	ResourceCache<VertexArray>::ref().load<StaticMeshLoader>("plane"_hs, "./res/models/plane.obj");
+	ResourceCache<VertexArray>::ref().load<StaticMeshLoader>("cube"_hs, "./res/models/cube.obj");
+	ResourceCache<VertexArray>::ref().load<StaticMeshLoader>("capsule"_hs, "./res/models/capsule.obj");
 
-	ResourceCache<VertexArray>::ref()
-			.load<VertexArrayLoader>("sphere"_hs, "./res/models/sphere.obj", hints);
-	ResourceCache<VertexArray>::ref()
-			.load<VertexArrayLoader>("plane"_hs, "./res/models/plane.obj", hints);
-	ResourceCache<VertexArray>::ref()
-			.load<VertexArrayLoader>("cube"_hs, "./res/models/cube.obj", hints);
-	ResourceCache<VertexArray>::ref()
-			.load<VertexArrayLoader>("capsule"_hs, "./res/models/capsule.obj", hints);
+	ResourceCache<VertexArray>::ref().load<StaticMeshLoader>("ship"_hs, "./res/models/hms-leopard-tex.fbx");
 
-	ResourceCache<VertexArray>::ref()
-			.load<VertexArrayLoader>("ship"_hs, "./res/models/hms-leopard-tex.fbx", hints);
-
-	ResourceCache<IndexedModel>::ref()
-			.load<ModelLoader>("cube"_hs, "./res/models/cube.obj", hints);
+	ResourceCache<IndexedModel>::ref().load<ModelLoader>("cube"_hs, "./res/models/cube.obj");
 
 	auto bricksDiffuse = ResourceCache<Texture>::ref()
 			.load<TextureLoader>("bricks-diffuse"_hs, "./res/textures/bricks.dds");
@@ -74,7 +60,7 @@ void TempScene::load() {
 	auto shipMaterial = ResourceCache<Texture>::ref()
 			.load<TextureLoader>("ship-material"_hs, "./res/textures/Ship_Material.png");
 	auto shipDisplacement = ResourceCache<Texture>::ref()
-			.load<TextureLoader>("ship-disp"_hs, "./res/textures/flat-disp.png");
+			.load<TextureLoader>("ship-disp"_hs, "./res/textures/ship-displacement.png");
 
 	ResourceCache<Material>::ref().load<MaterialLoader>("bricks"_hs,
 			bricksDiffuse, bricksNormal, bricksMaterial, bricks2Disp);
@@ -106,7 +92,7 @@ void TempScene::load() {
 	auto cube = registry.create();
 	registry.assign<TransformComponent>(cube, Transform(Vector3f(0, 0, 0), rot, Vector3f(1, 1, 1)));
 	registry.assign<StaticMesh>(cube, &ResourceCache<VertexArray>::ref().handle("ship"_hs).get(),
-			&ResourceCache<Material>::ref().handle("bricks2"_hs).get(), true);
+			&ResourceCache<Material>::ref().handle("ship"_hs).get(), true);
 
 	auto eCam = registry.create();
 
