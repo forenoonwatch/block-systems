@@ -13,15 +13,17 @@ layout (location = 0) in vec3 position;
 layout (location = 1) in vec2 texCoord;
 layout (location = 2) in vec3 normal;
 layout (location = 3) in vec3 tangent;
-layout (location = 4) in mat4 transform;
+layout (location = 4) in vec3 biTangent;
+layout (location = 5) in mat4 transform;
 
 void main() {
 	const vec4 vertPos = transform * vec4(position, 1.0);
 
 	const vec3 N = normalize(vec3(transform * vec4(normal, 0.0)));
 	vec3 T = normalize(vec3(transform * vec4(tangent, 0.0)));
+	vec3 B = -normalize(vec3(transform * vec4(biTangent, 0.0)));
 	T = normalize(T - dot(T, N) * N);
-	vec3 B = cross(N, T);
+	//vec3 B = cross(N, T);
 
 	gl_Position = viewProjection * vertPos;
 	
@@ -36,7 +38,7 @@ void main() {
 
 #elif defined(FS_BUILD)
 
-#define HEIGHT_SCALE 0.1
+#define HEIGHT_SCALE 0.001
 
 uniform sampler2D diffuse;
 uniform sampler2D normalMap;
