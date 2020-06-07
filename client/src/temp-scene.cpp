@@ -6,13 +6,15 @@
 #include <engine/application/application.hpp>
 #include <engine/rendering/render-system.hpp>
 
+#include <engine/resource/asset-loader.hpp>
 #include <engine/resource/texture-loader.hpp>
 #include <engine/resource/cube-map-loader.hpp>
 #include <engine/resource/material-loader.hpp>
 #include <engine/resource/shader-loader.hpp>
-
 #include <engine/resource/model-loader.hpp>
-#include <engine/resource/static-mesh-loader.hpp>
+#include <engine/resource/vertex-array-loader.hpp>
+#include <engine/resource/animation-loader.hpp>
+#include <engine/resource/rig-loader.hpp>
 
 #include <engine/resource/resource-cache.hpp>
 
@@ -20,20 +22,39 @@
 #include <engine/components/camera-component.hpp>
 #include <engine/components/transform-component.hpp>
 #include <engine/components/static-mesh.hpp>
+#include <engine/components/rigged-mesh.hpp>
+#include <engine/components/animator.hpp>
 
 #include "orbit-camera.hpp"
 
 void TempScene::load() {
 	Application::ref().moveToCenter();
 
-	ResourceCache<VertexArray>::ref().load<StaticMeshLoader>("sphere"_hs, "./res/models/sphere.obj");
-	ResourceCache<VertexArray>::ref().load<StaticMeshLoader>("plane"_hs, "./res/models/plane.obj");
-	ResourceCache<VertexArray>::ref().load<StaticMeshLoader>("cube"_hs, "./res/models/cube.obj");
-	ResourceCache<VertexArray>::ref().load<StaticMeshLoader>("capsule"_hs, "./res/models/capsule.obj");
+	ArrayList<IndexedModel> models;
+	ArrayList<Rig> rigs;
+	ArrayList<Animation> animations;
 
-	ResourceCache<VertexArray>::ref().load<StaticMeshLoader>("ship"_hs, "./res/models/hms-leopard-tex.fbx");
+	AssetLoader::loadAssets("./res/models/sphere.obj", models, rigs, animations);
+	AssetLoader::loadAssets("./res/models/plane.obj", models, rigs, animations);
+	AssetLoader::loadAssets("./res/models/cube.obj", models, rigs, animations);
+	AssetLoader::loadAssets("./res/models/capsule.obj", models, rigs, animations);
+	AssetLoader::loadAssets("./res/models/hms-leopard-tex.fbx", models, rigs, animations);
 
-	ResourceCache<IndexedModel>::ref().load<ModelLoader>("cube"_hs, "./res/models/cube.obj");
+	AssetLoader::loadAssets("./res/models/model.dae", models, rigs, animations);
+
+	ResourceCache<VertexArray>::ref().load<VertexArrayLoader>("sphere"_hs, models[0]);
+	ResourceCache<VertexArray>::ref().load<VertexArrayLoader>("plane"_hs, models[1]);
+	ResourceCache<VertexArray>::ref().load<VertexArrayLoader>("cube"_hs, models[2]);
+	ResourceCache<VertexArray>::ref().load<VertexArrayLoader>("capsule"_hs, models[3]);
+
+	ResourceCache<VertexArray>::ref().load<VertexArrayLoader>("ship"_hs, models[4]);
+
+	ResourceCache<VertexArray>::ref().load<VertexArrayLoader>("cowboy"_hs, models[5]);
+
+	ResourceCache<IndexedModel>::ref().load<ModelLoader>("cube"_hs, models[2]);
+
+	ResourceCache<Rig>::ref().load<RigLoader>("cowboy"_hs, rigs[0]);
+	ResourceCache<Animation>::ref().load<AnimationLoader>("cowboy-run"_hs, animations[0]);
 
 	auto bricksDiffuse = ResourceCache<Texture>::ref()
 			.load<TextureLoader>("bricks-diffuse"_hs, "./res/textures/bricks.dds");
@@ -93,6 +114,12 @@ void TempScene::load() {
 	registry.assign<TransformComponent>(cube, Transform(Vector3f(0, 0, 0), rot, Vector3f(1, 1, 1)));
 	registry.assign<StaticMesh>(cube, &ResourceCache<VertexArray>::ref().handle("ship"_hs).get(),
 			&ResourceCache<Material>::ref().handle("ship"_hs).get(), true);
+
+	auto riggedMesh = registry.create();
+	registry.assign<TransformComponent>(riggedMesh, Transform());
+	//registry.assign<RiggedMesh>(riggedMesh, &ResourceCache<VertexArray>::ref().handle("cowboy"_hs).get(),
+	//		&ResourceCache<VertexArray>::ref().handle("bricks2"_hs),
+	//		&ResourceCache<Rig>::ref().handle("cowboy"_hs), true);
 
 	auto eCam = registry.create();
 

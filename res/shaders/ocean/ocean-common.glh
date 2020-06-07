@@ -8,7 +8,7 @@
 
 const float texelSize = TEXEL_SIZE / SMOOTHNESS;
 
-layout (std140, binding = 2) uniform OceanData {
+layout (std140) uniform OceanData {
 	vec4 corners[4];
 	float amplitude;
 	float detailAmplitude;
