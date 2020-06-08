@@ -51,19 +51,21 @@ void main() {
 
 #elif defined(FS_BUILD)
 
+#include "parallax-map.glh"
+
 uniform sampler2D diffuse;
 uniform sampler2D normalMap;
 uniform sampler2D materialMap;
 uniform sampler2D depthMap;
 
-#include "parallax-map.glh"
+uniform float heightScale;
 
 layout (location = 0) out vec4 outColor;
 layout (location = 1) out vec4 outNormal;
 layout (location = 2) out vec4 outLighting;
 
 void main() {
-	const vec2 texCoords = parallaxMap(texCoord0, normalize(cameraPos0 - vertPos0));
+	const vec2 texCoords = parallaxMap(depthMap, texCoord0, normalize(cameraPos0 - vertPos0), heightScale);
 
 	if (texCoords.x > 1.0 || texCoords.y > 1.0 || texCoords.x < 0.0 || texCoords.y < 0.0) {
 		discard;

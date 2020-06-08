@@ -84,14 +84,13 @@ void TempScene::load() {
 			.load<TextureLoader>("ship-disp"_hs, "./res/textures/ship-displacement.png");
 
 	ResourceCache<Material>::ref().load<MaterialLoader>("bricks"_hs,
-			bricksDiffuse, bricksNormal, bricksMaterial, bricks2Disp);
+			bricksDiffuse, bricksNormal, bricksMaterial, bricks2Disp, 0.01f);
 	ResourceCache<Material>::ref().load<MaterialLoader>("ship"_hs,
-			shipDiffuse, shipNormal, shipMaterial, shipDisplacement);
-	ResourceCache<Material>::ref().load<MaterialLoader>("bricks2"_hs, bricks2Diff, bricks2Norm, bricksMaterial, bricks2Disp);
+			shipDiffuse, shipNormal, shipMaterial, shipDisplacement, 0.001f);
+	ResourceCache<Material>::ref().load<MaterialLoader>("bricks2"_hs, bricks2Diff,
+			bricks2Norm, bricksMaterial, bricks2Disp, 0.001f);
 
 	ResourceCache<Shader>::ref().load<ShaderLoader>("normal-shader"_hs, "./res/shaders/normal-shader.glsl");
-	// TODO: remove
-	ResourceCache<Shader>::ref().load<ShaderLoader>("rigged-mesh-shader"_hs, "./res/shaders/rigged-mesh-deferred.glsl");
 
 	String cubeMap = "./res/textures/sargasso-diffuse.dds";
 	ResourceCache<CubeMap>::ref()
