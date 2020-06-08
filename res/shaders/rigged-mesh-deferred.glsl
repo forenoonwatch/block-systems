@@ -1,6 +1,8 @@
 #include "common.glh"
 #include "scene-info.glh"
 
+#define MAX_JOINTS 20
+
 varying vec2 texCoord0;
 varying mat3 TBN;
 
@@ -14,19 +16,30 @@ layout (location = 1) in vec2 texCoord;
 layout (location = 2) in vec3 normal;
 layout (location = 3) in vec3 tangent;
 layout (location = 4) in vec3 biTangent;
-layout (location = 5) in mat4 transform;
+layout (location = 5) in vec3 jointIndices;
+layout (location = 6) in vec3 jointWeights;
+layout (location = 7) in mat4 transform;
+
+layout (std140) uniform AnimationData {
+	mat4 jointTransforms[MAX_JOINTS];
+};
 
 void main() {
-	const vec4 vertPos = transform * vec4(position, 1.0);
+	mat4 jointTransform = jointTransforms[int(jointIndices[0])] * jointWeights[0];
+	jointTransform += jointTransforms[int(jointIndices[1])] * jointWeights[1];
+	jointTransform += jointTransforms[int(jointIndices[2])] * jointWeights[2];
 
-	const vec3 N = normalize(vec3(transform * vec4(normal, 0.0)));
-	vec3 T = normalize(vec3(transform * vec4(tangent, 0.0)));
-	vec3 B = -normalize(vec3(transform * vec4(biTangent, 0.0)));
+	const mat4 model = transform * jointTransform;
+
+	const vec4 vertPos = model * vec4(position, 1.0);
+
+	vec3 N = normalize(vec3(model * vec4(normal, 0.0)));
+	vec3 T = normalize(vec3(model * vec4(tangent, 0.0)));
+	vec3 B = -normalize(vec3(model * vec4(biTangent, 0.0)));
 	T = normalize(T - dot(T, N) * N);
-	//vec3 B = cross(N, T);
 
 	gl_Position = viewProjection * vertPos;
-	
+
 	texCoord0 = texCoord;
 	TBN = mat3(T, B, N);
 

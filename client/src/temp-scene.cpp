@@ -90,6 +90,8 @@ void TempScene::load() {
 	ResourceCache<Material>::ref().load<MaterialLoader>("bricks2"_hs, bricks2Diff, bricks2Norm, bricksMaterial, bricks2Disp);
 
 	ResourceCache<Shader>::ref().load<ShaderLoader>("normal-shader"_hs, "./res/shaders/normal-shader.glsl");
+	// TODO: remove
+	ResourceCache<Shader>::ref().load<ShaderLoader>("rigged-mesh-shader"_hs, "./res/shaders/rigged-mesh-deferred.glsl");
 
 	String cubeMap = "./res/textures/sargasso-diffuse.dds";
 	ResourceCache<CubeMap>::ref()
@@ -110,16 +112,17 @@ void TempScene::load() {
 	auto rot = Math::rotate(Quaternion(1, 0, 0, 0), Math::toRadians(-90.f), Vector3f(1, 0, 0));
 	//auto rot = Quaternion(1, 0, 0, 0);
 
-	auto cube = registry.create();
-	registry.assign<TransformComponent>(cube, Transform(Vector3f(0, 0, 0), rot, Vector3f(1, 1, 1)));
-	registry.assign<StaticMesh>(cube, &ResourceCache<VertexArray>::ref().handle("ship"_hs).get(),
-			&ResourceCache<Material>::ref().handle("ship"_hs).get(), true);
+	//auto cube = registry.create();
+	//registry.assign<TransformComponent>(cube, Transform(Vector3f(0, 0, 0), rot, Vector3f(1, 1, 1)));
+	//registry.assign<StaticMesh>(cube, &ResourceCache<VertexArray>::ref().handle("ship"_hs).get(),
+	//		&ResourceCache<Material>::ref().handle("ship"_hs).get(), true);
 
 	auto riggedMesh = registry.create();
 	registry.assign<TransformComponent>(riggedMesh, Transform());
-	//registry.assign<RiggedMesh>(riggedMesh, &ResourceCache<VertexArray>::ref().handle("cowboy"_hs).get(),
-	//		&ResourceCache<VertexArray>::ref().handle("bricks2"_hs),
-	//		&ResourceCache<Rig>::ref().handle("cowboy"_hs), true);
+	registry.assign<RiggedMesh>(riggedMesh, &ResourceCache<VertexArray>::ref().handle("cowboy"_hs).get(),
+			&ResourceCache<Material>::ref().handle("bricks2"_hs).get(),
+			&ResourceCache<Rig>::ref().handle("cowboy"_hs).get(), true);
+	registry.assign<Animator>(riggedMesh, &ResourceCache<Animation>::ref().handle("cowboy-run"_hs).get());
 
 	auto eCam = registry.create();
 
@@ -127,6 +130,21 @@ void TempScene::load() {
 	registry.assign<CameraComponent>(eCam, Vector3f(), 0, 0);
 	registry.assign<CameraDistanceComponent>(eCam, 0.1f, 0.1f, 50.f);
 	registry.assign<PlayerInputComponent>(eCam);
+
+	auto cowboy = ResourceCache<VertexArray>::ref().handle("cowboy"_hs);
+
+	Matrix4f m(1.f);
+	cowboy->updateBuffer(7, &m, sizeof(Matrix4f));
+
+	auto animBuf = RenderContext::ref().getUniformBuffer("AnimationData").lock();
+
+	Matrix4f matrices[Rig::MAX_JOINTS];
+
+	for (int i = 0; i < Rig::MAX_JOINTS; ++i) {
+		matrices[i] = Math::translate(Matrix4f(1.f), Vector3f(0, 0, 1.f * i));
+	}
+
+	animBuf->update(matrices, Rig::MAX_JOINTS * sizeof(Matrix4f));
 }
 
 void TempScene::update(float deltaTime) {
@@ -151,6 +169,16 @@ void TempScene::update(float deltaTime) {
 		//tfc.transform.setRotation(Math::rotate(tfc.transform.getRotation(), deltaTime, Vector3f(0, 1, 0)));
 	});
 
+	updateAnimators(registry, deltaTime);
+
+	/*if (app.getKeyPressed(Input::KEY_C)) {
+		auto animBuf = RenderContext::ref().getUniformBuffer("AnimationData").lock();
+
+		registry.view<RiggedMesh>().each([&](auto& rm) {
+			animBuf->update(rm.rig->getTransformSet(), Rig::MAX_JOINTS * sizeof(Matrix4f));
+		});
+	}*/
+
 	renderer.updateCamera();
 }
 
@@ -159,10 +187,18 @@ void TempScene::render() {
 	auto& renderer = RenderSystem::ref();
 	auto& context = RenderContext::ref();
 
+	//auto cowboy = ResourceCache<VertexArray>::ref().handle("cowboy"_hs);
+	//auto rms = ResourceCache<Shader>::ref().handle("rigged-mesh-shader"_hs);
+
 	renderStaticMeshes(registry, renderer);
+	renderRiggedMeshes(registry, renderer);
 
 	renderer.clear();
+
+	//context.draw(renderer.getTarget(), *rms, *cowboy, GL_TRIANGLES);
+
 	renderer.flushStaticMeshes();
+	renderer.flushRiggedMeshes();
 	renderer.applyLighting();
 	
 	renderer.renderSkybox();
