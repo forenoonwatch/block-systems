@@ -93,7 +93,7 @@ void TempScene::load() {
 
 	ResourceCache<Shader>::ref().load<ShaderLoader>("normal-shader"_hs, "./res/shaders/normal-shader.glsl");
 
-	ResourceCache<Font>::ref().load<FontLoader>("font"_hs, "./res/fonts/LucidaTypewriterRegular.ttf", 24);
+	ResourceCache<Font>::ref().load<FontLoader>("font"_hs, "/usr/share/fonts/truetype/hack/Hack-Regular.ttf", 24);
 
 	String cubeMap = "./res/textures/sargasso-diffuse.dds";
 	ResourceCache<CubeMap>::ref()
@@ -165,7 +165,7 @@ void TempScene::render() {
 	auto font = ResourceCache<Font>::ref().handle("font"_hs);
 
 	//renderer.drawTextureQuad(font->getTexture(), Vector4f(100, 100, 0, 0), Vector4f(font->getWidth(), font->getHeight(), 1, 1));
-	renderer.drawText(font, "Hello world", 5, 100, 100);
+	renderer.drawText(font, "Hello world", 0, 200, Vector3f(0, 0, 0));
 
 	renderStaticMeshes(registry, renderer);
 	renderRiggedMeshes(registry, renderer);
