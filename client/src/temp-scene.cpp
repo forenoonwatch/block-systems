@@ -15,6 +15,7 @@
 #include <engine/resource/vertex-array-loader.hpp>
 #include <engine/resource/animation-loader.hpp>
 #include <engine/resource/rig-loader.hpp>
+#include <engine/resource/font-loader.hpp>
 
 #include <engine/resource/resource-cache.hpp>
 
@@ -92,6 +93,8 @@ void TempScene::load() {
 
 	ResourceCache<Shader>::ref().load<ShaderLoader>("normal-shader"_hs, "./res/shaders/normal-shader.glsl");
 
+	ResourceCache<Font>::ref().load<FontLoader>("font"_hs, "./res/fonts/LucidaTypewriterRegular.ttf", 24);
+
 	String cubeMap = "./res/textures/sargasso-diffuse.dds";
 	ResourceCache<CubeMap>::ref()
 			.load<CubeMapLoader>("sargasso-diffuse"_hs, &cubeMap, 1);
@@ -158,6 +161,11 @@ void TempScene::render() {
 	auto& registry = Registry::ref();
 	auto& renderer = RenderSystem::ref();
 	auto& context = RenderContext::ref();
+
+	auto font = ResourceCache<Font>::ref().handle("font"_hs);
+
+	//renderer.drawTextureQuad(font->getTexture(), Vector4f(100, 100, 0, 0), Vector4f(font->getWidth(), font->getHeight(), 1, 1));
+	renderer.drawText(font, "Hello world", 5, 100, 100);
 
 	renderStaticMeshes(registry, renderer);
 	renderRiggedMeshes(registry, renderer);
