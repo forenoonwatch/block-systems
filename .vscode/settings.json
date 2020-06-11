@@ -1,6 +1,8 @@
 {
     "files.associations": {
         "string_view": "cpp",
-        "*.glh": "glsl"
+        "*.glh": "glsl",
+        "type_traits": "cpp",
+        "atomic": "cpp"
     }
 }
