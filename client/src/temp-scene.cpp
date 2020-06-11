@@ -5,6 +5,7 @@
 #include <engine/ecs/ecs.hpp>
 #include <engine/application/application.hpp>
 #include <engine/rendering/render-system.hpp>
+#include <engine/scene/scene-manager.hpp>
 
 #include <engine/resource/asset-loader.hpp>
 #include <engine/resource/texture-loader.hpp>
@@ -164,8 +165,9 @@ void TempScene::render() {
 
 	auto font = ResourceCache<Font>::ref().handle("font"_hs);
 
-	//renderer.drawTextureQuad(font->getTexture(), Vector4f(100, 100, 0, 0), Vector4f(font->getWidth(), font->getHeight(), 1, 1));
-	renderer.drawText(font, "Hello world", 0, 200, Vector3f(0, 0, 0));
+	String fpsText = "FPS:" + std::to_string(SceneManager::ref().getFPS());
+
+	renderer.drawText(font, fpsText, 20, 560, Vector3f(0, 0, 0));
 
 	renderStaticMeshes(registry, renderer);
 	renderRiggedMeshes(registry, renderer);
