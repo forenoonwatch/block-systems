@@ -2,13 +2,13 @@
 
 #include <engine/scene/scene.hpp>
 
-class TempScene final : public Scene<TempScene> {
+class TempScene final : public Scene {
 	public:
-		void load();
+		virtual void load() override;
 
-		void update(float deltaTime);
-		void render();
+		virtual void update(float deltaTime) override;
+		virtual void render() override;
 
-		void unload();
+		virtual void unload() override;
 	private:
 };
