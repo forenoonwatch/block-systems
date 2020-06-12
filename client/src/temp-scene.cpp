@@ -27,6 +27,8 @@
 #include <engine/components/rigged-mesh.hpp>
 #include <engine/components/animator.hpp>
 
+#include <engine/physics/physics-engine.hpp>
+
 #include "orbit-camera.hpp"
 #include "player-controller.hpp"
 
@@ -47,6 +49,8 @@ void TempScene::load() {
 
 	AssetLoader::loadAssets("./res/models/model.dae", models, rigs, animations);
 
+	AssetLoader::loadAssets("./res/models/platform.obj", models, rigs, animations);
+
 	auto& rm = ResourceManager::ref();
 
 	rm.vertexArrays.load<VertexArrayLoader>("sphere"_hs, models[0]);
@@ -58,6 +62,8 @@ void TempScene::load() {
 
 	rm.vertexArrays.load<VertexArrayLoader>("cowboy"_hs, models[5]);
 
+	rm.vertexArrays.load<VertexArrayLoader>("platform"_hs, models[6]);
+
 	rm.models.load<ModelLoader>("cube"_hs, models[2]);
 
 	rm.rigs.load<RigLoader>("cowboy"_hs, rigs[0]);
@@ -65,16 +71,18 @@ void TempScene::load() {
 
 	auto bricksDiffuse = rm.textures.load<TextureLoader>("bricks-diffuse"_hs, "./res/textures/bricks.dds");
 	auto bricksNormal = rm.textures.load<TextureLoader>("bricks-normal"_hs, "./res/textures/bricks-normal.dds");
-	//auto bricksMaterial = rm.textures
-	//		.load<TextureLoader>("bricks-material"_hs,
-	//		"./res/textures/bricks-material.dds");
-	auto bricksMaterial = rm.textures.load<TextureLoader>("bricks-material"_hs, "./res/textures/flat-material.png");
+	auto bricksMaterial = rm.textures.load<TextureLoader>("bricks-material"_hs, "./res/textures/bricks-material.dds");
 
 	auto bricks2Diff = rm.textures.load<TextureLoader>("bricks2-diffuse"_hs, "./res/textures/bricks2.jpg");
 	auto bricks2Norm = rm.textures.load<TextureLoader>("bricks2-normal"_hs, "./res/textures/bricks2_normal.jpg");
 	auto bricks2Disp = rm.textures.load<TextureLoader>("bricks2-disp"_hs, "./res/textures/bricks2_disp.jpg");
 
 	auto flatNormal = rm.textures.load<TextureLoader>("flat-normal"_hs, "./res/textures/flat-normal.png");
+	auto flatMaterial = rm.textures.load<TextureLoader>("flat-material"_hs, "./res/textures/flat-material.png");
+	auto flatDisp = rm.textures.load<TextureLoader>("flat-disp"_hs, "./res/textures/flat-disp.png");
+
+	auto metalDiffuse = rm.textures.load<TextureLoader>("metal-diffuse"_hs, "./res/textures/metal-diffuse.png");
+	auto metalMaterial = rm.textures.load<TextureLoader>("metal-material"_hs, "./res/textures/metal-material.png");
 
 	auto shipDiffuse = rm.textures
 			.load<TextureLoader>("ship-diffuse"_hs, "./res/textures/Grayscale_Target.png");
@@ -90,7 +98,8 @@ void TempScene::load() {
 	rm.materials.load<MaterialLoader>("ship"_hs,
 			shipDiffuse, shipNormal, shipMaterial, shipDisplacement, 0.001f);
 	rm.materials.load<MaterialLoader>("bricks2"_hs, bricks2Diff,
-			bricks2Norm, bricksMaterial, bricks2Disp, 0.01f);
+			bricks2Norm, flatMaterial, bricks2Disp, 0.01f);
+	rm.materials.load<MaterialLoader>("metal"_hs, metalDiffuse, flatNormal, metalMaterial, flatDisp, 0.f);
 
 	rm.shaders.load<ShaderLoader>("normal-shader"_hs, "./res/shaders/normal-shader.glsl");
 
@@ -109,37 +118,60 @@ void TempScene::load() {
 	RenderSystem::ref().setBrdfLUT(rm.textures.handle("schlick-brdf"_hs));
 	
 	auto& registry = Registry::ref();
+	auto& physics = PhysicsEngine::ref();
 
 	auto rot = Math::rotate(Quaternion(1, 0, 0, 0), Math::toRadians(-90.f), Vector3f(1, 0, 0));
 	//auto rot = Quaternion(1, 0, 0, 0);
 
+	auto planeCollider = physics.createCollider<BoxCollider>(Vector3f(10.f, 0.1f, 10.f));
+	auto planeBody = physics.createBody(planeCollider, 0.f);
+
 	auto plane = registry.create();
 	registry.assign<TransformComponent>(plane, Transform());
-	registry.assign<StaticMesh>(plane, &rm.vertexArrays.handle("plane"_hs).get(),
+	registry.assign<StaticMesh>(plane, &rm.vertexArrays.handle("platform"_hs).get(),
 			&rm.materials.handle("bricks2"_hs).get(), true);
+	registry.assign<Body>(plane, planeBody);
 
 	auto test = registry.create();
-	registry.assign<TransformComponent>(test, Transform(Vector3f(0, 0, 5)));
+	registry.assign<TransformComponent>(test, Transform(Vector3f(0, 2, 5)));
 	registry.assign<StaticMesh>(test, &rm.vertexArrays.handle("cube"_hs).get(),
 			&rm.materials.handle("bricks2"_hs).get(), true);
 	registry.assign<Tag<"spinner"_hs>>(test);
 
+	auto playerCollider = physics.createCollider<CapsuleCollider>(1.f, 1.f);
+	auto playerBody = physics.createBody(playerCollider, 1.f, Vector3f(0, 15.f, 0));
+	playerBody.setInvInertiaDiagLocal(Vector3f());
+
 	auto plr = registry.create();
 	registry.assign<StaticMesh>(plr, &rm.vertexArrays.handle("capsule"_hs).get(),
-			&rm.materials.handle("bricks2"_hs).get(), true);
-	registry.assign<TransformComponent>(plr, Transform(Vector3f(0, 1, 0)));
+			&rm.materials.handle("metal"_hs).get(), true);
+	registry.assign<TransformComponent>(plr, Transform());
 	registry.assign<CameraComponent>(plr, Vector3f(), 0, 0);
 	registry.assign<CameraDistanceComponent>(plr, 0.1f, 0.1f, 50.f);
 	registry.assign<PlayerInputComponent>(plr);
-	registry.assign<PlayerController>(plr, Vector3f(), 5.f);
+	registry.assign<PlayerController>(plr, Vector3f(), 10.f);
+	registry.assign<Body>(plr, playerBody);
+
+	auto wallCollider = physics.createCollider<BoxCollider>(Vector3f(0.5f, 4.f, 2.f));
+	auto wallBody = physics.createBody(wallCollider, 0.f);
+
+	auto wall = registry.create();
+	registry.assign<TransformComponent>(wall, Transform(Vector3f(), Quaternion(1, 0, 0, 0), Vector3f(0.5f, 4.f, 2.f)));
+	registry.assign<StaticMesh>(wall, &rm.vertexArrays.handle("cube"_hs).get(),
+			&rm.materials.handle("bricks2"_hs).get(), true);
+	registry.assign<Body>(wall, wallBody);
 }
 
 void TempScene::update(float deltaTime) {
 	auto& registry = Registry::ref();
 	auto& app = Application::ref();
 	auto& renderer = RenderSystem::ref();
+	auto& physicsEngine = PhysicsEngine::ref();
 
 	app.pollEvents();
+
+	physicsEngine.step(deltaTime);
+	physicsEngine.writeTransformComponents(registry);
 
 	updatePlayerController(registry, deltaTime);
 

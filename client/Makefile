@@ -26,13 +26,17 @@ ifeq ($(UNAME), Linux)
 	GLEW := $(shell pkg-config glew --static --libs)
 
 	FREETYPE := $(shell pkg-config freetype2 --static --libs)
+	FREETYPE_I := $(shell pkg-config freetype2 --static --cflags)
 
 	YOJIMBO := -lyojimbo
 	SODIUM := $(shell pkg-config libsodium --static --libs)
 	MBEDTLS := -lmbedtls -lmbedx509 -lmbedcrypto
 
-	LDLIBS := -L"$(ENGINE_DIR)/bin" -lNXEngine -pthread $(GLFW3) $(ASSIMP) $(GLEW) $(FREETYPE) $(YOJIMBO) $(SODIUM) $(MBEDTLS)
-	CXXFLAGS := -I$(CURDIR)/src -I$(ENGINE_DIR)/include -msse2 $(shell pkg-config freetype2 --cflags)
+	BULLET := $(shell pkg-config bullet --static --libs)
+	BULLET_I := $(shell pkg-config bullet --static --cflags)
+
+	LDLIBS := -L"$(ENGINE_DIR)/bin" -lNXEngine -pthread $(GLFW3) $(ASSIMP) $(GLEW) $(FREETYPE) $(YOJIMBO) $(SODIUM) $(MBEDTLS) $(BULLET)
+	CXXFLAGS := -I$(CURDIR)/src -I$(ENGINE_DIR)/include -msse2 $(FREETYPE_I) $(BULLET_I)
 else
 	LDLIBS := -L"$(ENGINE_DIR)/bin" -lNXEngine -lglu32 -lopengl32 -L"$(LIB_DIR)/lib" -lglew32 -lglfw3 -lassimp.dll -lkernel32 -luser32 -lgdi32 -lwinspool -lshell32 -lole32 -loleaut32 -luuid -lcomdlg32 -ladvapi32
 	CXXFLAGS := -I$(CURDIR)/src -I$(ENGINE_DIR)/include -I$(LIB_DIR)/include -msse2

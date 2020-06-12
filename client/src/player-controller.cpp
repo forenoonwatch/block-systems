@@ -2,10 +2,13 @@
 
 #include <engine/ecs/registry.hpp>
 
-#include <engine/components/transform-component.hpp>
 #include <engine/components/player-input.hpp>
 
 #include <engine/rendering/render-system.hpp>
+
+#include <engine/math/transform.hpp>
+
+#include <engine/physics/body.hpp>
 
 void updatePlayerController(Registry& registry, float deltaTime) {
 	auto& camera = RenderSystem::ref().getCamera();
@@ -16,8 +19,8 @@ void updatePlayerController(Registry& registry, float deltaTime) {
 	rightVector = Math::normalize(rightVector);
 	lookVector = -Math::normalize(lookVector);
 
-	registry.view<PlayerController, PlayerInputComponent, TransformComponent>().each(
-			[&](auto& pc, auto& pic, auto& tfc) {
+	registry.view<PlayerController, PlayerInputComponent, Body>().each(
+			[&](auto& pc, auto& pic, auto& body) {
 		float x = 0.f, z = 0.f;
 
 		if (pic.forward) {
@@ -41,13 +44,31 @@ void updatePlayerController(Registry& registry, float deltaTime) {
 		}
 		else {
 			pc.moveDirection = Math::normalize(rightVector * x + lookVector * z);
-			const Vector3f newPos = tfc.transform.getPosition() + pc.moveDirection * (pc.moveSpeed * deltaTime);
 
-			Transform tf(tfc.transform);
-			tf.matrixLookAt(newPos);
+			Transform tf;
+			body.getCenterOfMassTransform(tf);
 
-			tfc.transform.setPosition(newPos);
-			tfc.transform.setRotation(Math::slerp(tfc.transform.getRotation(), tf.getRotation(), 0.1f));
+			const Vector3f newPos = tf.getPosition() + pc.moveDirection * (pc.moveSpeed * deltaTime);
+
+			Transform newTf(tf);
+			newTf.matrixLookAt(newPos);
+
+			tf.setPosition(newPos);
+			tf.setRotation(Math::slerp(tf.getRotation(), newTf.getRotation(), 0.1f));
+
+			body.setCenterOfMassTransform(tf);
+
+			if (!body.isAwake()) {
+				body.setToAwake();
+			}
+		}
+
+		if (pic.jump) {
+			body.applyImpulse(Vector3f(0, 5, 0));
+
+			if (!body.isAwake()) {
+				body.setToAwake();
+			}
 		}
 	});
 }

@@ -4,6 +4,7 @@
 #include <engine/rendering/render-context.hpp>
 #include <engine/rendering/render-system.hpp>
 #include <engine/resource/resource-manager.hpp>
+#include <engine/physics/physics-engine.hpp>
 
 #include <engine/math/math.hpp>
 
@@ -19,6 +20,7 @@ int main() {
 	RenderSystem::init(RenderContext::ref(), width, height, Math::toRadians(70.f), 0.1f, 100.f);
 
 	ResourceManager::init();
+	PhysicsEngine::init();
 
 	SceneManager::init();
 
@@ -27,6 +29,7 @@ int main() {
 
 	SceneManager::destroy();
 
+	PhysicsEngine::destroy();
 	ResourceManager::destroy();
 
 	RenderSystem::destroy();
