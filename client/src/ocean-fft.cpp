@@ -25,7 +25,7 @@ OceanFFTSeed::OceanFFTSeed(RenderContext& context, int32 N, int32 L)
 
 	for (uint32 i = 0; i < 4; ++i) {
 		ss.str("");
-		ss << "./res/Noise256_" << i << ".jpg";
+		ss << "./res/textures/Noise256_" << i << ".jpg";
 
 		bmp.load(ss.str());
 		noise[i] = new Texture(context, bmp, GL_RGBA32F);
@@ -146,7 +146,7 @@ void OceanFFT::update(float delta) {
 	timeCounter += delta * timeScale;
 
 	// update floating objects
-	flushFloatingTransforms();
+	//flushFloatingTransforms();
 }
 
 OceanFFT::~OceanFFT() {

@@ -4,6 +4,7 @@
 
 #include <engine/rendering/vertex-array.hpp>
 #include <engine/rendering/uniform-buffer.hpp>
+#include <engine/rendering/render-context.hpp>
 
 #include <engine/ecs/ecs.hpp>
 
@@ -43,14 +44,13 @@ void initOcean(RenderContext& context, Ocean& ocean, uint32 gridLength) {
 
 	ocean.gridArray = Memory::make_shared<VertexArray>(context, grid,
 			GL_STATIC_DRAW);
-	ocean.oceanDataBuffer = Memory::make_shared<UniformBuffer>(context,
-			OCEAN_BUFFER_SIZE, GL_STREAM_DRAW, 2);
 }
 
 void updateOceanBuffer(Registry& registry, float deltaTime) { 
-	registry.view<Ocean, OceanProjector>().each([&](
-			Ocean& ocean, OceanProjector& op) {
+	auto oceanDataBuffer = RenderContext::ref().getUniformBuffer("OceanData").lock();
+
+	registry.view<Ocean, OceanProjector>().each([&](auto& ocean, auto& op) {
 		ocean.oceanFFT->update(deltaTime);
-		ocean.oceanDataBuffer->update(op.corners, 4 * sizeof(Vector4f));
+		oceanDataBuffer->update(op.corners, 4 * sizeof(Vector4f));
 	});
 }

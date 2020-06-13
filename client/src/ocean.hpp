@@ -24,7 +24,6 @@ struct Ocean {
 
 	Memory::SharedPointer<OceanFFT> oceanFFT;
 	Memory::SharedPointer<VertexArray> gridArray;
-	Memory::SharedPointer<UniformBuffer> oceanDataBuffer;
 	uint32 gridLength;
 };
 

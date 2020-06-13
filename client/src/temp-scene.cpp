@@ -32,6 +32,9 @@
 #include "orbit-camera.hpp"
 #include "player-controller.hpp"
 
+#include "ocean.hpp"
+#include "ocean-projector.hpp"
+
 #include <entt/entity/helper.hpp> // entt::tag
 
 void TempScene::load() {
@@ -93,6 +96,8 @@ void TempScene::load() {
 	auto shipDisplacement = rm.textures
 			.load<TextureLoader>("ship-disp"_hs, "./res/textures/ship-displacement.png");
 
+	rm.textures.load<TextureLoader>("foam"_hs, "./res/textures/foam.jpg");
+
 	rm.materials.load<MaterialLoader>("bricks"_hs,
 			bricksDiffuse, bricksNormal, bricksMaterial, bricks2Disp, 0.01f);
 	rm.materials.load<MaterialLoader>("ship"_hs,
@@ -102,6 +107,7 @@ void TempScene::load() {
 	rm.materials.load<MaterialLoader>("metal"_hs, metalDiffuse, flatNormal, metalMaterial, flatDisp, 0.f);
 
 	rm.shaders.load<ShaderLoader>("normal-shader"_hs, "./res/shaders/normal-shader.glsl");
+	rm.shaders.load<ShaderLoader>("ocean-deferred"_hs, "./res/shaders/ocean/ocean-deferred.glsl");
 
 	rm.fonts.load<FontLoader>("font"_hs, "/usr/share/fonts/truetype/hack/Hack-Regular.ttf", 24);
 
@@ -116,6 +122,14 @@ void TempScene::load() {
 	RenderSystem::ref().setDiffuseIBL(rm.cubeMaps.handle("sargasso-diffuse"_hs));
 	RenderSystem::ref().setSpecularIBL(rm.cubeMaps.handle("sargasso-specular"_hs));
 	RenderSystem::ref().setBrdfLUT(rm.textures.handle("schlick-brdf"_hs));
+
+	auto oceanFFT = Memory::make_shared<OceanFFT>(RenderContext::ref(), 256, 1000, true, 5.f);
+
+	Ocean ocean;
+	ocean.oceanFFT = oceanFFT;
+
+	oceanFFT->setOceanParams(2.f, Vector2f(1.f, 1.f), 10.f, 0.5f);
+	oceanFFT->setFoldingParams(0, 0, 1);
 	
 	auto& registry = Registry::ref();
 	auto& physics = PhysicsEngine::ref();
@@ -151,6 +165,10 @@ void TempScene::load() {
 	registry.assign<PlayerInputComponent>(plr);
 	registry.assign<PlayerController>(plr, Vector3f(), 10.f);
 	registry.assign<Body>(plr, playerBody);
+	registry.assign<OceanProjector>(plr, RenderSystem::ref().getCamera(), Matrix4f(1.f));
+	registry.assign<Ocean>(plr, oceanFFT);
+
+	initOcean(RenderContext::ref(), registry.get<Ocean>(plr), 256);
 
 	auto wallCollider = physics.createCollider<BoxCollider>(Vector3f(0.5f, 4.f, 2.f));
 	auto wallBody = physics.createBody(wallCollider, 0.f);
@@ -160,6 +178,10 @@ void TempScene::load() {
 	registry.assign<StaticMesh>(wall, &rm.vertexArrays.handle("cube"_hs).get(),
 			&rm.materials.handle("bricks2"_hs).get(), true);
 	registry.assign<Body>(wall, wallBody);
+
+	auto oceanData = RenderContext::ref().getUniformBuffer("OceanData").lock();
+
+	oceanData->set({"amplitude", "detailAmplitude", "lambda"}, 1.f, 0.01f, 1.f);
 }
 
 void TempScene::update(float deltaTime) {
@@ -200,6 +222,8 @@ void TempScene::update(float deltaTime) {
 	});
 
 	renderer.updateCamera();
+	updateOceanProjector(registry, RenderSystem::ref().getCamera(), deltaTime);
+	updateOceanBuffer(registry, deltaTime);
 }
 
 void TempScene::render() {
@@ -208,6 +232,9 @@ void TempScene::render() {
 	auto& context = RenderContext::ref();
 
 	auto& rm = ResourceManager::ref();
+
+	auto oceanShader = rm.shaders.handle("ocean-deferred"_hs);
+	auto foam = rm.textures.handle("foam"_hs);
 
 	auto font = rm.fonts.handle("font"_hs);
 
@@ -222,6 +249,18 @@ void TempScene::render() {
 
 	renderer.flushStaticMeshes();
 	renderer.flushRiggedMeshes();
+
+	registry.view<Ocean>().each([&](auto& ocean) {
+		oceanShader->setSampler("displacementMap",
+				ocean.oceanFFT->getDisplacement(), renderer.getLinearSampler(), 0);
+		oceanShader->setSampler("foldingMap", ocean.oceanFFT->getFoldingMap(),
+				renderer.getLinearSampler(), 1);
+		oceanShader->setSampler("foam", *foam, renderer.getLinearSampler(), 2);
+
+		context.draw(renderer.getTarget(), oceanShader, *ocean.gridArray, renderer.getDrawParams(),
+				GL_TRIANGLES);
+	});
+
 	renderer.applyLighting();
 	
 	renderer.renderSkybox();

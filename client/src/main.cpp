@@ -17,7 +17,7 @@ int main() {
 	const int width = Application::ref().getWidth();
 	const int height = Application::ref().getHeight();
 
-	RenderSystem::init(RenderContext::ref(), width, height, Math::toRadians(70.f), 0.1f, 100.f);
+	RenderSystem::init(RenderContext::ref(), width, height, Math::toRadians(70.f), 0.1f, 1000.f);
 
 	ResourceManager::init();
 	PhysicsEngine::init();
