@@ -51,6 +51,7 @@ void OceanFFTSeed::setParams(float amplitude, const Vector2f& direction,
 	h0kShader.setSampler("noise_i1", *noise[3], noiseSampler, 4);
 
 	context->compute(h0kShader, computeSpace, computeSpace);
+	context->awaitFinish();
 }
 
 OceanFFTSeed::~OceanFFTSeed() {

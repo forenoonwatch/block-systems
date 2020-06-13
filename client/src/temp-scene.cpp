@@ -107,7 +107,7 @@ void TempScene::load() {
 	rm.materials.load<MaterialLoader>("metal"_hs, metalDiffuse, flatNormal, metalMaterial, flatDisp, 0.f);
 
 	rm.shaders.load<ShaderLoader>("normal-shader"_hs, "./res/shaders/normal-shader.glsl");
-	rm.shaders.load<ShaderLoader>("ocean-deferred"_hs, "./res/shaders/ocean/ocean-deferred.glsl");
+	rm.shaders.load<ShaderLoader>("ocean-deferred"_hs, "./res/shaders/ocean/ocean-deferred-2.glsl");
 
 	rm.fonts.load<FontLoader>("font"_hs, "/usr/share/fonts/truetype/hack/Hack-Regular.ttf", 24);
 
@@ -123,13 +123,14 @@ void TempScene::load() {
 	RenderSystem::ref().setSpecularIBL(rm.cubeMaps.handle("sargasso-specular"_hs));
 	RenderSystem::ref().setBrdfLUT(rm.textures.handle("schlick-brdf"_hs));
 
-	auto oceanFFT = Memory::make_shared<OceanFFT>(RenderContext::ref(), 256, 1000, true, 5.f);
+	auto oceanFFT = Memory::make_shared<OceanFFT>(RenderContext::ref(), 256, 1000, true, 6.f);
 
 	Ocean ocean;
 	ocean.oceanFFT = oceanFFT;
 
-	oceanFFT->setOceanParams(2.f, Vector2f(1.f, 1.f), 10.f, 0.5f);
-	oceanFFT->setFoldingParams(0, 0, 1);
+	//oceanFFT->setFoldingParams(1.f, 1.f, 0.022f);
+	oceanFFT->setFoldingParams(1.f, 1.f, 0.03f);
+	oceanFFT->setOceanParams(5.f, Vector2f(1.f, 1.f), 100.f, 0.05f);
 	
 	auto& registry = Registry::ref();
 	auto& physics = PhysicsEngine::ref();
@@ -181,7 +182,9 @@ void TempScene::load() {
 
 	auto oceanData = RenderContext::ref().getUniformBuffer("OceanData").lock();
 
-	oceanData->set({"amplitude", "detailAmplitude", "lambda"}, 1.f, 0.01f, 1.f);
+	oceanData->set({"amplitude", "detailAmplitude", "lambda"}, 1.5f, 0.01f, 1.f);
+
+	RenderContext::ref().awaitFinish();
 }
 
 void TempScene::update(float deltaTime) {
@@ -255,7 +258,7 @@ void TempScene::render() {
 				ocean.oceanFFT->getDisplacement(), renderer.getLinearSampler(), 0);
 		oceanShader->setSampler("foldingMap", ocean.oceanFFT->getFoldingMap(),
 				renderer.getLinearSampler(), 1);
-		oceanShader->setSampler("foam", *foam, renderer.getLinearSampler(), 2);
+		//oceanShader->setSampler("foam", *foam, renderer.getLinearSampler(), 2);
 
 		context.draw(renderer.getTarget(), oceanShader, *ocean.gridArray, renderer.getDrawParams(),
 				GL_TRIANGLES);
