@@ -5,6 +5,7 @@
 #include <engine/rendering/render-system.hpp>
 #include <engine/resource/resource-manager.hpp>
 #include <engine/physics/physics-engine.hpp>
+#include <engine/ocean/ocean.hpp>
 
 #include <engine/math/math.hpp>
 
@@ -22,12 +23,15 @@ int main() {
 	ResourceManager::init();
 	PhysicsEngine::init();
 
+
 	SceneManager::init();
 
 	// start the engine
 	SceneManager::ref().load<TempScene>();
 
 	SceneManager::destroy();
+
+	Ocean::destroy();
 
 	PhysicsEngine::destroy();
 	ResourceManager::destroy();

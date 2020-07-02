@@ -8,7 +8,8 @@
 
 #include <engine/math/transform.hpp>
 
-#include <engine/physics/body.hpp>
+#include <engine/physics/character-controller.hpp>
+#include <engine/physics/physics-util.hpp>
 
 void updatePlayerController(Registry& registry, float deltaTime) {
 	auto& camera = RenderSystem::ref().getCamera();
@@ -19,8 +20,10 @@ void updatePlayerController(Registry& registry, float deltaTime) {
 	rightVector = Math::normalize(rightVector);
 	lookVector = -Math::normalize(lookVector);
 
-	registry.view<PlayerController, PlayerInputComponent, Body>().each(
-			[&](auto& pc, auto& pic, auto& body) {
+	//registry.view<PlayerController, PlayerInputComponent, Body>().each(
+	//		[&](auto& pc, auto& pic, auto& body) {
+	registry.view<PlayerController, PlayerInputComponent, CharacterController>().each(
+			[&](auto& pc, auto& pic, auto& cc) {
 		float x = 0.f, z = 0.f;
 
 		if (pic.forward) {
@@ -45,30 +48,34 @@ void updatePlayerController(Registry& registry, float deltaTime) {
 		else {
 			pc.moveDirection = Math::normalize(rightVector * x + lookVector * z);
 
-			Transform tf;
-			body.getCenterOfMassTransform(tf);
 
-			const Vector3f newPos = tf.getPosition() + pc.moveDirection * (pc.moveSpeed * deltaTime);
+			//Transform tf;
+			//body.getCenterOfMassTransform(tf);
 
-			Transform newTf(tf);
-			newTf.matrixLookAt(newPos);
+			//const Vector3f newPos = tf.getPosition() + pc.moveDirection * (pc.moveSpeed * deltaTime);
 
-			tf.setPosition(newPos);
-			tf.setRotation(Math::slerp(tf.getRotation(), newTf.getRotation(), 0.1f));
+			//Transform newTf(tf);
+			//newTf.matrixLookAt(newPos);
 
-			body.setCenterOfMassTransform(tf);
+			//tf.setPosition(newPos);
+			//tf.setRotation(Math::slerp(tf.getRotation(), newTf.getRotation(), 0.1f));
 
-			if (!body.isAwake()) {
-				body.setToAwake();
-			}
+			//body.setCenterOfMassTransform(tf);
+
+			//if (!body.isAwake()) {
+			//	body.setToAwake();
+			//}
 		}
 
-		if (pic.jump) {
-			body.applyImpulse(Vector3f(0, 5, 0));
+		cc.getController()->setWalkDirection(Physics::nativeToBtVec3(pc.moveDirection * (5.f * deltaTime)));
 
-			if (!body.isAwake()) {
-				body.setToAwake();
-			}
+		if (pic.jump && cc.getController()->canJump()) {
+			cc.getController()->jump();
+			//body.applyImpulse(Vector3f(0, 5, 0));
+
+			//if (!body.isAwake()) {
+			//	body.setToAwake();
+			//}
 		}
 	});
 }

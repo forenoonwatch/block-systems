@@ -20,7 +20,7 @@ vec4 getOceanPosition(vec2 pos) {
 	const vec4 b = mix(corners[1], corners[3], pos.x);
 
 	vec4 o = mix(a, b, pos.y);
-	const vec3 data = oceanData(o.xz / o.w * OCEAN_SAMPLE);
+	const vec3 data = oceanData(o.xz / o.w * sampleScale);
 
 	o.xyz += data * o.w;
 
@@ -32,7 +32,7 @@ vec2 getOceanUV(vec2 pos) {
 	const vec4 b = mix(corners[1], corners[3], pos.x);
 	const vec4 o = mix(a, b, pos.y);
 
-	return o.xz / o.w * OCEAN_SAMPLE;
+	return o.xz / o.w * sampleScale;
 }
 
 varying vec2 xyPos0;
@@ -70,7 +70,7 @@ void main() {
 
 	outColor = vec4(mix(oceanColor0, vec3(1.0), folding), 1.0);
 	outNormal = vec4(normal, 1.0);
-	outLighting = vec4(0, mix(0.15, 1.0, folding), mix(0.8, 0.0, min(folding, 1.0)), 1);
+	outLighting = vec4(0, mix(0.15, 1.0, folding), mix(0.9, 0.0, min(folding, 1.0)), 1);
 
 	/*float foamMask = foldNorm.w;
 

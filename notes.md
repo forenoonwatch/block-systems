@@ -24,6 +24,10 @@ Stuff that makes the game possible but isn't core engine necessarily
 - Volumetric clouds
 
 ### Physics
+- Character Controller
+- Vehicle Controller
+- Ship Controller
+- Land Vehicle Controller
 
 ### Networking
 - Networked Physics
@@ -38,12 +42,17 @@ Stuff that makes the game possible but isn't core engine necessarily
 - Asynchronous asset loading
 - Shader file encoding/decoding
 
+### Ocean
+- Convert random maps to SSBO of vec4s
+- Generate random maps from std::uniform_distribution(0, 1) of a std::minstd_rand
+
 ### Other/Misc
 - UI
 - Lua scripting support
 - Multithreading and Asynchronous Programming
 - Event emission/handling
 - Input consumption
+- Terrain
 
 ## Neat Ideas
 
@@ -61,6 +70,10 @@ The main instanced animation shader will read from the texture based on the inst
 ### "Sort-based draw call bucketing"
 https://realtimecollisiondetection.net/blog/?p=86
 Use a 64 bit ID to aggregate draw calls and sort them into full order. Currently not entirely useful/feasible but a neat idea.
+
+### Deferred rendering of transparent materials
+- All transparent objects must be rendered with forward rendering
+- Must be done after lighting is applied but before tone mapping
 
 ## Resources/Sources
 I need to fill this out.

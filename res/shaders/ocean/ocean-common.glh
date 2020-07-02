@@ -1,16 +1,17 @@
-#define OCEAN_SAMPLE 0.02
-#define DETAIL_SAMPLE_MODIFIER 10.0
+//#define OCEAN_SAMPLE 0.02
+//#define DETAIL_SAMPLE_MODIFIER 10.0
 
-#define TEXEL_SIZE 256.0
-#define SMOOTHNESS 2.0
+//#define TEXEL_SIZE 256.0
+//#define SMOOTHNESS 2.0
 
 #define GRID_LENGTH 256.0
 
-const float texelSize = TEXEL_SIZE / SMOOTHNESS;
+//const float texelSize = TEXEL_SIZE / SMOOTHNESS;
 
 layout (std140) uniform OceanData {
 	vec4 corners[4];
 	float amplitude;
 	float detailAmplitude;
 	float lambda;
+	float sampleScale;
 };

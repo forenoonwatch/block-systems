@@ -28,14 +28,18 @@
 #include <engine/components/animator.hpp>
 
 #include <engine/physics/physics-engine.hpp>
+#include <engine/physics/physics-util.hpp>
+
+#include <engine/ocean/ocean.hpp>
 
 #include "orbit-camera.hpp"
 #include "player-controller.hpp"
 
-#include "ocean.hpp"
-#include "ocean-projector.hpp"
-
 #include <entt/entity/helper.hpp> // entt::tag
+
+namespace {
+	//Body planeBodyPtr;
+};
 
 void TempScene::load() {
 	Application::ref().moveToCenter();
@@ -107,7 +111,6 @@ void TempScene::load() {
 	rm.materials.load<MaterialLoader>("metal"_hs, metalDiffuse, flatNormal, metalMaterial, flatDisp, 0.f);
 
 	rm.shaders.load<ShaderLoader>("normal-shader"_hs, "./res/shaders/normal-shader.glsl");
-	rm.shaders.load<ShaderLoader>("ocean-deferred"_hs, "./res/shaders/ocean/ocean-deferred-2.glsl");
 
 	rm.fonts.load<FontLoader>("font"_hs, "/usr/share/fonts/truetype/hack/Hack-Regular.ttf", 24);
 
@@ -123,29 +126,29 @@ void TempScene::load() {
 	RenderSystem::ref().setSpecularIBL(rm.cubeMaps.handle("sargasso-specular"_hs));
 	RenderSystem::ref().setBrdfLUT(rm.textures.handle("schlick-brdf"_hs));
 
-	auto oceanFFT = Memory::make_shared<OceanFFT>(RenderContext::ref(), 256, 1000, true, 6.f);
-
-	Ocean ocean;
-	ocean.oceanFFT = oceanFFT;
-
-	//oceanFFT->setFoldingParams(1.f, 1.f, 0.022f);
-	oceanFFT->setFoldingParams(1.f, 1.f, 0.03f);
-	oceanFFT->setOceanParams(5.f, Vector2f(1.f, 1.f), 100.f, 0.05f);
-	
 	auto& registry = Registry::ref();
 	auto& physics = PhysicsEngine::ref();
 
-	auto rot = Math::rotate(Quaternion(1, 0, 0, 0), Math::toRadians(-90.f), Vector3f(1, 0, 0));
 	//auto rot = Quaternion(1, 0, 0, 0);
+	auto rot = Math::rotate(Quaternion(1, 0, 0, 0), Math::toRadians(45.f), Vector3f(1, 0, 0));
 
 	auto planeCollider = physics.createCollider<BoxCollider>(Vector3f(10.f, 0.1f, 10.f));
-	auto planeBody = physics.createBody(planeCollider, 0.f);
+	//auto planeBody = physics.createBody(planeCollider, 0.f, Vector3f(0, -2, 0));
+	auto planeController = physics.createVehicleController(planeCollider, Vector3f(), rot);
+
+	planeController.getController()->setLinearVelocity(btVector3(0, 0, 0.5));
+
+	//planeBodyPtr = planeBody;
+
+	//planeBody.applyImpulse(Vector3f(0, 0, 1));
+	//planeBody.getHandle()->setAngularFactor(0.f);
 
 	auto plane = registry.create();
 	registry.assign<TransformComponent>(plane, Transform());
 	registry.assign<StaticMesh>(plane, &rm.vertexArrays.handle("platform"_hs).get(),
 			&rm.materials.handle("bricks2"_hs).get(), true);
-	registry.assign<Body>(plane, planeBody);
+	registry.assign<VehicleController>(plane, planeController);
+	//registry.assign<Body>(plane, planeBody);
 
 	auto test = registry.create();
 	registry.assign<TransformComponent>(test, Transform(Vector3f(0, 2, 5)));
@@ -154,8 +157,13 @@ void TempScene::load() {
 	registry.assign<Tag<"spinner"_hs>>(test);
 
 	auto playerCollider = physics.createCollider<CapsuleCollider>(1.f, 1.f);
-	auto playerBody = physics.createBody(playerCollider, 1.f, Vector3f(0, 15.f, 0));
-	playerBody.setInvInertiaDiagLocal(Vector3f());
+	//auto playerBody = physics.createBody(playerCollider, 1.f, Vector3f(0, 15.f, 0));
+	//playerBody.setInvInertiaDiagLocal(Vector3f());
+
+	rot = Math::rotate(Quaternion(1, 0, 0, 0), Math::toRadians(90.f), Vector3f(1, 0, 0));
+
+	auto playerCC = physics.createCharacterController(playerCollider, 0.1, Vector3f(0, 1, 0), rot);
+	playerCC.getController()->setJumpSpeed(5.f);
 
 	auto plr = registry.create();
 	registry.assign<StaticMesh>(plr, &rm.vertexArrays.handle("capsule"_hs).get(),
@@ -165,26 +173,25 @@ void TempScene::load() {
 	registry.assign<CameraDistanceComponent>(plr, 0.1f, 0.1f, 50.f);
 	registry.assign<PlayerInputComponent>(plr);
 	registry.assign<PlayerController>(plr, Vector3f(), 10.f);
-	registry.assign<Body>(plr, playerBody);
-	registry.assign<OceanProjector>(plr, RenderSystem::ref().getCamera(), Matrix4f(1.f));
-	registry.assign<Ocean>(plr, oceanFFT);
+	//registry.assign<Body>(plr, playerBody);
+	registry.assign<CharacterController>(plr, playerCC);
 
-	initOcean(RenderContext::ref(), registry.get<Ocean>(plr), 256);
+	rot = Math::rotate(Quaternion(1, 0, 0, 0), Math::toRadians(0.f), Vector3f(0, 0, 1));
 
-	auto wallCollider = physics.createCollider<BoxCollider>(Vector3f(0.5f, 4.f, 2.f));
-	auto wallBody = physics.createBody(wallCollider, 0.f);
+	//auto wallCollider = physics.createCollider<BoxCollider>(Vector3f(0.5f, 4.f, 2.f));
+	//auto wallBody = physics.createBody(wallCollider, 1.f, Vector3f(), rot);
 
-	auto wall = registry.create();
-	registry.assign<TransformComponent>(wall, Transform(Vector3f(), Quaternion(1, 0, 0, 0), Vector3f(0.5f, 4.f, 2.f)));
-	registry.assign<StaticMesh>(wall, &rm.vertexArrays.handle("cube"_hs).get(),
-			&rm.materials.handle("bricks2"_hs).get(), true);
-	registry.assign<Body>(wall, wallBody);
+	//auto wall = registry.create();
+	//registry.assign<TransformComponent>(wall, Transform(Vector3f(), rot, Vector3f(0.5f, 4.f, 2.f)));
+	//registry.assign<StaticMesh>(wall, &rm.vertexArrays.handle("cube"_hs).get(),
+	//		&rm.materials.handle("bricks2"_hs).get(), true);
+	//registry.assign<Body>(wall, wallBody);
 
-	auto oceanData = RenderContext::ref().getUniformBuffer("OceanData").lock();
+	//wallBody.setFriction(1.0);
+	//playerBody.setFriction(1.0);
 
-	oceanData->set({"amplitude", "detailAmplitude", "lambda"}, 1.5f, 0.01f, 1.f);
-
-	RenderContext::ref().awaitFinish();
+	Ocean::init(RenderContext::ref(), RenderSystem::ref().getCamera(),
+			256, 256, 250, true, 6.f);
 }
 
 void TempScene::update(float deltaTime) {
@@ -195,10 +202,36 @@ void TempScene::update(float deltaTime) {
 
 	app.pollEvents();
 
+	updatePlayerController(registry, deltaTime);
+
+	registry.view<TransformComponent, CharacterController>().each([&](auto& tfc, auto& cc) {
+		auto btTf = cc.getGhostObject()->getWorldTransform();
+		Physics::btToNativeTransform(tfc.transform, btTf);
+
+		auto lv = cc.getController()->getLinearVelocity();
+
+		//DEBUG_LOG_TEMP("%.2f, %.2f, %.2f", lv.x(), lv.y(), lv.z());
+	});
+
+	registry.view<TransformComponent, VehicleController>().each([&](auto& tfc, auto& vc) {
+		auto btTf = vc.getController()->getGhostObject()->getWorldTransform();
+		Physics::btToNativeTransform(tfc.transform, btTf);
+	});
+
+	//Transform tf;
+	//planeBodyPtr.getCenterOfMassTransform(tf);
+
+	//tf.setPosition(tf.getPosition() + Vector3f(0, 0, 1.f * deltaTime));
+
+	//planeBodyPtr.setCenterOfMassTransform(tf);
+	//planeBodyPtr.getHandle()->getMotionState()->setWorldTransform(btTransform(Physics::nativeToBtQuat(tf.getRotation()),
+	//		Physics::nativeToBtVec3(tf.getPosition())));
+	//planeBodyPtr.getHandle()->setLinearVelocity(btVector3(0, 0, 1));
+	//planeBodyPtr.setToAwake();
+	//planeBodyPtr.getHandle()->applyCentralForce(btVector3(0, 1.0 * 9.81, 0));
+
 	physicsEngine.step(deltaTime);
 	physicsEngine.writeTransformComponents(registry);
-
-	updatePlayerController(registry, deltaTime);
 
 	if (app.getKeyPressed(Input::KEY_M)) {
 		app.setFullscreen(!app.isFullscreen());
@@ -225,8 +258,7 @@ void TempScene::update(float deltaTime) {
 	});
 
 	renderer.updateCamera();
-	updateOceanProjector(registry, RenderSystem::ref().getCamera(), deltaTime);
-	updateOceanBuffer(registry, deltaTime);
+	Ocean::ref().update(renderer.getCamera(), deltaTime);
 }
 
 void TempScene::render() {
@@ -236,14 +268,13 @@ void TempScene::render() {
 
 	auto& rm = ResourceManager::ref();
 
-	auto oceanShader = rm.shaders.handle("ocean-deferred"_hs);
-	auto foam = rm.textures.handle("foam"_hs);
-
 	auto font = rm.fonts.handle("font"_hs);
 
 	String fpsText = "FPS:" + std::to_string(SceneManager::ref().getFPS());
 
 	renderer.drawText(font, fpsText, 20, 560, Vector3f(0, 0, 0));
+
+	//renderer.drawTextureQuad(Ocean::ref().getFFTData().getDisplacement(), Vector4f(50, 50, 0, 0), Vector4f(600, 600, 1, 1), Vector3f(1, 1, 1));
 
 	renderStaticMeshes(registry, renderer);
 	renderRiggedMeshes(registry, renderer);
@@ -253,16 +284,7 @@ void TempScene::render() {
 	renderer.flushStaticMeshes();
 	renderer.flushRiggedMeshes();
 
-	registry.view<Ocean>().each([&](auto& ocean) {
-		oceanShader->setSampler("displacementMap",
-				ocean.oceanFFT->getDisplacement(), renderer.getLinearSampler(), 0);
-		oceanShader->setSampler("foldingMap", ocean.oceanFFT->getFoldingMap(),
-				renderer.getLinearSampler(), 1);
-		//oceanShader->setSampler("foam", *foam, renderer.getLinearSampler(), 2);
-
-		context.draw(renderer.getTarget(), oceanShader, *ocean.gridArray, renderer.getDrawParams(),
-				GL_TRIANGLES);
-	});
+	Ocean::ref().render();
 
 	renderer.applyLighting();
 	
@@ -271,6 +293,8 @@ void TempScene::render() {
 	renderer.flush();
 
 	renderer.flushTexturedQuads();
+
+	PhysicsEngine::ref().debugDrawWorld();
 
 	Application::ref().swapBuffers();
 }
