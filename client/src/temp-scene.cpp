@@ -112,7 +112,8 @@ void TempScene::load() {
 
 	rm.shaders.load<ShaderLoader>("normal-shader"_hs, "./res/shaders/normal-shader.glsl");
 
-	rm.fonts.load<FontLoader>("font"_hs, "/usr/share/fonts/truetype/hack/Hack-Regular.ttf", 24);
+	//rm.fonts.load<FontLoader>("font"_hs, "/usr/share/fonts/truetype/hack/Hack-Regular.ttf", 24);
+	rm.fonts.load<FontLoader>("font"_hs, "./res/fonts/LucidaTypewriterRegular.ttf", 24);
 
 	String cubeMap = "./res/textures/sargasso-diffuse.dds";
 	rm.cubeMaps.load<CubeMapLoader>("sargasso-diffuse"_hs, &cubeMap, 1);

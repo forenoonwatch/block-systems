@@ -38,8 +38,20 @@ ifeq ($(UNAME), Linux)
 	LDLIBS := -L"$(ENGINE_DIR)/bin" -lNXEngine -pthread $(GLFW3) $(ASSIMP) $(GLEW) $(FREETYPE) $(YOJIMBO) $(SODIUM) $(MBEDTLS) $(BULLET)
 	CXXFLAGS := -I$(CURDIR)/src -I$(ENGINE_DIR)/include -msse2 $(FREETYPE_I) $(BULLET_I)
 else
-	LDLIBS := -L"$(ENGINE_DIR)/bin" -lNXEngine -lglu32 -lopengl32 -L"$(LIB_DIR)/lib" -lglew32 -lglfw3 -lassimp.dll -lkernel32 -luser32 -lgdi32 -lwinspool -lshell32 -lole32 -loleaut32 -luuid -lcomdlg32 -ladvapi32
-	CXXFLAGS := -I$(CURDIR)/src -I$(ENGINE_DIR)/include -I$(LIB_DIR)/include -msse2
+	GLFW3 := -lglfw3
+	ASSIMP := -lassimp.dll
+	GLEW := -lglew32
+
+	WIN := -lkernel32 -luser32 -lgdi32 -lwinspool -lshell32 -lole32 -loleaut32 -luuid -lcomdlg32 -ladvapi32
+
+	BULLET := -lBulletDynamics -lBulletInverseDynamics -lBulletSoftBody -lBulletCollision -lBullet3Geometry -lBullet3Common -lLinearMath
+	BULLET_I := -I$(LIB_DIR)/include/bullet
+
+	FREETYPE := -lfreetype
+	FREETYPE_I := -I$(LIB_DIR)/include/freetype2
+
+	LDLIBS := -L"$(ENGINE_DIR)/bin" -lNXEngine -lglu32 -lopengl32 -L"$(LIB_DIR)/lib" $(GLEW) $(GLFW3) $(ASSIMP) $(WIN) $(FREETYPE) $(BULLET)
+	CXXFLAGS := -I$(CURDIR)/src -I$(ENGINE_DIR)/include -I$(LIB_DIR)/include $(BULLET_I) $(FREETYPE_I) -msse2
 endif
 
 CPPFLAGS := -std=c++17 -g -ggdb
