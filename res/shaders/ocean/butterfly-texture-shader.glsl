@@ -7,7 +7,7 @@ layout (local_size_x = 1, local_size_y = 16) in;
 
 layout (binding = 0, rgba32f) writeonly uniform image2D butterflyTexture;
 
-layout (std430, binding = 1) buffer indices {
+layout (std430, binding = 0) buffer indices {
 	int v[];
 } bitReversedIndices;
 
