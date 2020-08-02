@@ -29,6 +29,8 @@
 
 #include <engine/physics/physics-engine.hpp>
 #include <engine/physics/physics-util.hpp>
+#include <engine/physics/character-controller.hpp>
+#include <engine/physics/vehicle-controller.hpp>
 
 #include <engine/ocean/ocean.hpp>
 
@@ -135,9 +137,9 @@ void TempScene::load() {
 
 	auto planeCollider = physics.createCollider<BoxCollider>(Vector3f(10.f, 0.1f, 10.f));
 	//auto planeBody = physics.createBody(planeCollider, 0.f, Vector3f(0, -2, 0));
-	auto planeController = physics.createVehicleController(planeCollider, Vector3f(), rot);
+	auto* planeController = physics.createVehicleController(planeCollider, Vector3f(), rot);
 
-	planeController.getController()->setLinearVelocity(btVector3(0, 0, 0.5));
+	//planeController.getController()->setLinearVelocity(btVector3(0, 0, 0.5));
 
 	//planeBodyPtr = planeBody;
 
@@ -148,7 +150,7 @@ void TempScene::load() {
 	registry.assign<TransformComponent>(plane, Transform());
 	registry.assign<StaticMesh>(plane, &rm.vertexArrays.handle("platform"_hs).get(),
 			&rm.materials.handle("bricks2"_hs).get(), true);
-	registry.assign<VehicleController>(plane, planeController);
+	registry.assign<VehicleController*>(plane, planeController);
 	//registry.assign<Body>(plane, planeBody);
 
 	auto test = registry.create();
@@ -163,8 +165,8 @@ void TempScene::load() {
 
 	rot = Math::rotate(Quaternion(1, 0, 0, 0), Math::toRadians(90.f), Vector3f(1, 0, 0));
 
-	auto playerCC = physics.createCharacterController(playerCollider, 0.1, Vector3f(0, 1, 0), rot);
-	playerCC.getController()->setJumpSpeed(5.f);
+	auto* playerCC = physics.createCharacterController(playerCollider, Vector3f(0, 1, 0), rot);
+	//playerCC.getController()->setJumpSpeed(5.f);
 
 	auto plr = registry.create();
 	registry.assign<StaticMesh>(plr, &rm.vertexArrays.handle("capsule"_hs).get(),
@@ -175,7 +177,7 @@ void TempScene::load() {
 	registry.assign<PlayerInputComponent>(plr);
 	registry.assign<PlayerController>(plr, Vector3f(), 10.f);
 	//registry.assign<Body>(plr, playerBody);
-	registry.assign<CharacterController>(plr, playerCC);
+	registry.assign<CharacterController*>(plr, playerCC);
 
 	rot = Math::rotate(Quaternion(1, 0, 0, 0), Math::toRadians(0.f), Vector3f(0, 0, 1));
 
@@ -205,11 +207,11 @@ void TempScene::update(float deltaTime) {
 
 	updatePlayerController(registry, deltaTime);
 
-	registry.view<TransformComponent, CharacterController>().each([&](auto& tfc, auto& cc) {
-		auto btTf = cc.getGhostObject()->getWorldTransform();
+	registry.view<TransformComponent, CharacterController*>().each([&](auto& tfc, auto* cc) {
+		auto btTf = cc->getGhostObject()->getWorldTransform();
 		Physics::btToNativeTransform(tfc.transform, btTf);
 
-		auto lv = cc.getController()->getLinearVelocity();
+		auto lv = cc->getLinearVelocity();
 
 		//DEBUG_LOG_TEMP("%.2f, %.2f, %.2f", lv.x(), lv.y(), lv.z());
 	});
